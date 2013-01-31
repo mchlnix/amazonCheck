@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from os.path import expanduser
@@ -21,12 +21,6 @@ LIGHT_BLUE = '\033[96m'
 NOCOLOR = '\033[0m'
 
 
-def remove_all_files():
-    remove( expanduser( '~' ) + '/.amazonCheck.prices' )
-    remove( expanduser( '~' ) + '/.amazonCheck.titles' )
-    remove( expanduser( '~' ) + '/.amazonCheck.links' )
-
-
 def is_valid( lines ):
 
     data = lines[ 0 : -1]
@@ -43,18 +37,6 @@ def get_time():
     return strftime( '%H:%M:%S' )
 
 
-def print_help():
-    print( '' )
-    print( ' amazonCheck add \'link1\' \'link2\'             Add article(s) to the list' )
-    print( ' amazonCheck update                          Update the prices' )
-    print( ' amazonCheck delete                          Bring up the delete menu' )
-    print( ' amazonCheck clearlist                       Deletes all entries' )
-    print( ' amazonCheck [show]                          Show all articles' )
-    print( '' )
-    print( ' amazonCheck (--help, help)                  Print this help' )
-    print( '' )
-
-
 def shorten_amazon_link( url ):
     offset = url.find( 'amazon.' )
 
@@ -66,7 +48,7 @@ def shorten_amazon_link( url ):
 
     except AttributeError:
 
-        exit( 'Link couldn\'t be parsed.'  )
+        return_url = ''
 
     return return_url
 
@@ -95,17 +77,7 @@ def add_article( url ):
 
     ( title, price ) = get_info_for( url )
 
-    urls = read_links()
-    prices = read_prices()
-    titles = read_titles()
 
-    urls.append( url )
-    prices.append( price )
-    titles.append( title )
-
-    write_links( urls )
-    write_prices( prices )
-    write_titles( titles )
 
 
 def delete_article():
@@ -268,59 +240,6 @@ def updated_info():
     return ( titles, prices )
 
 
-def write_links( links ):
-    if len( links ):
-        links_file = open( expanduser( '~' ) + '/.amazonCheck.links' , 'w')
-
-        length = len( links )
-
-        for index in range( 0, length ):
-            links[ index ] = links[ index ].replace( '\n', '' ) + '\n'
-
-        links_file.write( ''.join( links ) )
-
-        hash_string = md5( ''.join( links ).replace( '\n', '' ) ).hexdigest()
-
-        links_file.write( hash_string )
-    else:
-        remove_all_files()
-
-def write_titles( titles ):
-    if len( titles ):
-        titles_file = open( expanduser( '~' ) + '/.amazonCheck.titles' , 'w')
-
-        length = len( titles )
-
-        for index in range( 0, length ):
-            titles[ index ] = titles[ index ].replace( '\n', '' ) + '\n'
-
-        titles_file.write( ''.join( titles ) )
-
-        hash_string = md5( ''.join( titles ).replace( '\n', '' ) ).hexdigest()
-
-        titles_file.write( hash_string )
-    else:
-        remove_all_files()
-
-
-def write_prices( prices ):
-    if len( prices ):
-        prices_file = open( expanduser( '~' ) + '/.amazonCheck.prices' , 'w')
-
-        length = len( prices )
-
-        for index in range( 0, length ):
-            prices[ index ] = prices[ index ].replace( '\n', '' ) + '\n'
-
-        prices_file.write( ''.join( prices ) )
-
-        hash_string = md5( ''.join( prices ).replace( '\n', '' ) ).hexdigest()
-
-        prices_file.write( hash_string )
-    else:
-        remove_all_files()
-
-
 def get_info_for( url ):
     try:
 
@@ -349,52 +268,6 @@ def get_info_for( url ):
 
     return ( title, price )
 
-
-#-----------------------------------------------------------------------
-
-
-if __name__ == '__main__':
-
-    if len( argv ) < 2:
-        print_list()
-
-    elif len( argv ) < 3 and argv[1] == 'show':
-        print_list()
-
-    elif len( argv ) < 3 and argv[1] == 'update':
-        try:
-            old_prices = read_prices()
-
-            ( updated_titles, updated_prices ) = updated_info()
-
-            write_prices( updated_prices )
-            write_titles( updated_titles )
-
-            print_list( old_prices, False )
-        except OSError:
-            print( '\rFiles not found ( add articles before trying to look at them ).' )
-            exit( 1 )
-
-    elif len( argv ) < 3 and argv[1] == '--help' or argv[1] == 'help':
-        print_help()
-
-    elif len( argv ) < 3 and argv[1] == 'delete':
-        delete_article()
-
-    elif len( argv ) < 3 and argv[1] == 'clearlist':
-        try:
-            remove_all_files()
-        except OSError:
-            pass
-
-    elif len( argv ) > 2 and argv[1] == 'add':
-
-        for index in range( 2, len( argv ) ):
-            url = shorten_amazon_link( argv[ index ] )
-            add_article( url )
-
-    else:
-        print_help()
 
 
 
