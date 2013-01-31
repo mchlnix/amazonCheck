@@ -34,7 +34,7 @@ def is_valid( lines ):
 
 
 def get_time():
-    return strftime( '%H:%M:%S' )
+    return strftime( '[%H:%M:%S]' )
 
 
 def shorten_amazon_link( url ):
