@@ -18,6 +18,7 @@ CONFIG_VARS = 3
 
 
 def reset_config_file():
+
     new_config_file = open( CONFIG_FILE, 'w' )
 
     options = [ SILENT, UPDATES_ONLY, VERBOSE ]
@@ -27,21 +28,36 @@ def reset_config_file():
     new_config_file.close()
 
 
+def read_config_file():
+
+    config_file = open( CONFIG_FILE, 'r' )
+
+    options = loads( config_file.read() )
+
+    if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ):
+        return options
+    else:
+        reset_config_file()
+
+        return [ SILENT, UPDATES_ONLY, VERBOSE ]
+
+
+def write_config_file( options ):
+
+    if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ):
+        config_file = open( CONFIG_FILE, 'w' )
+
+        config_file.write( dumps( options ) )
+
+        config_file.close()
+
 
 
 def main():
 
-    #if exists( CONFIG_FILE ):
-        #data = loads( open( CONFIG_FILE , 'r' ).read() )
-#
-        #if len( data ) == CONFIG_VARS:
-#
-        #else:
-            #reset_config_file()
+    [ SILENT, UPDATES_ONLY, VERBOSE ] = read_config_file()
 
-
-
-	return 0
+    return 0
 
 if __name__ == '__main__':
 	main()
