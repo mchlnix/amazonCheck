@@ -54,13 +54,16 @@ def shorten_amazon_link( url ):
 
 
 def format_price( string ):
-    format_from = [ '\n', '\t', '  ' ]
-    format_to = [ '', '', '' ]
-
+    format_from = [ '\n', '\t', '  ', ',' ]
+    format_to = [ '', '', '', '.' ]
     for index in range( 0, len( format_from ) ):
         string = string.replace( format_from[ index ], format_to[ index ] )
 
-    return string
+    currency = search( '[^ .,0-9]*', string )
+
+    price = float( search( '[.,0-9]*', string ) )
+
+    return ( price, currency )
 
 
 def format_title( string ):
@@ -264,9 +267,9 @@ def get_info_for( url ):
     else:
         price = 'N/A'
 
-    price = format_price( price )
+    ( price, currency ) = format_price( price )
 
-    return ( title, price )
+    return ( title, currency, price )
 
 
 

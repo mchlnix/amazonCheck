@@ -6,6 +6,7 @@ from os.path import exists, expanduser
 from time import ctime, time
 from json import dumps, loads
 from sys import argv, exit
+from re import search
 from os import name
 
 
@@ -26,14 +27,12 @@ CONFIG_VARS = 5
 
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
-    ( title, price ) = get_info_for( url )
-
-    price = price
-
-    #get_currency, get_price dann speichern und testen
+    ( title, currency, price ) = get_info_for( url )
 
 
-    data_file.write( dumps( [ url, title,  ] ) )
+    data_file.write( dumps( [ url, title, currency, price ] ) )
+
+    data_file.close()
 
 
 def get_avg_price( prices ):
@@ -200,7 +199,7 @@ if __name__ == '__main__':
             start_time = time()
             #Schleife mit get_info
             for index in len( links ):
-                prices[ index ].append( ( get_info_for( links( index ) )[1], time() ) )
+                prices[ index ].append( ( get_info_for( links( index ) )[2], time() ) )
                 #avg price
                 avgs.append( get_avg_price( prices[ index ] ) )
                 #min price
