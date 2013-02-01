@@ -59,16 +59,19 @@ def format_price( string ):
     for index in range( 0, len( format_from ) ):
         string = string.replace( format_from[ index ], format_to[ index ] )
 
-    currency = search( '[^ .,0-9]*', string )
+    currency = search( '[^ .,0-9]*', string ).group()
 
-    price = float( search( '[.,0-9]*', string ) )
+    try:
+        price = float( search( '[0-9]*[.][0-9]*', string ).group() )
+    except AttributeError:
+        price = 'N/A'
 
     return ( price, currency )
 
 
 def format_title( string ):
-    format_from = [ '&auml;', '&Auml;', '&ouml;', '&Ouml;', '&uuml;', '&Uuml;', '&szlig;', '&amp;', '&quot;']
-    format_to = [ 'ä', 'Ä', 'ö', 'Ö', 'ü', 'Ü', 'ß', '&', '\'' ]
+    format_from = [ '&auml;', '&Auml;', '&ouml;', '&Ouml;', '&uuml;', '&Uuml;', '&szlig;', '&amp;', '&quot;', '&#39;' ]
+    format_to = [ 'ae', 'Ae', 'oe', 'Oe', 'ue', 'Ue', 'ss', '&', '\'', '\'' ]
 
     for i in range( 0, len( format_from ) ):
         string = string.replace( format_from[ i ], format_to[ i ] )
@@ -259,7 +262,7 @@ def get_info_for( url ):
     elif title.find( 'Amazon.com: ' ) != -1:
         title = format_title( title[ title.find( 'Amazon.com: ' ) + 12 : ] )
     else:
-        title = format_title( title )
+        title = format_title( title ) + '\0'
 
 
     if temp_file.find( '<b class="priceLarge">') != -1:

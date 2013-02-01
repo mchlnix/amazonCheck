@@ -3,7 +3,7 @@
 
 from amazonCheckLib import get_info_for, get_time, shorten_amazon_link
 from os.path import exists, expanduser
-from time import ctime, time
+from time import ctime, time, sleep
 from json import dumps, loads
 from sys import argv, exit
 from re import search
@@ -29,8 +29,10 @@ def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
     ( title, currency, price ) = get_info_for( url )
 
-
-    data_file.write( dumps( [ url, title, currency, price ] ) )
+    try:
+        data_file.write( dumps( [ url, title, currency, [ price, time() ] ] ) )
+    except UnicodeDecodeError:
+        data_file.write( dumps( [ url, 'Encoutered error', currency, [ price, time() ] ] ) )
 
     data_file.close()
 
@@ -38,12 +40,19 @@ def add_article( url ):
 def get_avg_price( prices ):
     avg = 0
     length = len( prices )
+    div_time = prices[ -1 ][1] - prices[0][1]
 
     for i in range( 2, length + 1 ):
+
         index = length - i
+
+        if prices[ index ][0] == 'N/A':
+            div_time -= prices[ index + 1 ][1] - prices[ index ][1]
+            continue
+
         avg += prices[ index ][0] * ( prices[ index + 1 ][1] - prices[ index ][1] )
 
-    return avg / ( prices[ -1 ][1] - prices[0][1] )
+    return avg / div_time
 
 
 def read_config_file():
@@ -165,7 +174,7 @@ if __name__ == '__main__':
 
     data_file = open( DATA_FILE, 'r' )
 
-    data = data.readlines()
+    data = data_file.readlines()
 
     data_file.close()
 
@@ -178,15 +187,17 @@ if __name__ == '__main__':
     currencies =[]
     prices = []
 
-    for index in len( data ):
+    for index in range( 0,  len( data ) ):
         info = loads( data[ index ] )
 
-        links.append = data[ index ][0]
-        titles.append = data[ index ][1]
-        currencies.append = data[ index ][2]
-        prices.append = data[ index ][ 3: ]
+        links.append( info[0] )
+        titles.append( info[1] )
+        currencies.append( info[2] )
+        prices.append( info[ 3: ] )
 
     try:
+
+        logfile.write( get_time() + ' Starting main loop' + '\n' )
 
         while 1:
             sleeptime = MIN_SLEEP_TIME
@@ -198,8 +209,9 @@ if __name__ == '__main__':
             #Startzeit
             start_time = time()
             #Schleife mit get_info
-            for index in len( links ):
-                prices[ index ].append( ( get_info_for( links( index ) )[2], time() ) )
+            logfile.write( get_time() + ' Getting info' + '\n' )
+            for index in range( 0, len( links ) ):
+                prices[ index ].append( [ get_info_for( links[ index ] )[2], time() ] )
                 #avg price
                 avgs.append( get_avg_price( prices[ index ] ) )
                 #min price
@@ -209,9 +221,20 @@ if __name__ == '__main__':
                 #prog
                 #progs.append( get_prognosis( prices[ index ] ) )
             #Endzeit
+
+            logfile.write( get_time() + ' Saving data' + '\n' )
+
+            data_file = open( DATA_FILE, 'w' )
+
+            for index in range( 0, len( links ) ):
+                data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , prices[ index ] ] ) + '\n' )
+
             end_time = time()
+
             #Differenz berechnen
             diff_time = end_time - start_time
+            logfile.write( get_time() + ' It took ' + str( diff_time ) + ' seconds' + '\n' )
+
             #Sleeptime berechnen
             if 2 * diff_time > MAX_SLEEP_TIME:
                 sleeptime = MAX_SLEEP_TIME
@@ -220,12 +243,18 @@ if __name__ == '__main__':
             else:
                 sleeptime = 2 * diff_time
 
-            sleep( sleep_time )
+
+            logfile.write( get_time() + ' Sleeping for ' + str( sleeptime ) + ' seconds' + '\n' )
+            print( str( sleeptime ) + 'seconds')
+            sleep( sleeptime )
 
     except KeyboardInterrupt:
         logfile.write( get_time() + ' Program halted by user' + '\n' )
         logfile.write( get_time() + ' Exited normally' + '\n' )
         exit()
+    #except:
+        #logfile.write( get_time() + ' Something went wrong' + '\n' )
+        #exit()
 
 
 
