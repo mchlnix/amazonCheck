@@ -246,7 +246,10 @@ if __name__ == '__main__':
             for index in range( 0, len( links ) ):
                 data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , prices[ index ] ] ) + '\n' )
 
+            data_file.close()
+
             end_time = time()
+
 
             #Differenz berechnen
             diff_time = end_time - start_time
