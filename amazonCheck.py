@@ -20,7 +20,7 @@ UPDATES_ONLY = False
 VERBOSE = False
 
 
-MIN_SLEEP_TIME = 60
+MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
 
 
@@ -45,10 +45,6 @@ def get_avg_price( price_list ):
 
     if length == 1:
         return price_list[0][1]
-
-    print( price_list[0][1] )
-    print( price_list[-1][1] )
-    print( price_list )
 
     div_time = price_list[ -1 ][1] - price_list[0][1]
 
@@ -115,7 +111,6 @@ def write_config_file( options ):
 
 
 
-
 if __name__ == '__main__':
 
     logfile = open( LOGFILE, 'a' )
@@ -131,6 +126,7 @@ if __name__ == '__main__':
             exit()
 
 
+    write_config = False
 
     if len( argv ) > 1:
 
@@ -142,18 +138,27 @@ if __name__ == '__main__':
 
                 SILENT = True
 
+                write_config = True
+
             elif argument == '-v' or argument == '--verbose':
 
                 VERBOSE == True
+
+                write_config = True
 
             elif argument == '-u' or argument == '--update-only':
 
                 UPDATES_ONLY = True
 
+                write_config = True
+
             elif argument.find( '--min_sleep=' ) != -1:
 
                 try:
                     MIN_SLEEP_TIME = float( argument[ 12 : ] )
+
+                    write_config = True
+
                 except ValueError:
                     logfile.write( get_time() + ' Given min_sleep argument was not a number' + '\n' )
 
@@ -161,17 +166,19 @@ if __name__ == '__main__':
 
                 try:
                     MAX_SLEEP_TIME = float( argument[ 12 : ] )
+
+                    write_config = True
+
                 except ValueError:
                     logfile.write( get_time() + ' Given max_sleep argument was not a number' + '\n' )
-
-            elif argument == '-u' or argument == '--update-only':
-
-                UPDATES_ONLY = True
 
             else:
 
                 logfile.write( get_time() + ' Illegal argument \'' + argument + '\' detected' + '\n' )
                 continue
+
+        if write_config:
+            write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
     #Read data [ link, title, currency, prices, ... ]
 
@@ -243,7 +250,7 @@ if __name__ == '__main__':
 
             #Differenz berechnen
             diff_time = end_time - start_time
-            logfile.write( get_time() + ' It took ' + str( diff_time ) + ' seconds' + '\n' )
+            logfile.write( get_time() + ' It took ' + str( int( round( diff_time ) ) ) + ' seconds' + '\n' )
 
             #Sleeptime berechnen
             if 2 * diff_time > MAX_SLEEP_TIME:
@@ -254,8 +261,7 @@ if __name__ == '__main__':
                 sleeptime = 2 * diff_time
 
 
-            logfile.write( get_time() + ' Sleeping for ' + str( sleeptime ) + ' seconds' + '\n' )
-            print( str( sleeptime ) + 'seconds')
+            logfile.write( get_time() + ' Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' + '\n' )
             sleep( sleeptime )
 
     except KeyboardInterrupt:
