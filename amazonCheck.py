@@ -19,38 +19,48 @@ SILENT = True
 UPDATES_ONLY = False
 VERBOSE = False
 
+
 MIN_SLEEP_TIME = 60
 MAX_SLEEP_TIME = 300
 
 
 CONFIG_VARS = 5
 
+
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
     ( title, currency, price ) = get_info_for( url )
 
     try:
-        data_file.write( dumps( [ url, title, currency, [ price, time() ] ] ) )
+        data_file.write( dumps( [ url, title, currency, [ [ price, time() ] ] ] ) )
     except UnicodeDecodeError:
-        data_file.write( dumps( [ url, 'Encoutered error', currency, [ price, time() ] ] ) )
+        data_file.write( dumps( [ url, 'Encoutered error', currency, [ [ price, time() ] ] ] ) )
 
     data_file.close()
 
 
-def get_avg_price( prices ):
+def get_avg_price( price_list ):
     avg = 0
-    length = len( prices )
-    div_time = prices[ -1 ][1] - prices[0][1]
+    length = len( price_list )
+
+    if length == 1:
+        return price_list[0][1]
+
+    print( price_list[0][1] )
+    print( price_list[-1][1] )
+    print( price_list )
+
+    div_time = price_list[ -1 ][1] - price_list[0][1]
 
     for i in range( 2, length + 1 ):
 
         index = length - i
 
-        if prices[ index ][0] == 'N/A':
-            div_time -= prices[ index + 1 ][1] - prices[ index ][1]
+        if price_list[ index ][0] == 'N/A':
+            div_time -= price_list[ index + 1 ][1] - price_list[ index ][1]
             continue
 
-        avg += prices[ index ][0] * ( prices[ index + 1 ][1] - prices[ index ][1] )
+        avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
 
     return avg / div_time
 
@@ -193,7 +203,7 @@ if __name__ == '__main__':
         links.append( info[0] )
         titles.append( info[1] )
         currencies.append( info[2] )
-        prices.append( info[ 3: ] )
+        prices.extend( info[ 3: ] )
 
     try:
 
