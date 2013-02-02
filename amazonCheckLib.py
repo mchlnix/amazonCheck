@@ -49,25 +49,34 @@ def format_title( string ):
 
 
 def get_min_price( price_list ):
-    min_price = 9999999999999999
+    min_price = 99999999999999
+    changed = False
 
     for price in price_list:
         if price[0] == 'N/A':
             continue
         else:
             if price[0] < min_price:
+                changed = True
                 min_price = price[0]
 
-    return min_price
+    if changed:
+        return min_price
+    else:
+        return -1
 
 
 
 def get_avg_price( price_list ):
     avg = 0
     length = len( price_list )
+    changed = False
 
     if length == 1:
-        return price_list[0][1]
+        if price_list[0][1] == 'N/A':
+            return -1
+        else:
+            return price_list[0][1]
 
     div_time = price_list[ -1 ][1] - price_list[0][1]
 
@@ -81,21 +90,32 @@ def get_avg_price( price_list ):
 
         avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
 
-    return round( avg / div_time, 2 )
+    try:
+        if changed:
+            return round( avg / div_time, 2 )
+        else:
+            return -1
 
+    except ZeroDivisionError:
+        return -1
 
 
 def get_max_price( price_list ):
     max_price = 0
+    changed = False
 
     for price in price_list:
         if price[0] == 'N/A':
             continue
         else:
             if price[0] > max_price:
+                changed = True
                 max_price = price[0]
 
-    return max_price
+    if changed:
+        return max_price
+    else:
+        return -1
 
 
 

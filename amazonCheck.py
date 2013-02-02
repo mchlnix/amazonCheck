@@ -1,6 +1,15 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
+
+# TODO:
+#   - get_prognosis
+#   - prognosis in print_list
+#   - way to delete articles
+#   - test, what happens, when price is 'N/A'
+
+
+
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
