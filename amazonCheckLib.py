@@ -124,7 +124,7 @@ def get_info_for( url ):
         temp_file = urlopen( url ).read()
 
     except IOError:
-        exit( 'Error connecting' )
+        return ( -1, -1, -1)
 
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
 

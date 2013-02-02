@@ -1,15 +1,6 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-
-# TODO:
-#   - get_prognosis
-#   - prognosis in print_list
-#   - way to delete articles
-#   - test, what happens, when price is 'N/A'
-
-
-
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
@@ -20,19 +11,24 @@ from re import search
 from os import name
 
 
+# TODO:
+#   - get_prognosis
+#   - prognosis in print_list
+#   - way to delete articles
+#   - test, what happens, when price is 'N/A'
+
+
+
 CONFIG_FILE = expanduser( '~/.amazonCheck.config' )
 DATA_FILE = expanduser( '~/.amazonCheck.data' )
 LOGFILE = expanduser( '~/.amazonCheck.log' )
-
 
 SILENT = True
 UPDATES_ONLY = False
 VERBOSE = False
 
-
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
-
 
 CONFIG_VARS = 5
 
@@ -41,6 +37,12 @@ CONFIG_VARS = 5
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
     ( title, currency, price ) = get_info_for( url )
+
+    if ( title, currency, price) == ( -1, -1, -1 ):
+        write_log_file( 'Error while connecting' )
+        write_log_file( 'Program is terminating' )
+        data_file.close()
+        exit(1)
 
     try:
         data_file.write( dumps( [ url, title, currency, [ [ price, time() ] ] ] ) + '\n' )
@@ -208,6 +210,8 @@ if __name__ == '__main__':
     write_log_file( ' -------------------------------' )
     write_log_file( ' Started Program' )
 
+    runs = 0
+
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     if len( argv ) == 2 and argv[1] == 'show':
@@ -223,7 +227,9 @@ if __name__ == '__main__':
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
-            add_article( shorten_amazon_link( argv[2] ) )
+            url = shorten_amazon_link( argv[2] )
+            write_log_file( 'Adding article from: ' + url )
+            add_article( url )
             write_log_file( ' Program halted after adding article' )
             exit(0)
 
@@ -282,52 +288,65 @@ if __name__ == '__main__':
         if write_config:
             write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
-    #Read data [ link, title, currency, prices, ... ]
+    #Reading data
 
     ( links, titles, currencies, prices ) = read_data_file()
-
-    runs = 0
 
     try:
 
         write_log_file( ' Starting main loop' )
 
         while 1:
-            runs = runs + 1
-
-            write_log_file( ' Starting run ' + str( runs ) + ':' )
-
             sleeptime = MIN_SLEEP_TIME
             avgs = []
             mins = []
             maxs = []
             progs = []
 
-            #Startzeit
+            runs = runs + 1
+
+
+
+            write_log_file( ' Starting run ' + str( runs ) + ':' )
+
+            #Getting the start time
+
             start_time = time()
-            #Schleife mit get_info
+
+            #Updates the information
+
             write_log_file( '   Getting info' )
+
             for index in range( 0, len( links ) ):
                 info = get_info_for( links[ index ] )
+
+                if info == ( -1, -1, -1):
+                    write_log_file( 'Error while connecting' )
+                    write_log_file( 'Article from ' + str( links[ index ] ) + ' was skipped' )
+                    continue
 
                 titles[ index ] = info[0]
                 currencies[ index ] = info[1]
                 prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
-            #Endzeit
+            #Saving data to file
 
             write_log_file( '   Saving data' )
 
             write_data_file( links, titles, currencies, prices )
 
+            #Getting the time the operation finished
+
             end_time = time()
 
+            #Calculating the length of operating
 
-            #Differenz berechnen
             diff_time = round( end_time - start_time, 2 )
+
             write_log_file( '   It took ' + str( int( diff_time ) ) + ' seconds' )
 
-            #Sleeptime berechnen
+            #Calculating sleeptime
+
             if 2 * diff_time > MAX_SLEEP_TIME:
                 sleeptime = MAX_SLEEP_TIME
             elif 2 * diff_time < MIN_SLEEP_TIME:
@@ -335,8 +354,10 @@ if __name__ == '__main__':
             else:
                 sleeptime = 2 * diff_time
 
+            #Sleeping for agreed amount
 
             write_log_file( '   Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' )
+
             sleep( sleeptime )
 
     except KeyboardInterrupt:
