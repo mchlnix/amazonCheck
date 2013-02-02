@@ -96,7 +96,7 @@ def read_config_file():
 
     options = loads( config_file.read() )
 
-    logfile.write( get_time() + ' Read Config File at ' + CONFIG_FILE + '\n' )
+    write_log_file( ' Read Config File at ' + CONFIG_FILE )
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
 
@@ -117,7 +117,7 @@ def reset_config_file():
 
     new_config_file.close()
 
-    logfile.write( get_time() + ' Reset Config File at ' + CONFIG_FILE + '\n' )
+    write_log_file( ' Reset Config File at ' + CONFIG_FILE )
 
 
 def write_config_file( options ):
@@ -130,16 +130,16 @@ def write_config_file( options ):
 
         config_file.close()
 
-    logfile.write( get_time() + ' Wrote to Config File at ' + CONFIG_FILE + '\n' )
+    write_log_file( ' Wrote to Config File at ' + CONFIG_FILE )
 
 
 def read_data_file():
     if not exists( DATA_FILE ):
-        logfile.write( get_time() + ' Data File does not exist' + '\n' )
-        logfile.write( get_time() + ' Program halted' + '\n' )
+        write_log_file( ' Data File does not exist' )
+        write_log_file( ' Program halted' )
         exit( 'Data File does not exist.' )
 
-    logfile.write( get_time() + ' Data File is being read' + '\n' )
+    write_log_file( ' Data File is being read' )
 
     data_file = open( DATA_FILE, 'r' )
 
@@ -147,7 +147,7 @@ def read_data_file():
 
     data_file.close()
 
-    logfile.write( get_time() + ' Data is being processed' + '\n' )
+    write_log_file( ' Data is being processed' )
 
     #Break up into links, titles and prices
 
@@ -177,31 +177,40 @@ def write_data_file( links, titles, currencies, prices ):
 
 
 
+def write_log_file( string ):
+    logfile = open( LOGFILE, 'a' )
+
+    logfile.write( get_time() + string + '\n' )
+
+    logfile.close()
+
+
+
+
 
 if __name__ == '__main__':
 
-    logfile = open( LOGFILE, 'a' )
-    logfile.write( get_time() + ' -------------------------------' + '\n' )
-    logfile.write( get_time() + ' Started Program' + '\n' )
+    write_log_file( ' -------------------------------' )
+    write_log_file( ' Started Program' )
 
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     if len( argv ) == 2 and argv[1] == 'show':
         ( links, titles, currencies, prices ) = read_data_file()
 
-        logfile.write( get_time() + ' Showing list' + '\n' )
+        write_log_file( ' Showing list' )
 
         print_result( links, titles, currencies, prices )
 
-        logfile.write( get_time() + ' Program halted after output' + '\n' )
-        exit()
+        write_log_file( ' Program halted after output' )
+        exit(0)
 
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
             add_article( shorten_amazon_link( argv[2] ) )
-            logfile.write( get_time() + ' Program halted after adding article' + '\n' )
-            exit()
+            write_log_file( ' Program halted after adding article' )
+            exit(0)
 
 
     write_config = False
@@ -210,7 +219,7 @@ if __name__ == '__main__':
 
         for argument in argv[ 1 : ]:
 
-            logfile.write( get_time() + ' Program called with \'' + argument + '\'' + '\n' )
+            write_log_file( ' Program called with \'' + argument + '\'' )
 
             if argument == '-s' or argument == '--silent':
 
@@ -238,7 +247,7 @@ if __name__ == '__main__':
                     write_config = True
 
                 except ValueError:
-                    logfile.write( get_time() + ' Given min_sleep argument was not a number' + '\n' )
+                    write_log_file( ' Given min_sleep argument was not a number' )
 
             elif argument.find( '--min_sleep=' ) != -1:
 
@@ -248,11 +257,11 @@ if __name__ == '__main__':
                     write_config = True
 
                 except ValueError:
-                    logfile.write( get_time() + ' Given max_sleep argument was not a number' + '\n' )
+                    write_log_file( ' Given max_sleep argument was not a number' )
 
             else:
 
-                logfile.write( get_time() + ' Illegal argument \'' + argument + '\' detected' + '\n' )
+                write_log_file( ' Illegal argument \'' + argument + '\' detected' )
                 continue
 
         if write_config:
@@ -266,14 +275,12 @@ if __name__ == '__main__':
 
     try:
 
-        logfile.write( get_time() + ' Starting main loop' + '\n' )
-        logfile.close()
+        write_log_file( ' Starting main loop' )
 
         while 1:
             runs = runs + 1
 
-            logfile = open( LOGFILE, 'a' )
-            logfile.write( get_time() + ' Starting run ' + str( runs ) + ':' + '\n' )
+            write_log_file( ' Starting run ' + str( runs ) + ':' )
 
             sleeptime = MIN_SLEEP_TIME
             avgs = []
@@ -284,7 +291,7 @@ if __name__ == '__main__':
             #Startzeit
             start_time = time()
             #Schleife mit get_info
-            logfile.write( get_time() + '   Getting info' + '\n' )
+            write_log_file( '   Getting info' )
             for index in range( 0, len( links ) ):
                 info = get_info_for( links[ index ] )
 
@@ -294,7 +301,7 @@ if __name__ == '__main__':
 
             #Endzeit
 
-            logfile.write( get_time() + '   Saving data' + '\n' )
+            write_log_file( '   Saving data' )
 
             write_data_file( links, titles, currencies, prices )
 
@@ -303,7 +310,7 @@ if __name__ == '__main__':
 
             #Differenz berechnen
             diff_time = round( end_time - start_time, 2 )
-            logfile.write( get_time() + '   It took ' + str( int( diff_time ) ) + ' seconds' + '\n' )
+            write_log_file( '   It took ' + str( int( diff_time ) ) + ' seconds' )
 
             #Sleeptime berechnen
             if 2 * diff_time > MAX_SLEEP_TIME:
@@ -314,22 +321,15 @@ if __name__ == '__main__':
                 sleeptime = 2 * diff_time
 
 
-            logfile.write( get_time() + '   Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' + '\n' )
-            logfile.close()
+            write_log_file( '   Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' )
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        logfile = open( LOGFILE, 'a' )
-        logfile.write( get_time() + ' Program halted by user' + '\n' )
-        logfile.write( get_time() + ' Exited normally' + '\n' )
-        exit()
+        write_log_file( ' Program halted by user' )
+        write_log_file( ' Exited normally' )
+        exit(0)
     #except:
-        #logfile.write( get_time() + ' Something went wrong' + '\n' )
-        #exit()
-
-
-    write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
-
-    logfile.write( get_time() + ' Exited normally' + '\n' )
-    logfile.close()
+        #write_log_file( ' Something went wrong' )
+        #write_log_file( ' Exited abnormally' )
+        #exit(1)
 

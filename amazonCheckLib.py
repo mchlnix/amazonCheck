@@ -130,7 +130,7 @@ def get_info_for( url ):
 
 
 def get_time():
-    return strftime( '[%H:%M:%S]' )
+    return strftime( '[%d.%m.%y - %H:%M:%S]' )
 
 
 
@@ -145,72 +145,6 @@ def shorten_amazon_link( url ):
         return_url = ''
 
     return return_url
-
-
-
-def print_list( old_prices = [] , is_delete_menu = False ):
-
-    try:
-        COLOR = NOCOLOR
-
-        titles = read_titles()
-        prices = read_prices()
-
-        if not ( len( titles ) and len( prices ) ):
-            print( 'Files not found ( add articles before trying to look at them ).' )
-            exit( 1 )
-
-        fmt_prices_old = []
-        fmt_prices_new = []
-
-        if len( old_prices ) > 0:
-            for index in range( 0, len( old_prices ) ):
-                try:
-                    fmt_prices_old.append( float( search( '[-]*[0-9]+[,.]{1}[0-9]{2}',  old_prices[ index ] ).group().replace( ',', '.' ) ) )
-                except AttributeError:
-                    fmt_prices_old.append( 'N/A' )
-                try:
-                    fmt_prices_new.append( float( search( '[-]*[0-9]+[,.]{1}[0-9]{2}',  prices[ index ] ).group().replace( ',', '.' ) ) )
-                except AttributeError:
-                    fmt_prices_new.append( 'N/A' )
-
-    #for index in range( 0, len( old_prices ) ):
-      #print( str( fmt_prices_new[ index ] ) + '    ' + str( fmt_prices_old[ index ] ) )
-
-        print( '                ' )
-
-        for index in range( 0, len( titles ) ):
-            if is_delete_menu:
-                print( str( index + 1 ) + '    ' + prices[ index ].replace( '\n' , '' ) + '\t---\t' + titles[ index ].replace( '\n' , '' ) )
-            else:
-
-                price_change = '\r'
-
-                if len( prices ) > 0:
-                    try:
-                        if fmt_prices_new[ index ] == 'N/A':
-                            prices[ index ] = 'N/A'
-                            COLOR = RED
-                            #price_change = '    ' + RED + 'Product is unavailable'+ NOCOLOR + '\n'
-                        elif fmt_prices_new[ index ] < fmt_prices_old[ index ]:
-                            COLOR = GREEN
-                            price_change = '    ' + RED + str( fmt_prices_old[ index ] ) + NOCOLOR + ' > ' + GREEN + str( fmt_prices_new[ index ] ) + NOCOLOR + '\t - ' + GREEN + str( fmt_prices_old[ index ] - fmt_prices_new[ index ] ) + NOCOLOR + '\n'
-                        elif fmt_prices_new[ index ] > fmt_prices_old[ index ]:
-                            COLOR = RED
-                            price_change = '    ' + GREEN + str( fmt_prices_old[ index ] ) + NOCOLOR + ' > ' + RED + str( fmt_prices_new[ index ] ) + NOCOLOR + '\t + ' + RED + str( fmt_prices_new[ index ] - fmt_prices_old[ index ] ) + NOCOLOR + '\n'
-                        else:
-                            COLOR = NOCOLOR
-                    except:
-                        pass
-
-                print( ' ' + COLOR + prices[ index ].replace( '\n' , '' ) + '\t---\t' + titles[ index ].replace( '\n' , '' ) ) + NOCOLOR
-                print( price_change ),
-
-        print( '' )
-
-    except IOError:
-        print( 'Files not found ( add articles before trying to look at them ).' )
-        exit( 1 )
 
 
 
