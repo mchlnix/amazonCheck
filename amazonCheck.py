@@ -42,7 +42,6 @@ def add_article( url ):
 
 
 def print_result( links, titles, currencies, prices ):
-
     print( BOLD_WHITE + '\tPrice\tMin\tAvg\tMax\tTitle\t' + NOCOLOR )
 
     color_min = GREEN
@@ -81,6 +80,8 @@ def print_result( links, titles, currencies, prices ):
             color_price = GREEN
 
         print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
+
+        write_data_file( links, titles, currencies, prices )
 
 
 def read_config_file():
@@ -165,6 +166,14 @@ def read_data_file():
 
     return ( links, titles, currencies, prices )
 
+
+def write_data_file( links, titles, currencies, prices ):
+    data_file = open( DATA_FILE, 'w' )
+
+    for index in range( 0, len( links ) ):
+        data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , prices[ index ] ] ) + '\n' )
+
+    data_file.close()
 
 
 
@@ -281,18 +290,13 @@ if __name__ == '__main__':
 
                 titles[ index ] = info[0]
                 currencies[ index ] = info[1]
-                prices[ index ].append( [ info[2], round( time() ) ] )
+                prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
             #Endzeit
 
             logfile.write( get_time() + '   Saving data' + '\n' )
 
-            data_file = open( DATA_FILE, 'w' )
-
-            for index in range( 0, len( links ) ):
-                data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , prices[ index ] ] ) + '\n' )
-
-            data_file.close()
+            write_data_file( links, titles, currencies, prices )
 
             end_time = time()
 
