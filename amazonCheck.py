@@ -1,7 +1,8 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-from amazonCheckLib import get_info_for, get_time, shorten_amazon_link
+from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, shorten_amazon_link
+from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
 from time import ctime, time, sleep
 from json import dumps, loads
@@ -39,59 +40,22 @@ def add_article( url ):
     data_file.close()
 
 
-def get_avg_price( price_list ):
-    avg = 0
-    length = len( price_list )
-
-    if length == 1:
-        return price_list[0][1]
-
-    div_time = price_list[ -1 ][1] - price_list[0][1]
-
-    for i in range( 2, length + 1 ):
-
-        index = length - i
-
-        if price_list[ index ][0] == 'N/A':
-            div_time -= price_list[ index + 1 ][1] - price_list[ index ][1]
-            continue
-
-        avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
-
-    return round( avg / div_time, 2 )
-
-
-def get_max_price( price_list ):
-    max_price = 0
-
-    for price in price_list:
-        if price[0] == 'N/A':
-            continue
-        else:
-            if price[0] > max_price:
-                max_price = price[0]
-
-    return max_price
-
-
-def get_min_price( price_list ):
-    min_price = 9999999999999999
-
-    for price in price_list:
-        if price[0] == 'N/A':
-            continue
-        else:
-            if price[0] < min_price:
-                min_price = price[0]
-
-    return min_price
-
 
 def print_result( links, titles, currencies, prices ):
 
-    print( '\tPrice\tMin\tAvg\tMax\tTitle\t' )
+    print( BOLD_WHITE + '\tPrice\tMin\tAvg\tMax\tTitle\t' + NOCOLOR )
+
+    color_min = GREEN
+    color_max = RED
+    color_avg = YELLOW
+
+    color_plain = NOCOLOR
+
+    color_price = NOCOLOR
+
 
     for index in range( 0, len( links ) ):
+        price = prices[ index ][-1][0]
 
         if len( prices ) == 1:
             avgs = prices
@@ -104,7 +68,19 @@ def print_result( links, titles, currencies, prices ):
             maxs = get_max_price( prices[ index ] )
             #progs.append( get_prognosis( prices[ index ] ) )
 
-        print( str( currencies[ index ] ) + '\t' + str( prices[ index ][-1][0] ) + '\t' + str( mins ) + '\t' + str( avgs ) + '\t' + str( maxs ) + '\t' + titles[ index ] )
+        if maxs == mins:
+            color_price = NOCOLOR
+
+        elif price == mins:
+            color_price = BLUE
+
+        elif price > avgs:
+            color_price = RED
+
+        elif price < avgs:
+            color_price = GREEN
+
+        print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
 
 
 def read_config_file():
