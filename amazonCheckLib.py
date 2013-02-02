@@ -140,7 +140,7 @@ def get_info_for( url ):
         title = format_title( title[ 0 : title.find( ': Amazon' ) ] )
 
     elif title.find( 'Amazon.com: ' ) != -1:
-        title = format_title( title[ title.find( 'Amazon.com: ' ) + 12 : ]
+        title = format_title( title[ title.find( 'Amazon.com: ' ) + 12 : ] )
 
     else:
         title = format_title( title ) + '\0'
