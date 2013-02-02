@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
 from amazonCheckLib import get_info_for, get_time, shorten_amazon_link
@@ -61,6 +61,18 @@ def get_avg_price( price_list ):
     return avg / div_time
 
 
+def print_result( links, titles, currency, prices ):
+
+    for index in range( 0, len( links ) ):
+
+        if len( prices ) == 1:
+            avgs.append( get_avg_price( prices[ index ] ) )
+            mins.append( get_min_price( prices[ index ] ) )
+            maxs.append( get_max_price( prices[ index ] ) )
+            #progs.append( get_prognosis( prices[ index ] ) )
+            print( '' )
+
+
 def read_config_file():
 
     if not exists( CONFIG_FILE ):
@@ -110,6 +122,42 @@ def write_config_file( options ):
     logfile.write( get_time() + ' Wrote to Config File at ' + CONFIG_FILE + '\n' )
 
 
+def read_data_file():
+    if not exists( DATA_FILE ):
+        logfile.write( get_time() + ' Data File does not exist' + '\n' )
+        logfile.write( get_time() + ' Program halted' + '\n' )
+        exit( 'Data File does not exist.' )
+
+    logfile.write( get_time() + ' Data File is being read' + '\n' )
+
+    data_file = open( DATA_FILE, 'r' )
+
+    data = data_file.readlines()
+
+    data_file.close()
+
+    logfile.write( get_time() + ' Data is being processed' + '\n' )
+
+    #Break up into links, titles and prices
+
+    links = []
+    titles = []
+    currencies =[]
+    prices = []
+
+    for index in range( 0,  len( data ) ):
+        info = loads( data[ index ] )
+
+        links.append( info[0] )
+        titles.append( info[1] )
+        currencies.append( info[2] )
+        prices.extend( info[ 3: ] )
+
+    return ( links, titles, currencies, prices )
+
+
+
+
 
 if __name__ == '__main__':
 
@@ -118,6 +166,12 @@ if __name__ == '__main__':
     logfile.write( get_time() + ' Started Program' + '\n' )
 
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+
+    if len( argv ) == 2 and argv[1] == 'show':
+        ( links, titles, currencies, prices ) = read_data_file()
+
+        print_list( links, titles, currencies, prices )
+
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
@@ -182,41 +236,21 @@ if __name__ == '__main__':
 
     #Read data [ link, title, currency, prices, ... ]
 
-    if not exists( DATA_FILE ):
-        logfile.write( get_time() + ' Data File does not exist' + '\n' )
-        logfile.write( get_time() + ' Program halted' + '\n' )
-        exit( 'Data File does not exist.' )
+    ( links, titles, currencies, prices ) = read_data_file()
 
-    logfile.write( get_time() + ' Data File is being read' + '\n' )
-
-    data_file = open( DATA_FILE, 'r' )
-
-    data = data_file.readlines()
-
-    data_file.close()
-
-    logfile.write( get_time() + ' Data is being processed' + '\n' )
-
-    #Break up into links, titles and prices
-
-    links = []
-    titles = []
-    currencies =[]
-    prices = []
-
-    for index in range( 0,  len( data ) ):
-        info = loads( data[ index ] )
-
-        links.append( info[0] )
-        titles.append( info[1] )
-        currencies.append( info[2] )
-        prices.extend( info[ 3: ] )
+    runs = 0
 
     try:
 
         logfile.write( get_time() + ' Starting main loop' + '\n' )
+        logfile.close()
 
         while 1:
+            runs = runs + 1
+
+            logfile = open( LOGFILE, 'a' )
+            logfile.write( get_time() + ' Starting run ' + str( runs ) + ':' + '\n' )
+
             sleeptime = MIN_SLEEP_TIME
             avgs = []
             mins = []
@@ -226,11 +260,10 @@ if __name__ == '__main__':
             #Startzeit
             start_time = time()
             #Schleife mit get_info
-            logfile.write( get_time() + ' Getting info' + '\n' )
+            logfile.write( get_time() + '   Getting info' + '\n' )
             for index in range( 0, len( links ) ):
                 prices[ index ].append( [ get_info_for( links[ index ] )[2], time() ] )
                 #avg price
-                avgs.append( get_avg_price( prices[ index ] ) )
                 #min price
                 #mins.append( get_min_price( prices[ index ] ) )
                 #max price
@@ -239,7 +272,7 @@ if __name__ == '__main__':
                 #progs.append( get_prognosis( prices[ index ] ) )
             #Endzeit
 
-            logfile.write( get_time() + ' Saving data' + '\n' )
+            logfile.write( get_time() + '   Saving data' + '\n' )
 
             data_file = open( DATA_FILE, 'w' )
 
@@ -253,7 +286,7 @@ if __name__ == '__main__':
 
             #Differenz berechnen
             diff_time = end_time - start_time
-            logfile.write( get_time() + ' It took ' + str( int( round( diff_time ) ) ) + ' seconds' + '\n' )
+            logfile.write( get_time() + '   It took ' + str( int( round( diff_time ) ) ) + ' seconds' + '\n' )
 
             #Sleeptime berechnen
             if 2 * diff_time > MAX_SLEEP_TIME:
@@ -264,7 +297,8 @@ if __name__ == '__main__':
                 sleeptime = 2 * diff_time
 
 
-            logfile.write( get_time() + ' Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' + '\n' )
+            logfile.write( get_time() + '   Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' + '\n' )
+            logfile.close()
             sleep( sleeptime )
 
     except KeyboardInterrupt:
@@ -274,9 +308,6 @@ if __name__ == '__main__':
     #except:
         #logfile.write( get_time() + ' Something went wrong' + '\n' )
         #exit()
-
-
-
 
 
     write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
