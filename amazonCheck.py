@@ -322,8 +322,8 @@ if __name__ == '__main__':
 
 
             #Differenz berechnen
-            diff_time = end_time - start_time
-            logfile.write( get_time() + '   It took ' + str( int( round( diff_time ) ) ) + ' seconds' + '\n' )
+            diff_time = round( end_time - start_time, 2 )
+            logfile.write( get_time() + '   It took ' + str( int( diff_time ) ) + ' seconds' + '\n' )
 
             #Sleeptime berechnen
             if 2 * diff_time > MAX_SLEEP_TIME:
