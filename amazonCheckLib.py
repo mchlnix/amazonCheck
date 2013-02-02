@@ -70,8 +70,8 @@ def format_price( string ):
 
 
 def format_title( string ):
-    format_from = [ '&auml;', '&Auml;', '&ouml;', '&Ouml;', '&uuml;', '&Uuml;', '&szlig;', '&amp;', '&quot;', '&#39;' ]
-    format_to = [ 'ae', 'Ae', 'oe', 'Oe', 'ue', 'Ue', 'ss', '&', '\'', '\'' ]
+    format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;' ]
+    format_to = [ 'ä', 'Ä', 'Ä',  'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ß','ß', 'ß', '&', '\'', '\'' ]
 
     for i in range( 0, len( format_from ) ):
         string = string.replace( format_from[ i ], format_to[ i ] )

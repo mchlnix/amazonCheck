@@ -32,9 +32,9 @@ def add_article( url ):
     ( title, currency, price ) = get_info_for( url )
 
     try:
-        data_file.write( dumps( [ url, title, currency, [ [ price, time() ] ] ] ) )
+        data_file.write( dumps( [ url, title, currency, [ [ price, time() ] ] ] ) + '\n' )
     except UnicodeDecodeError:
-        data_file.write( dumps( [ url, 'Encoutered error', currency, [ [ price, time() ] ] ] ) )
+        data_file.write( dumps( [ url, 'Encountered error', currency, [ [ price, time() ] ] ] )  + '\n' )
 
     data_file.close()
 
@@ -58,19 +58,53 @@ def get_avg_price( price_list ):
 
         avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
 
-    return avg / div_time
+    return round( avg / div_time, 2 )
 
 
-def print_result( links, titles, currency, prices ):
+def get_max_price( price_list ):
+    max_price = 0
+
+    for price in price_list:
+        if price[0] == 'N/A':
+            continue
+        else:
+            if price[0] > max_price:
+                max_price = price[0]
+
+    return max_price
+
+
+def get_min_price( price_list ):
+    min_price = 9999999999999999
+
+    for price in price_list:
+        if price[0] == 'N/A':
+            continue
+        else:
+            if price[0] < min_price:
+                min_price = price[0]
+
+    return min_price
+
+
+def print_result( links, titles, currencies, prices ):
+
+    print( '\tPrice\tMin\tAvg\tMax\tTitle\t' )
 
     for index in range( 0, len( links ) ):
 
         if len( prices ) == 1:
-            avgs.append( get_avg_price( prices[ index ] ) )
-            mins.append( get_min_price( prices[ index ] ) )
-            maxs.append( get_max_price( prices[ index ] ) )
+            avgs = prices
+            mins = prices
+            maxs = prices
+            #progs = prices
+        else:
+            avgs = get_avg_price( prices[ index ] )
+            mins = get_min_price( prices[ index ] )
+            maxs = get_max_price( prices[ index ] )
             #progs.append( get_prognosis( prices[ index ] ) )
-            print( '' )
+
+        print( str( currencies[ index ] ) + '\t' + str( prices[ index ][-1][0] ) + '\t' + str( mins ) + '\t' + str( avgs ) + '\t' + str( maxs ) + '\t' + titles[ index ] )
 
 
 def read_config_file():
@@ -170,7 +204,12 @@ if __name__ == '__main__':
     if len( argv ) == 2 and argv[1] == 'show':
         ( links, titles, currencies, prices ) = read_data_file()
 
-        print_list( links, titles, currencies, prices )
+        logfile.write( get_time() + ' Showing list' + '\n' )
+
+        print_result( links, titles, currencies, prices )
+
+        logfile.write( get_time() + ' Program halted after output' + '\n' )
+        exit()
 
 
     if len( argv ) > 2:
@@ -262,14 +301,12 @@ if __name__ == '__main__':
             #Schleife mit get_info
             logfile.write( get_time() + '   Getting info' + '\n' )
             for index in range( 0, len( links ) ):
-                prices[ index ].append( [ get_info_for( links[ index ] )[2], time() ] )
-                #avg price
-                #min price
-                #mins.append( get_min_price( prices[ index ] ) )
-                #max price
-                #maxs.append( get_max_price( prices[ index ] ) )
-                #prog
-                #progs.append( get_prognosis( prices[ index ] ) )
+                info = get_info_for( links[ index ] )
+
+                titles[ index ] = info[0]
+                currencies[ index ] = info[1]
+                prices[ index ].append( [ info[2], round( time() ) ] )
+
             #Endzeit
 
             logfile.write( get_time() + '   Saving data' + '\n' )
@@ -302,6 +339,7 @@ if __name__ == '__main__':
             sleep( sleeptime )
 
     except KeyboardInterrupt:
+        logfile = open( LOGFILE, 'a' )
         logfile.write( get_time() + ' Program halted by user' + '\n' )
         logfile.write( get_time() + ' Exited normally' + '\n' )
         exit()
