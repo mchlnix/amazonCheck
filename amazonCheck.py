@@ -28,6 +28,7 @@ MAX_SLEEP_TIME = 300
 CONFIG_VARS = 5
 
 
+
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
     ( title, currency, price ) = get_info_for( url )
@@ -84,6 +85,7 @@ def print_result( links, titles, currencies, prices ):
         write_data_file( links, titles, currencies, prices )
 
 
+
 def read_config_file():
 
     if not exists( CONFIG_FILE ):
@@ -107,6 +109,7 @@ def read_config_file():
         return options
 
 
+
 def reset_config_file():
 
     new_config_file = open( CONFIG_FILE, 'w' )
@@ -120,6 +123,7 @@ def reset_config_file():
     write_log_file( ' Reset Config File at ' + CONFIG_FILE )
 
 
+
 def write_config_file( options ):
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
@@ -131,6 +135,7 @@ def write_config_file( options ):
         config_file.close()
 
     write_log_file( ' Wrote to Config File at ' + CONFIG_FILE )
+
 
 
 def read_data_file():
@@ -167,6 +172,7 @@ def read_data_file():
     return ( links, titles, currencies, prices )
 
 
+
 def write_data_file( links, titles, currencies, prices ):
     data_file = open( DATA_FILE, 'w' )
 
@@ -185,7 +191,7 @@ def write_log_file( string ):
     logfile.close()
 
 
-
+#-----------------------------------------------------------------------
 
 
 if __name__ == '__main__':
