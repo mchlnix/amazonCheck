@@ -6,16 +6,29 @@ from urllib import urlopen
 from time import strftime, time
 from sys import argv, exit
 from re import search
+from os import name
 
-BOLD_WHITE = '\033[1;97m'
-GRAY = '\033[90m'
-RED = '\033[91m'
-GREEN = '\033[92m'
-YELLOW = '\033[93m'
-BLUE = '\033[94m'
-PURPLE = '\033[95m'
-LIGHT_BLUE = '\033[96m'
-NOCOLOR = '\033[0m'
+
+if name == 'nt':
+    BOLD_WHITE = ''
+    GRAY = ''
+    RED = ''
+    GREEN = ''
+    YELLOW = ''
+    BLUE = ''
+    PURPLE = ''
+    LIGHT_BLUE = ''
+    NOCOLOR = ''
+else:
+    BOLD_WHITE = '\033[1;97m'
+    GRAY = '\033[90m'
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    PURPLE = '\033[95m'
+    LIGHT_BLUE = '\033[96m'
+    NOCOLOR = '\033[0m'
 
 
 
