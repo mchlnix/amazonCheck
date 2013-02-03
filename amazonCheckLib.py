@@ -19,7 +19,6 @@ if name == 'posix':
     LIGHT_BLUE = '\033[96m'
     NOCOLOR = '\033[0m'
 
-    notify = send_notification
 else:
     BOLD_WHITE = ''
     GRAY = ''
@@ -30,8 +29,6 @@ else:
     PURPLE = ''
     LIGHT_BLUE = ''
     NOCOLOR = ''
-
-    notify = print_notification
 
 
 
@@ -179,6 +176,11 @@ def get_time():
 
 
 
+def print_notification( title, body ):
+    print( get_time() + ' ' + title + ' ' + body )
+
+
+
 def send_notification( title, body ):
     if name == 'posix':
         if not init ("summary-body"):
@@ -201,10 +203,11 @@ def send_notification( title, body ):
 
 
 
-def print_notification( title, body ):
-    print( get_time() + ' ' + title + ' ' + body )
+if name == 'posix':
+    notify = send_notification
 
-
+else:
+    notify = print_notification
 
 def shorten_amazon_link( url ):
     offset = url.find( 'amazon.' )
