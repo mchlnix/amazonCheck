@@ -265,7 +265,7 @@ if __name__ == '__main__':
 
             elif argument == '-v' or argument == '--verbose':
 
-                UPDATES_ONLY = False
+                UPDATES_ONLY = True
                 SILENT = False
                 VERBOSE = True
 

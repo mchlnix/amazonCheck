@@ -186,15 +186,9 @@ def send_notification( title, body ):
         if not init ("summary-body"):
             return false
 
-        BOLD_WHITE = ''
-        GRAY = ''
-        RED = ''
-        GREEN = ''
-        YELLOW = ''
-        BLUE = ''
-        PURPLE = ''
-        LIGHT_BLUE = ''
-        NOCOLOR = ''
+        for color in [ RED, GREEN, NOCOLOR ]:
+            title = title.replace( color, '' )
+            body = body.replace( color, '' )
 
         # try the summary-body case
         Notification ( title, body ).show()
