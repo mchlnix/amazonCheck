@@ -3,7 +3,7 @@
 
 
 from urllib import urlopen
-from time import strftime
+from time import strftime, time
 from sys import argv, exit
 from re import search
 
@@ -73,12 +73,19 @@ def get_avg_price( price_list ):
     changed = False
 
     if length == 1:
-        if price_list[0][1] == 'N/A':
+        if price_list[0][0] == 'N/A':
             return -1
         else:
-            return price_list[0][1]
+            return price_list[0][0]
 
-    div_time = price_list[ -1 ][1] - price_list[0][1]
+    div_time = int( round( time() ) ) - price_list[0][1]
+
+    if price_list[-1][0] == 'N/A':
+        div_time -= int( round( time() ) ) - price_list[-1][1]
+    else:
+        changed = True
+        avg += price_list[-1][0] * (int( round( time() ) ) - price_list[-1][1])
+
 
     for i in range( 2, length + 1 ):
 
@@ -89,6 +96,7 @@ def get_avg_price( price_list ):
             continue
 
         avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
+        changed = True
 
     try:
         if changed:

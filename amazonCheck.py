@@ -292,6 +292,8 @@ if __name__ == '__main__':
 
     ( links, titles, currencies, prices ) = read_data_file()
 
+    write_data_file( links, titles, currencies, prices )
+
     try:
 
         write_log_file( ' Starting main loop' )
@@ -305,8 +307,6 @@ if __name__ == '__main__':
 
             runs = runs + 1
 
-
-
             write_log_file( ' Starting run ' + str( runs ) + ':' )
 
             #Getting the start time
@@ -315,19 +315,25 @@ if __name__ == '__main__':
 
             #Updates the information
 
-            write_log_file( '   Getting info' )
+            write_log_file( '   Getting data' )
 
             for index in range( 0, len( links ) ):
                 info = get_info_for( links[ index ] )
 
                 if info == ( -1, -1, -1):
-                    write_log_file( 'Error while connecting' )
-                    write_log_file( 'Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( '  Error while connecting' )
+                    write_log_file( '  Article from ' + str( links[ index ] ) + ' was skipped' )
                     continue
 
                 titles[ index ] = info[0]
                 currencies[ index ] = info[1]
-                prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+
+                if info[2] == prices[ index ][-1][0]:
+                    pass
+                else:
+                    prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+
+
 
             #Saving data to file
 
