@@ -140,7 +140,7 @@ def reset_config_file():
 
 def write_config_file( options ):
 
-    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1.0 ) or type( options[ 4 ] ) != type( 1.0 ) ):
+    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
 
         config_file = open( CONFIG_FILE, 'w' )
 
@@ -152,6 +152,8 @@ def write_config_file( options ):
 
     else:
         write_log_file( 'Did not write to Config File. Options did not match necessary types' )
+        for option in options:
+            write_log_file( str( type( option ) ) )
 
 
 
@@ -271,7 +273,7 @@ if __name__ == '__main__':
                 write_config = True
                 write_log_file( 'Changed output-mode to VERBOSE' )
 
-            elif argument == '-u' or argument == '--update-only':
+            elif argument == '-u' or argument == '--updates_only':
 
                 SILENT = False
                 VERBOSE = False
@@ -283,7 +285,7 @@ if __name__ == '__main__':
             elif argument.find( '--min_sleep=' ) != -1:
 
                 try:
-                    MIN_SLEEP_TIME = float( argument[ 12 : ] )
+                    MIN_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
                     write_log_file( 'Changed MIN_SLEEP_TIME to ' + str( MIN_SLEEP_TIME ) )
@@ -294,7 +296,7 @@ if __name__ == '__main__':
             elif argument.find( '--max_sleep=' ) != -1:
 
                 try:
-                    MAX_SLEEP_TIME = float( argument[ 12 : ] )
+                    MAX_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
                     write_log_file( 'Changed MAX_SLEEP_TIME to ' + str( MAX_SLEEP_TIME ) )
