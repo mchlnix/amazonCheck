@@ -45,9 +45,9 @@ def add_article( url ):
         exit(1)
 
     try:
-        data_file.write( dumps( [ url, title, currency, [ [ price, time() ] ] ] ) + '\n' )
+        data_file.write( dumps( [ url, title, currency, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
     except UnicodeDecodeError:
-        data_file.write( dumps( [ url, 'Encountered error', currency, [ [ price, time() ] ] ] )  + '\n' )
+        data_file.write( dumps( [ url, 'Encountered error', currency, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
     data_file.close()
 
@@ -75,8 +75,11 @@ def print_result( links, titles, currencies, prices ):
             #progs = prices
         else:
             avgs = get_avg_price( prices[ index ] )
+            if avgs == -1: avgs = 'N/A'
             mins = get_min_price( prices[ index ] )
+            if mins == -1: mins = 'N/A'
             maxs = get_max_price( prices[ index ] )
+            if maxs == -1: maxs = 'N/A'
             #progs.append( get_prognosis( prices[ index ] ) )
 
         if maxs == mins:
@@ -137,7 +140,7 @@ def reset_config_file():
 
 def write_config_file( options ):
 
-    if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
+    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
 
         config_file = open( CONFIG_FILE, 'w' )
 
@@ -145,7 +148,10 @@ def write_config_file( options ):
 
         config_file.close()
 
-    write_log_file( 'Wrote to Config File at ' + CONFIG_FILE )
+        write_log_file( 'Wrote to Config File at ' + CONFIG_FILE )
+
+    else:
+        write_log_file( 'Did not write to Config File. Options did not match necessary types' )
 
 
 
@@ -210,12 +216,13 @@ def write_log_file( string ):
 
 if __name__ == '__main__':
 
+
+    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+
     write_log_file( '-------------------------------' )
     write_log_file( 'Started Program' )
 
     runs = 0
-
-    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     if len( argv ) == 2 and argv[1] == 'show':
         ( links, titles, currencies, prices ) = read_data_file()
@@ -248,18 +255,24 @@ if __name__ == '__main__':
 
             if argument == '-s' or argument == '--silent':
 
+                UPDATES_ONLY = False
+                VERBOSE = False
                 SILENT = True
 
                 write_config = True
 
             elif argument == '-v' or argument == '--verbose':
 
-                VERBOSE == True
+                UPDATES_ONLY = False
+                SILENT = False
+                VERBOSE = True
 
                 write_config = True
 
             elif argument == '-u' or argument == '--update-only':
 
+                SILENT = False
+                VERBOSE = False
                 UPDATES_ONLY = True
 
                 write_config = True
@@ -289,8 +302,8 @@ if __name__ == '__main__':
                 write_log_file( 'Illegal argument \'' + argument + '\' detected' )
                 continue
 
-        if write_config:
-            write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+    if write_config:
+        write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
     #Reading data
 
