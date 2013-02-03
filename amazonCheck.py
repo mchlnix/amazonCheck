@@ -140,7 +140,7 @@ def reset_config_file():
 
 def write_config_file( options ):
 
-    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
+    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1.0 ) or type( options[ 4 ] ) != type( 1.0 ) ):
 
         config_file = open( CONFIG_FILE, 'w' )
 
@@ -260,6 +260,7 @@ if __name__ == '__main__':
                 SILENT = True
 
                 write_config = True
+                write_log_file( 'Changed output-mode to SILENT' )
 
             elif argument == '-v' or argument == '--verbose':
 
@@ -268,6 +269,7 @@ if __name__ == '__main__':
                 VERBOSE = True
 
                 write_config = True
+                write_log_file( 'Changed output-mode to VERBOSE' )
 
             elif argument == '-u' or argument == '--update-only':
 
@@ -276,6 +278,7 @@ if __name__ == '__main__':
                 UPDATES_ONLY = True
 
                 write_config = True
+                write_log_file( 'Changed output-mode to UPDATES_ONLY' )
 
             elif argument.find( '--min_sleep=' ) != -1:
 
@@ -283,16 +286,18 @@ if __name__ == '__main__':
                     MIN_SLEEP_TIME = float( argument[ 12 : ] )
 
                     write_config = True
+                    write_log_file( 'Changed MIN_SLEEP_TIME to ' + str( MIN_SLEEP_TIME ) )
 
                 except ValueError:
                     write_log_file( 'Given min_sleep argument was not a number' )
 
-            elif argument.find( '--min_sleep=' ) != -1:
+            elif argument.find( '--max_sleep=' ) != -1:
 
                 try:
                     MAX_SLEEP_TIME = float( argument[ 12 : ] )
 
                     write_config = True
+                    write_log_file( 'Changed MAX_SLEEP_TIME to ' + str( MAX_SLEEP_TIME ) )
 
                 except ValueError:
                     write_log_file( 'Given max_sleep argument was not a number' )
@@ -348,6 +353,17 @@ if __name__ == '__main__':
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
+                    if UPDATES_ONLY:
+                        if info[2] == 'N/A':
+                            print( 'Just became not available: ' + str( info[0] ) )
+                        elif info[2] > prices[ index ][-1][0]:
+                            print( GREEN +  'Just became ' + GREEN + 'cheaper' + NOCOLOR + ': ' + str( info[0] ) )
+                        elif info[2] < prices[ index ][-1][0]:
+                            print( 'Just became ' + RED + 'more expensive' + NOCOLOR + ': ' + str( info[0] ) )
+
+
+
+
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
 
