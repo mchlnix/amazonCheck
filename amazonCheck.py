@@ -356,15 +356,17 @@ if __name__ == '__main__':
                     pass
                 else:
                     if UPDATES_ONLY:
-                        if info[2] == 'N/A':
-                            print( 'Just became not available: ' + str( info[0] ) )
+                        if prices[ index ][-1][0] == 'N/A' and not info[2] == 'N/A':
+                            print( get_time() + ' Just became ' + GREEN + 'available' + NOCOLOR + ': ' + str( info[0] ) )
+
+                        elif info[2] == 'N/A':
+                            print( get_time() + ' Just became ' + RED + 'not available' + NOCOLOR + ': ' + str( info[0] ) )
+
                         elif info[2] > prices[ index ][-1][0]:
-                            print( GREEN +  'Just became ' + GREEN + 'cheaper' + NOCOLOR + ': ' + str( info[0] ) )
+                            print( get_time() + ' Just became ' + GREEN + 'cheaper' + NOCOLOR + ': ' + str( info[0] ) )
+
                         elif info[2] < prices[ index ][-1][0]:
-                            print( 'Just became ' + RED + 'more expensive' + NOCOLOR + ': ' + str( info[0] ) )
-
-
-
+                            print( get_time() + ' Just became ' + RED + 'more expensive' + NOCOLOR + ': ' + str( info[0] ) )
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
