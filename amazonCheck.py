@@ -197,6 +197,9 @@ def write_data_file( links, titles, currencies, prices ):
 def write_log_file( string ):
     logfile = open( LOGFILE, 'a' )
 
+    if VERBOSE:
+        print( get_time() + ' ' + string + '\n' ),
+
     logfile.write( get_time() + ' ' + string + '\n' )
 
     logfile.close()
@@ -322,8 +325,8 @@ if __name__ == '__main__':
                 info = get_info_for( links[ index ] )
 
                 if info == ( -1, -1, -1):
-                    write_log_file( ' Error while connecting' )
-                    write_log_file( ' Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( '   Error while connecting' )
+                    write_log_file( '   Article from ' + str( links[ index ] ) + ' was skipped' )
                     continue
 
                 titles[ index ] = info[0]
