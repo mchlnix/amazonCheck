@@ -109,7 +109,7 @@ def read_config_file():
 
     options = loads( config_file.read() )
 
-    write_log_file( ' Read Config File at ' + CONFIG_FILE )
+    write_log_file( 'Read Config File at ' + CONFIG_FILE )
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
 
@@ -131,7 +131,7 @@ def reset_config_file():
 
     new_config_file.close()
 
-    write_log_file( ' Reset Config File at ' + CONFIG_FILE )
+    write_log_file( 'Reset Config File at ' + CONFIG_FILE )
 
 
 
@@ -145,17 +145,17 @@ def write_config_file( options ):
 
         config_file.close()
 
-    write_log_file( ' Wrote to Config File at ' + CONFIG_FILE )
+    write_log_file( 'Wrote to Config File at ' + CONFIG_FILE )
 
 
 
 def read_data_file():
     if not exists( DATA_FILE ):
-        write_log_file( ' Data File does not exist' )
-        write_log_file( ' Program halted' )
+        write_log_file( 'Data File does not exist' )
+        write_log_file( 'Program halted' )
         exit( 'Data File does not exist.' )
 
-    write_log_file( ' Data File is being read' )
+    write_log_file( 'Data File is being read' )
 
     data_file = open( DATA_FILE, 'r' )
 
@@ -163,7 +163,7 @@ def read_data_file():
 
     data_file.close()
 
-    write_log_file( ' Data is being processed' )
+    write_log_file( 'Data is being processed' )
 
     #Break up into links, titles and prices
 
@@ -197,7 +197,7 @@ def write_data_file( links, titles, currencies, prices ):
 def write_log_file( string ):
     logfile = open( LOGFILE, 'a' )
 
-    logfile.write( get_time() + string + '\n' )
+    logfile.write( get_time() + ' ' + string + '\n' )
 
     logfile.close()
 
@@ -207,8 +207,8 @@ def write_log_file( string ):
 
 if __name__ == '__main__':
 
-    write_log_file( ' -------------------------------' )
-    write_log_file( ' Started Program' )
+    write_log_file( '-------------------------------' )
+    write_log_file( 'Started Program' )
 
     runs = 0
 
@@ -217,11 +217,12 @@ if __name__ == '__main__':
     if len( argv ) == 2 and argv[1] == 'show':
         ( links, titles, currencies, prices ) = read_data_file()
 
-        write_log_file( ' Showing list' )
+        write_log_file( 'Showing list' )
 
         print_result( links, titles, currencies, prices )
 
-        write_log_file( ' Program halted after output' )
+        write_log_file( 'Program halted after output' )
+        write_log_file( '-------------------------------' )
         exit(0)
 
 
@@ -230,7 +231,7 @@ if __name__ == '__main__':
             url = shorten_amazon_link( argv[2] )
             write_log_file( 'Adding article from: ' + url )
             add_article( url )
-            write_log_file( ' Program halted after adding article' )
+            write_log_file( 'Program halted after adding article' )
             exit(0)
 
 
@@ -240,7 +241,7 @@ if __name__ == '__main__':
 
         for argument in argv[ 1 : ]:
 
-            write_log_file( ' Program called with \'' + argument + '\'' )
+            write_log_file( 'Program called with \'' + argument + '\'' )
 
             if argument == '-s' or argument == '--silent':
 
@@ -268,7 +269,7 @@ if __name__ == '__main__':
                     write_config = True
 
                 except ValueError:
-                    write_log_file( ' Given min_sleep argument was not a number' )
+                    write_log_file( 'Given min_sleep argument was not a number' )
 
             elif argument.find( '--min_sleep=' ) != -1:
 
@@ -278,11 +279,11 @@ if __name__ == '__main__':
                     write_config = True
 
                 except ValueError:
-                    write_log_file( ' Given max_sleep argument was not a number' )
+                    write_log_file( 'Given max_sleep argument was not a number' )
 
             else:
 
-                write_log_file( ' Illegal argument \'' + argument + '\' detected' )
+                write_log_file( 'Illegal argument \'' + argument + '\' detected' )
                 continue
 
         if write_config:
@@ -296,7 +297,7 @@ if __name__ == '__main__':
 
     try:
 
-        write_log_file( ' Starting main loop' )
+        write_log_file( 'Starting main loop' )
 
         while 1:
             sleeptime = MIN_SLEEP_TIME
@@ -307,7 +308,7 @@ if __name__ == '__main__':
 
             runs = runs + 1
 
-            write_log_file( ' Starting run ' + str( runs ) + ':' )
+            write_log_file( 'Starting run ' + str( runs ) + ':' )
 
             #Getting the start time
 
@@ -315,14 +316,14 @@ if __name__ == '__main__':
 
             #Updates the information
 
-            write_log_file( '   Getting data' )
+            write_log_file( '  Getting data' )
 
             for index in range( 0, len( links ) ):
                 info = get_info_for( links[ index ] )
 
                 if info == ( -1, -1, -1):
-                    write_log_file( '  Error while connecting' )
-                    write_log_file( '  Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( ' Error while connecting' )
+                    write_log_file( ' Article from ' + str( links[ index ] ) + ' was skipped' )
                     continue
 
                 titles[ index ] = info[0]
@@ -337,7 +338,7 @@ if __name__ == '__main__':
 
             #Saving data to file
 
-            write_log_file( '   Saving data' )
+            write_log_file( '  Saving data' )
 
             write_data_file( links, titles, currencies, prices )
 
@@ -349,7 +350,7 @@ if __name__ == '__main__':
 
             diff_time = round( end_time - start_time, 2 )
 
-            write_log_file( '   It took ' + str( int( diff_time ) ) + ' seconds' )
+            write_log_file( '  It took ' + str( int( diff_time ) ) + ' seconds' )
 
             #Calculating sleeptime
 
@@ -362,16 +363,16 @@ if __name__ == '__main__':
 
             #Sleeping for agreed amount
 
-            write_log_file( '   Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' )
+            write_log_file( '  Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' )
 
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        write_log_file( ' Program halted by user' )
-        write_log_file( ' Exited normally' )
+        write_log_file( 'Program halted by user' )
+        write_log_file( 'Exited normally' )
         exit(0)
     #except:
-        #write_log_file( ' Something went wrong' )
-        #write_log_file( ' Exited abnormally' )
+        #write_log_file( 'Something went wrong' )
+        #write_log_file( 'Exited abnormally' )
         #exit(1)
 
