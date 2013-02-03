@@ -1,25 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
+from pynotify import init, Notification
 from urllib import urlopen
 from time import strftime, time
 from sys import argv, exit
 from re import search
 from os import name
 
-
-if name == 'nt':
-    BOLD_WHITE = ''
-    GRAY = ''
-    RED = ''
-    GREEN = ''
-    YELLOW = ''
-    BLUE = ''
-    PURPLE = ''
-    LIGHT_BLUE = ''
-    NOCOLOR = ''
-else:
+if name == 'posix':
     BOLD_WHITE = '\033[1;97m'
     GRAY = '\033[90m'
     RED = '\033[91m'
@@ -29,6 +18,21 @@ else:
     PURPLE = '\033[95m'
     LIGHT_BLUE = '\033[96m'
     NOCOLOR = '\033[0m'
+
+    notify = send_notification
+else:
+    BOLD_WHITE = ''
+    GRAY = ''
+    RED = ''
+    GREEN = ''
+    YELLOW = ''
+    BLUE = ''
+    PURPLE = ''
+    LIGHT_BLUE = ''
+    NOCOLOR = ''
+
+    notify = print_notification
+
 
 
 
@@ -172,6 +176,33 @@ def get_info_for( url ):
 
 def get_time():
     return strftime( '[%d.%m.%y - %H:%M:%S]' )
+
+
+
+def send_notification( title, body ):
+    if name == 'posix':
+        if not init ("summary-body"):
+            return false
+
+        BOLD_WHITE = ''
+        GRAY = ''
+        RED = ''
+        GREEN = ''
+        YELLOW = ''
+        BLUE = ''
+        PURPLE = ''
+        LIGHT_BLUE = ''
+        NOCOLOR = ''
+
+        # try the summary-body case
+        Notification ( title, body ).show()
+    else:
+        return false
+
+
+
+def print_notification( title, body ):
+    print( get_time() + ' ' + title + ' ' + body )
 
 
 

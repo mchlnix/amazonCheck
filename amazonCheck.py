@@ -356,16 +356,20 @@ if __name__ == '__main__':
                 else:
                     if UPDATES_ONLY:
                         if prices[ index ][-1][0] == 'N/A' and not info[2] == 'N/A':
-                            print( get_time() + ' Just became ' + GREEN + 'available' + NOCOLOR + ': ' + str( info[0] ) )
+                            title = 'Just became ' + GREEN + 'available' + NOCOLOR + ':'
 
                         elif info[2] == 'N/A':
-                            print( get_time() + ' Just became ' + RED + 'not available' + NOCOLOR + ': ' + str( info[0] ) )
+                            title = 'Just became ' + RED + 'not available' + NOCOLOR + ':'
 
                         elif info[2] < prices[ index ][-1][0]:
-                            print( get_time() + ' Just became ' + GREEN + 'cheaper ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ': ' + str( info[0] ) )
+                            title = 'Just became ' + GREEN + 'cheaper ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         elif info[2] > prices[ index ][-1][0]:
-                            print( get_time() + ' Just became ' + RED + 'more expensive( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ': ' + str( info[0] ) )
+                            title = 'Just became ' + RED + 'more expensive( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                        body = str( info[0] )
+
+                        notify( title, body )
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
