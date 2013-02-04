@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pynotify import init, Notification
+from os.path import abspath
 from urllib import urlopen
 from time import strftime, time
 from sys import argv, exit
@@ -29,7 +30,6 @@ else:
     PURPLE = ''
     LIGHT_BLUE = ''
     NOCOLOR = ''
-
 
 
 
@@ -146,8 +146,10 @@ def get_info_for( url ):
         temp_file = urlopen( url ).read()
 
     except IOError:
-        return ( -1, -1, -1)
+        return ( -1, -1, -1, -1 )
 
+
+    #Finding the title
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
 
     if title.find( ': Amazon' ) != -1:
@@ -159,15 +161,34 @@ def get_info_for( url ):
     else:
         title = format_title( title ) + '\0'
 
-    if temp_file.find( '<b class="priceLarge">') != -1:
-        price = temp_file[ temp_file.find( '<b class="priceLarge">') + 22 : temp_file.find( '</b>', temp_file.find( '<b class="priceLarge">') + 22 ) ]
+
+    #Finding the price
+    price_pos = temp_file.find( '<b class="priceLarge">') + 22
+
+    if  price_pos != -1:
+        price = temp_file[ price_pos : temp_file.find( '</b>', price_pos ) ]
 
     else:
         price = 'N/A'
 
+
+    #Formating price and currency
     ( price, currency ) = format_price( price )
 
-    return ( title, currency, price )
+
+    #Finding picture
+    pic_pos = temp_file.find( '<div class="main-image-inner-wrapper">' ) + 38
+
+    if pic_pos != -1:
+        picture = temp_file[ pic_pos : temp_file.find( '</div>', pic_pos ) ]
+
+        url_pos = picture.find( 'src="' ) + 5
+        picture = picture[ url_pos : picture.find( '"', url_pos ) ]
+    else:
+        picture = ''
+
+
+    return ( title, currency, price, picture )
 
 
 
@@ -176,14 +197,14 @@ def get_time():
 
 
 
-def print_notification( title, body ):
+def print_notification( title, body, picture='' ):
     print( get_time() + ' ' + title + ' ' + body )
 
 
 
-def send_notification( title, body ):
+def send_notification( title, body, picture ):
     if name == 'posix':
-        if not init ("summary-body"):
+        if not init ("icon-summary-body"):
             return false
 
         for color in [ RED, GREEN, NOCOLOR ]:
@@ -191,7 +212,8 @@ def send_notification( title, body ):
             body = body.replace( color, '' )
 
         # try the summary-body case
-        Notification ( title, body ).show()
+        print( abspath( picture ) )
+        Notification ( title, body, abspath( picture ) ).show()
     else:
         return false
 

@@ -4,6 +4,7 @@
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_notification, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
+from urllib import urlopen
 from time import ctime, time, sleep
 from json import dumps, loads
 from sys import argv, exit
@@ -17,10 +18,16 @@ from os import name
 #   - way to delete articles
 
 
+if name == 'nt':
+    IMAGE_WRITE_MODE = 'wb'
+else:
+    IMAGE_WRITE_MODE = 'w'
 
-CONFIG_FILE = expanduser( '~/.amazonCheck.config' )
-DATA_FILE = expanduser( '~/.amazonCheck.data' )
-LOGFILE = expanduser( '~/.amazonCheck.log' )
+CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
+DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
+LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
+
+IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
 SILENT = True
 UPDATES_ONLY = False
@@ -35,24 +42,28 @@ CONFIG_VARS = 5
 
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
-    ( title, currency, price ) = get_info_for( url )
+    ( title, currency, price, pic_url ) = get_info_for( url )
 
-    if ( title, currency, price) == ( -1, -1, -1 ):
+    if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
         write_log_file( 'Error while connecting' )
         write_log_file( 'Program is terminating' )
         data_file.close()
         exit(1)
 
+    pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
+
+    open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
+
     try:
-        data_file.write( dumps( [ url, title, currency, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
+        data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
     except UnicodeDecodeError:
-        data_file.write( dumps( [ url, 'Encountered error', currency, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
+        data_file.write( dumps( [ url, 'Encountered error', currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
     data_file.close()
 
 
 
-def print_result( links, titles, currencies, prices ):
+def print_result( titles, currencies, prices ):
     print( BOLD_WHITE + '\tPrice\tMin\tAvg\tMax\tTitle\t' + NOCOLOR )
 
     color_min = GREEN
@@ -64,7 +75,7 @@ def print_result( links, titles, currencies, prices ):
     color_price = NOCOLOR
 
 
-    for index in range( 0, len( links ) ):
+    for index in range( 0, len( titles ) ):
         price = prices[ index ][-1][0]
 
         if len( prices ) == 1:
@@ -94,8 +105,6 @@ def print_result( links, titles, currencies, prices ):
             color_price = GREEN
 
         print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
-
-        write_data_file( links, titles, currencies, prices )
 
 
 
@@ -172,11 +181,12 @@ def read_data_file():
 
     write_log_file( 'Data is being processed' )
 
-    #Break up into links, titles and prices
+    #Break up into links, titles currencies, pictures and prices
 
     links = []
     titles = []
     currencies =[]
+    pictures = []
     prices = []
 
     for index in range( 0,  len( data ) ):
@@ -185,24 +195,25 @@ def read_data_file():
         links.append( info[0] )
         titles.append( info[1] )
         currencies.append( info[2] )
-        prices.extend( info[ 3: ] )
+        pictures.append( info[3] )
+        prices.extend( info[ 4: ] )
 
-    return ( links, titles, currencies, prices )
+    return ( links, titles, currencies, pictures, prices )
 
 
 
-def write_data_file( links, titles, currencies, prices ):
+def write_data_file( links, titles, currencies, pictures, prices ):
     data_file = open( DATA_FILE, 'w' )
 
     for index in range( 0, len( links ) ):
-        data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , prices[ index ] ] ) + '\n' )
+        data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
 
 
 
 def write_log_file( string ):
-    logfile = open( LOGFILE, 'a' )
+    logfile = open( LOG_FILE, 'a' )
 
     if VERBOSE:
         print( get_time() + ' ' + string + '\n' ),
@@ -226,11 +237,11 @@ if __name__ == '__main__':
     runs = 0
 
     if len( argv ) == 2 and argv[1] == 'show':
-        ( links, titles, currencies, prices ) = read_data_file()
+        ( not_used, titles, currencies, not_used, prices ) = read_data_file()
 
         write_log_file( 'Showing list' )
 
-        print_result( links, titles, currencies, prices )
+        print_result( titles, currencies, prices )
 
         write_log_file( 'Program halted after output' )
         write_log_file( '-------------------------------' )
@@ -313,9 +324,7 @@ if __name__ == '__main__':
 
     #Reading data
 
-    ( links, titles, currencies, prices ) = read_data_file()
-
-    write_data_file( links, titles, currencies, prices )
+    ( links, titles, currencies, pictures, prices ) = read_data_file()
 
     try:
 
@@ -343,7 +352,7 @@ if __name__ == '__main__':
             for index in range( 0, len( links ) ):
                 info = get_info_for( links[ index ] )
 
-                if info == ( -1, -1, -1):
+                if info == ( -1, -1, -1, -1 ):
                     write_log_file( '   Error while connecting' )
                     write_log_file( '   Article from ' + str( links[ index ] ) + ' was skipped' )
                     continue
@@ -370,10 +379,10 @@ if __name__ == '__main__':
                         body = str( info[0] )
 
 
-                        notify( title, body )
+                        notify( title, body, IMAGE_PATH + pictures[ index ] )
 
                         if VERBOSE:
-                            print_notification( title, body )
+                            print_notification( title, body, IMAGE_PATH + pictures[ index ] )
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
@@ -383,7 +392,7 @@ if __name__ == '__main__':
 
             write_log_file( '  Saving data' )
 
-            write_data_file( links, titles, currencies, prices )
+            write_data_file( links, titles, currencies, pictures, prices )
 
             #Getting the time the operation finished
 
@@ -411,7 +420,7 @@ if __name__ == '__main__':
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        write_log_file( '\rProgram halted by user' )
+        write_log_file( 'Program halted by user' )
         write_log_file( 'Exited normally' )
         exit(0)
     #except:
