@@ -212,7 +212,6 @@ def send_notification( title, body, picture ):
             body = body.replace( color, '' )
 
         # try the summary-body case
-        print( abspath( picture ) )
         Notification ( title, body, abspath( picture ) ).show()
     else:
         return false
