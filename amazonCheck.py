@@ -4,6 +4,7 @@
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_notification, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
+from signal import alarm, signal, SIGALRM
 from urllib import urlopen
 from time import ctime, time, sleep
 from json import dumps, loads
@@ -35,6 +36,7 @@ VERBOSE = False
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
+TIMEOUT_TIME = 15
 
 CONFIG_VARS = 5
 
@@ -212,6 +214,15 @@ def write_data_file( links, titles, currencies, pictures, prices ):
 
 
 
+def timeout( seconds ):
+    alarm( seconds )
+
+
+def timeout_handler( signum, frame ):
+    raise Exception
+
+
+
 def write_log_file( string ):
     logfile = open( LOG_FILE, 'a' )
 
@@ -326,6 +337,8 @@ if __name__ == '__main__':
 
     ( links, titles, currencies, pictures, prices ) = read_data_file()
 
+    signal( SIGALRM, timeout_handler )
+
     try:
 
         write_log_file( 'Starting main loop' )
@@ -350,11 +363,19 @@ if __name__ == '__main__':
             write_log_file( '  Getting data' )
 
             for index in range( 0, len( links ) ):
-                info = get_info_for( links[ index ] )
+
+                try:
+                    timeout( TIMEOUT_TIME )
+                    info = get_info_for( links[ index ] )
+                    timeout( 0 )
+                except Exception:
+                    write_log_file( '  Connection timed out. ' )
+                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped' )
+                    continue
 
                 if info == ( -1, -1, -1, -1 ):
-                    write_log_file( '   Error while connecting' )
-                    write_log_file( '   Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( '    Error while connecting' )
+                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped' )
                     continue
 
                 titles[ index ] = info[0]
