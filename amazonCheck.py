@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, shorten_amazon_link
+from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_notification, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
 from time import ctime, time, sleep
@@ -369,7 +369,11 @@ if __name__ == '__main__':
 
                         body = str( info[0] )
 
+
                         notify( title, body )
+
+                        if VERBOSE:
+                            print_notification( title, body )
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
@@ -407,7 +411,7 @@ if __name__ == '__main__':
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        write_log_file( 'Program halted by user' )
+        write_log_file( '\rProgram halted by user' )
         write_log_file( 'Exited normally' )
         exit(0)
     #except:
