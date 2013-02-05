@@ -403,7 +403,7 @@ if __name__ == '__main__':
                         notify( title, body, IMAGE_PATH + pictures[ index ] )
 
                         if VERBOSE:
-                            print_notification( title, body, IMAGE_PATH + pictures[ index ] )
+                            print_notification( title, body, '' )
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
