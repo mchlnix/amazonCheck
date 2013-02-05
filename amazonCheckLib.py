@@ -43,7 +43,9 @@ def format_price( string ):
     currency = search( '[^ .,0-9]*', string ).group()
 
     try:
-        price = float( search( '[0-9]*[.][0-9]*', string ).group() )
+        price = float( search( '[0-9]+[.][0-9]+', string ).group() )
+    except ValueError:
+        price = 'N/A'
     except AttributeError:
         price = 'N/A'
 
@@ -224,12 +226,14 @@ if name == 'posix':
 else:
     notify = print_notification
 
+
+
 def shorten_amazon_link( url ):
     offset = url.find( 'amazon.' )
     domain = url[ url.find( '.' , offset ) + 1 : url.find( '/', offset ) ]
 
     try:
-        return_url = 'http://www.amazon.' + domain + '/gp/product/' + search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '/'
+        return_url = 'http://www.amazon.' + domain + '/gp/product/' + search( '\/[A-Z0-9]{10}', url ).group()[1: ] + '/'
 
     except AttributeError:
         return_url = ''
