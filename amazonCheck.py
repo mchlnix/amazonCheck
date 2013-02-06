@@ -392,10 +392,10 @@ if __name__ == '__main__':
                             title = 'Just became ' + RED + 'not available' + NOCOLOR + ':'
 
                         elif info[2] < prices[ index ][-1][0]:
-                            title = 'Just became ' + GREEN + 'cheaper ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                            title = 'Price went ' + GREEN + 'down ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         elif info[2] > prices[ index ][-1][0]:
-                            title = 'Just became ' + RED + 'more expensive( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                            title = 'Price went ' + RED + 'up ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         body = str( info[0] )
 
