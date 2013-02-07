@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_notification, shorten_amazon_link
+from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
 from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 from os.path import exists, expanduser
 from signal import alarm, signal, SIGALRM

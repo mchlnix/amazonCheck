@@ -200,7 +200,6 @@ def get_time():
 
 
 def print_help_text():
-    print( '\tamazonCheck' )
     print( '' )
     print( 'add "amazon_link"        adds an article to the list' )
     print( 'show                     shows an overview for all articles' )
@@ -212,6 +211,7 @@ def print_help_text():
     print( '' )
     print( '--min_sleep=1234         sets the min. time between updates to 1234s' )
     print( '--max_sleep=1234         sets the max. time between updates to 1234s' )
+    print( '' )
 
 
 
