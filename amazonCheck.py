@@ -258,6 +258,15 @@ if __name__ == '__main__':
         write_log_file( '-------------------------------' )
         exit(0)
 
+    if len( argv ) == 2 and (argv[1] == 'help' or argv[1] == '-h' or argv[1] == '--help'):
+        write_log_file( 'Showing help-text' )
+
+        print_help_text()
+
+        write_log_file( 'Program halted after output' )
+        write_log_file( '-------------------------------' )
+        exit(0)
+
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
@@ -265,6 +274,7 @@ if __name__ == '__main__':
             write_log_file( 'Adding article from: ' + url )
             add_article( url )
             write_log_file( 'Program halted after adding article' )
+            write_log_file( '---------------------------------------' )
             exit(0)
 
 
