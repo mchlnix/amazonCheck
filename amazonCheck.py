@@ -35,6 +35,8 @@ TIMEOUT_TIME = 15
 
 CONFIG_VARS = 5
 
+open( LOG_FILE, 'w' ).close()
+
 
 
 def add_article( url ):
@@ -44,6 +46,7 @@ def add_article( url ):
     if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
         write_log_file( 'Error while connecting', True )
         write_log_file( 'Program is terminating', True )
+        write_log_file( '---------------------------------------' )
         data_file.close()
         exit( 'Could not connect to website. Please check the provided link or your internet connection.' )
 
@@ -166,6 +169,7 @@ def read_data_file():
     if not exists( DATA_FILE ):
         write_log_file( 'Data File does not exist', True )
         write_log_file( 'Program halted', True )
+        write_log_file( '---------------------------------------' )
         exit( 'Data File does not exist.' )
 
     write_log_file( 'Data File is being read' )
@@ -231,15 +235,15 @@ def write_log_file( string, output=False ):
 
 
 #-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
 
 
 if __name__ == '__main__':
 
-
-    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
-
     write_log_file( '-------------------------------' )
     write_log_file( 'Started Program' )
+
+    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     runs = 0
 
@@ -449,6 +453,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         write_log_file( 'Program halted by user', True )
         write_log_file( 'Exited normally', True )
+        write_log_file( '---------------------------------------' )
         exit(0)
     #except:
         #write_log_file( 'Something went wrong' )
