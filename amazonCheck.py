@@ -13,11 +13,6 @@ from re import search
 from os import name
 
 
-# TODO:
-#   - get_prognosis
-#   - prognosis in print_list
-#   - way to delete articles
-
 
 if name == 'nt':
     IMAGE_WRITE_MODE = 'wb'
@@ -47,10 +42,10 @@ def add_article( url ):
     ( title, currency, price, pic_url ) = get_info_for( url )
 
     if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
-        write_log_file( 'Error while connecting' )
-        write_log_file( 'Program is terminating' )
+        write_log_file( 'Error while connecting', True )
+        write_log_file( 'Program is terminating', True )
         data_file.close()
-        exit(1)
+        exit( 'Could not connect to website. Please check the provided link or your internet connection.' )
 
     pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
 
@@ -161,7 +156,7 @@ def write_config_file( options ):
         write_log_file( 'Wrote to Config File at ' + CONFIG_FILE )
 
     else:
-        write_log_file( 'Did not write to Config File. Options did not match necessary types' )
+        write_log_file( 'Did not write to Config File. Options did not match necessary types', True )
         for option in options:
             write_log_file( str( type( option ) ) )
 
@@ -169,8 +164,8 @@ def write_config_file( options ):
 
 def read_data_file():
     if not exists( DATA_FILE ):
-        write_log_file( 'Data File does not exist' )
-        write_log_file( 'Program halted' )
+        write_log_file( 'Data File does not exist', True )
+        write_log_file( 'Program halted', True )
         exit( 'Data File does not exist.' )
 
     write_log_file( 'Data File is being read' )
@@ -218,15 +213,16 @@ def timeout( seconds ):
     alarm( seconds )
 
 
+
 def timeout_handler( signum, frame ):
     raise Exception
 
 
 
-def write_log_file( string ):
+def write_log_file( string, output=False ):
     logfile = open( LOG_FILE, 'a' )
 
-    if VERBOSE:
+    if VERBOSE and output:
         print( get_time() + ' ' + string + '\n' ),
 
     logfile.write( get_time() + ' ' + string + '\n' )
@@ -293,7 +289,7 @@ if __name__ == '__main__':
                 SILENT = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to SILENT' )
+                write_log_file( 'Changed output-mode to SILENT', True )
 
             elif argument == '-v' or argument == '--verbose':
 
@@ -302,7 +298,7 @@ if __name__ == '__main__':
                 VERBOSE = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to VERBOSE' )
+                write_log_file( 'Changed output-mode to VERBOSE', True )
 
             elif argument == '-u' or argument == '--updates_only':
 
@@ -311,7 +307,7 @@ if __name__ == '__main__':
                 UPDATES_ONLY = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to UPDATES_ONLY' )
+                write_log_file( 'Changed output-mode to UPDATES_ONLY', True )
 
             elif argument.find( '--min_sleep=' ) != -1:
 
@@ -319,10 +315,10 @@ if __name__ == '__main__':
                     MIN_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
-                    write_log_file( 'Changed MIN_SLEEP_TIME to ' + str( MIN_SLEEP_TIME ) )
+                    write_log_file( 'Changed MIN_SLEEP_TIME to ' + str( MIN_SLEEP_TIME ), True )
 
                 except ValueError:
-                    write_log_file( 'Given min_sleep argument was not a number' )
+                    write_log_file( 'Given min_sleep argument was not a number', True )
 
             elif argument.find( '--max_sleep=' ) != -1:
 
@@ -330,14 +326,14 @@ if __name__ == '__main__':
                     MAX_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
-                    write_log_file( 'Changed MAX_SLEEP_TIME to ' + str( MAX_SLEEP_TIME ) )
+                    write_log_file( 'Changed MAX_SLEEP_TIME to ' + str( MAX_SLEEP_TIME ), True )
 
                 except ValueError:
-                    write_log_file( 'Given max_sleep argument was not a number' )
+                    write_log_file( 'Given max_sleep argument was not a number', True )
 
             else:
 
-                write_log_file( 'Illegal argument \'' + argument + '\' detected' )
+                write_log_file( 'Illegal argument \'' + argument + '\' detected', True )
                 continue
 
     if write_config:
@@ -362,7 +358,7 @@ if __name__ == '__main__':
 
             runs = runs + 1
 
-            write_log_file( 'Starting run ' + str( runs ) + ':' )
+            write_log_file( 'Starting run ' + str( runs ) + ':', True )
 
             #Getting the start time
 
@@ -370,7 +366,7 @@ if __name__ == '__main__':
 
             #Updates the information
 
-            write_log_file( '  Getting data' )
+            write_log_file( '  Getting data', True )
 
             for index in range( 0, len( links ) ):
 
@@ -379,13 +375,13 @@ if __name__ == '__main__':
                     info = get_info_for( links[ index ] )
                     timeout( 0 )
                 except Exception:
-                    write_log_file( '  Connection timed out. ' )
-                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( '  Connection timed out. ', True )
+                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped', True )
                     continue
 
                 if info == ( -1, -1, -1, -1 ):
-                    write_log_file( '  Error while connecting' )
-                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped' )
+                    write_log_file( '  Error while connecting', True )
+                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped', True )
                     continue
 
                 titles[ index ] = info[0]
@@ -421,7 +417,7 @@ if __name__ == '__main__':
 
             #Saving data to file
 
-            write_log_file( '  Saving data' )
+            write_log_file( '  Saving data', True )
 
             write_data_file( links, titles, currencies, pictures, prices )
 
@@ -433,7 +429,7 @@ if __name__ == '__main__':
 
             diff_time = round( end_time - start_time, 2 )
 
-            write_log_file( '  It took ' + str( int( diff_time ) ) + ' seconds' )
+            write_log_file( '  It took ' + str( int( diff_time ) ) + ' seconds', True )
 
             #Calculating sleeptime
 
@@ -446,13 +442,13 @@ if __name__ == '__main__':
 
             #Sleeping for agreed amount
 
-            write_log_file( '  Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds' )
+            write_log_file( '  Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds', True )
 
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        write_log_file( 'Program halted by user' )
-        write_log_file( 'Exited normally' )
+        write_log_file( 'Program halted by user', True )
+        write_log_file( 'Exited normally', True )
         exit(0)
     #except:
         #write_log_file( 'Something went wrong' )

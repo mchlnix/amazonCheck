@@ -202,10 +202,10 @@ def get_time():
 def print_help_text():
     print( '' )
     print( 'add "amazon_link"        adds an article to the list' )
-    print( 'show                     shows an overview for all articles' )
+    print( 'show                     shows an overview of all articles' )
     print( 'help, -h, --help         displays this help text' )
     print( '' )
-    print( '-s, --silent             runs in the backfround completely silent' )
+    print( '-s, --silent             runs in the background completely silent' )
     print( '-u, --updates_only       shows notification bubbles, otherwise silent' )
     print( '-v, --verbose            mirrors the logfile to the commandline' )
     print( '' )
