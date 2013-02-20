@@ -167,7 +167,7 @@ def get_info_for( url ):
     #Finding the price
     price_pos = temp_file.find( '<b class="priceLarge">') + 22
 
-    if  price_pos != -1:
+    if  price_pos != -1 + 22:
         price = temp_file[ price_pos : temp_file.find( '</b>', price_pos ) ]
 
     else:

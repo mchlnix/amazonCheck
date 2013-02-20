@@ -63,6 +63,34 @@ def add_article( url ):
 
 
 
+#def print_delete_menu( titles, currencies, prices ):
+    #selection = 0
+#
+    #print( '' )
+#
+    #for index in range(0, len( titles ) ):
+        #print( str( index ) + '\t' + currencies[ index ] + '\t' + str( prices[ index ] ) + '\t' + titles[ index ] )
+#
+    #print( '' )
+    #print( 'Please select the item to delete: ' ),
+    #selection = input()
+#
+    #try:
+        #selection = int( selection ) - 1
+    #except ValueError:
+        #print( 'Your input was not recognized.' )
+        #exit()
+#
+    #if selection == -1:
+        #exit()
+    #elif selection >= len( titles ):
+        ##Not in range
+    #else:
+        ##Delete
+
+
+
+
 def print_result( titles, currencies, prices ):
     print( BOLD_WHITE + '\tPrice\tMin\tAvg\tMax\tTitle\t' + NOCOLOR )
 
@@ -120,7 +148,7 @@ def read_config_file():
 
     options = loads( config_file.read() )
 
-    write_log_file( 'Read Config File at ' + CONFIG_FILE )
+    write_log_file( 'Read from Config File at ' + CONFIG_FILE )
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
 
@@ -207,7 +235,10 @@ def write_data_file( links, titles, currencies, pictures, prices ):
     data_file = open( DATA_FILE, 'w' )
 
     for index in range( 0, len( links ) ):
-        data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
+        try:
+            data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
+        except:
+            data_file.write( dumps( [ links[ index] , 'Encountered error' , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
 
