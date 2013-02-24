@@ -19,6 +19,8 @@ if name == 'nt':
 else:
     IMAGE_WRITE_MODE = 'w'
 
+
+
 CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
 DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
 LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
@@ -63,31 +65,47 @@ def add_article( url ):
 
 
 
-#def print_delete_menu( titles, currencies, prices ):
-    #selection = 0
-#
-    #print( '' )
-#
-    #for index in range(0, len( titles ) ):
-        #print( str( index ) + '\t' + currencies[ index ] + '\t' + str( prices[ index ] ) + '\t' + titles[ index ] )
-#
-    #print( '' )
-    #print( 'Please select the item to delete: ' ),
-    #selection = input()
-#
-    #try:
-        #selection = int( selection ) - 1
-    #except ValueError:
-        #print( 'Your input was not recognized.' )
-        #exit()
-#
-    #if selection == -1:
-        #exit()
-    #elif selection >= len( titles ):
-        ##Not in range
-    #else:
-        ##Delete
+def print_delete_menu():
 
+    ( links, titles, currencies, pictures, prices ) = read_data_file()
+
+    selection = 0
+
+    print( '' )
+
+    for index in range(0, len( titles ) ):
+        print( str( index + 1 ) + '\t' + currencies[ index ] + '\t' + str( prices[ index ][-1][0] ) + '\t' + titles[ index ] )
+
+    print( '' )
+    print( 'Please select the item to delete ( 0 to exit ): ' ),
+    selection = raw_input()
+
+    try:
+        selection = int( selection )
+    except ValueError:
+        print( 'Your input was not interpreted.' )
+        exit()
+
+    if selection == 0:
+        exit()
+
+    elif selection > len( titles ):
+        pass
+        print( 'Provided index was not found.' )
+        exit()
+
+    else:
+        selection -= 1
+        links.pop( selection )
+        titles.pop( selection )
+        currencies.pop( selection )
+        pictures.pop( selection )
+        prices.pop( selection )
+
+        write_data_file( links, titles, currencies, pictures, prices )
+
+        print( 'Article successfully deleted' )
+        exit()
 
 
 
@@ -298,6 +316,15 @@ if __name__ == '__main__':
         write_log_file( '-------------------------------' )
         exit(0)
 
+    if len( argv ) == 2 and (argv[1] == 'delete' or argv[1] == '-d' or argv[1] == '--delete'):
+        write_log_file( 'Showing delete menu' )
+
+        print_delete_menu()
+
+        write_log_file( 'Program halted after output' )
+        write_log_file( '-------------------------------' )
+        exit(0)
+
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
@@ -374,10 +401,6 @@ if __name__ == '__main__':
     if write_config:
         write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
-    #Reading data
-
-    ( links, titles, currencies, pictures, prices ) = read_data_file()
-
     signal( SIGALRM, timeout_handler )
 
     try:
@@ -385,6 +408,10 @@ if __name__ == '__main__':
         write_log_file( 'Starting main loop' )
 
         while 1:
+            #Reading data
+
+            ( links, titles, currencies, pictures, prices ) = read_data_file()
+
             sleeptime = MIN_SLEEP_TIME
             avgs = []
             mins = []

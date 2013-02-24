@@ -202,6 +202,7 @@ def get_time():
 def print_help_text():
     print( '' )
     print( 'add "amazon_link"        adds an article to the list' )
+    print( 'delete                   shows the delete menu' )
     print( 'show                     shows an overview of all articles' )
     print( 'help, -h, --help         displays this help text' )
     print( '' )
@@ -229,7 +230,6 @@ def send_notification( title, body, picture ):
             title = title.replace( color, '' )
             body = body.replace( color, '' )
 
-        # try the summary-body case
         Notification ( title, body, abspath( picture ) ).show()
     else:
         return false
@@ -255,19 +255,3 @@ def shorten_amazon_link( url ):
         return_url = ''
 
     return return_url
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
