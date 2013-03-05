@@ -1,8 +1,10 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
+from amazonCheckTrans import strings as s
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
-from amazonCheckLib import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
+from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
+
 from os.path import exists, expanduser
 from signal import alarm, signal, SIGALRM
 from urllib import urlopen
@@ -46,11 +48,11 @@ def add_article( url ):
     ( title, currency, price, pic_url ) = get_info_for( url )
 
     if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
-        write_log_file( 'Error while connecting', True )
-        write_log_file( 'Program is terminating', True )
-        write_log_file( '---------------------------------------' )
+        write_log_file( s[ 'err-conec' ], True )
+        write_log_file( s[ 'prgm-term' ], True )
+        write_log_file( s[ 'dashes' ] )
         data_file.close()
-        exit( 'Could not connect to website. Please check the provided link or your internet connection.' )
+        exit( s[ 'no-conect' ] )
 
     pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
 
@@ -59,13 +61,15 @@ def add_article( url ):
     try:
         data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
     except UnicodeDecodeError:
-        data_file.write( dumps( [ url, 'Encountered error', currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
+        data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
     data_file.close()
 
 
 
 def print_delete_menu():
+
+    write_log_file( s[ 'del-mn-cl' ] )
 
     ( links, titles, currencies, pictures, prices ) = read_data_file()
 
@@ -77,13 +81,14 @@ def print_delete_menu():
         print( str( index + 1 ) + '\t' + currencies[ index ] + '\t' + str( prices[ index ][-1][0] ) + '\t' + titles[ index ] )
 
     print( '' )
-    print( 'Please select the item to delete ( 0 to exit ): ' ),
+    print( s[ 'del-selct' ] ),
     selection = raw_input()
 
     try:
         selection = int( selection )
     except ValueError:
-        print( 'Your input was not interpreted.' )
+        write_log_file( s[ 'slctn-nan' ] )
+        print( s[ 'input-nan' ] )
         exit()
 
     if selection == 0:
@@ -91,7 +96,8 @@ def print_delete_menu():
 
     elif selection > len( titles ):
         pass
-        print( 'Provided index was not found.' )
+        write_log_file( s[ 'slctn-nir' ] )
+        print( s[ 'indx-nofd' ] )
         exit()
 
     else:
@@ -104,13 +110,15 @@ def print_delete_menu():
 
         write_data_file( links, titles, currencies, pictures, prices )
 
-        print( 'Article successfully deleted' )
+        write_log_file( s[ 'add-succs' ] )
+
+        print( s[ 'add-succs' ] )
         exit()
 
 
 
 def print_result( titles, currencies, prices ):
-    print( BOLD_WHITE + '\tPrice\tMin\tAvg\tMax\tTitle\t' + NOCOLOR )
+    print( BOLD_WHITE + s[ 'show-head' ] + NOCOLOR )
 
     color_min = GREEN
     color_max = RED
@@ -120,6 +128,7 @@ def print_result( titles, currencies, prices ):
 
     color_price = NOCOLOR
 
+    print( '' )
 
     for index in range( 0, len( titles ) ):
         price = prices[ index ][-1][0]
@@ -131,11 +140,11 @@ def print_result( titles, currencies, prices ):
             #progs = prices
         else:
             avgs = get_avg_price( prices[ index ] )
-            if avgs == -1: avgs = 'N/A'
+            if avgs == -1: avgs = s[ 'N/A' ]
             mins = get_min_price( prices[ index ] )
-            if mins == -1: mins = 'N/A'
+            if mins == -1: mins = s[ 'N/A' ]
             maxs = get_max_price( prices[ index ] )
-            if maxs == -1: maxs = 'N/A'
+            if maxs == -1: maxs = s[ 'N/A' ]
             #progs.append( get_prognosis( prices[ index ] ) )
 
         if maxs == mins:
@@ -152,6 +161,8 @@ def print_result( titles, currencies, prices ):
 
         print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
 
+    print( '' )
+
 
 
 def read_config_file():
@@ -166,9 +177,11 @@ def read_config_file():
 
     options = loads( config_file.read() )
 
-    write_log_file( 'Read from Config File at ' + CONFIG_FILE )
+    write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
+
+        write_log_file( s[ 'err-rd-cf' ] )
 
         reset_config_file()
 
@@ -188,7 +201,7 @@ def reset_config_file():
 
     new_config_file.close()
 
-    write_log_file( 'Reset Config File at ' + CONFIG_FILE )
+    write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
 
 
@@ -202,10 +215,10 @@ def write_config_file( options ):
 
         config_file.close()
 
-        write_log_file( 'Wrote to Config File at ' + CONFIG_FILE )
+        write_log_file( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
 
     else:
-        write_log_file( 'Did not write to Config File. Options did not match necessary types', True )
+        write_log_file( s[ 'opt-types' ], True )
         for option in options:
             write_log_file( str( type( option ) ) )
 
@@ -213,12 +226,12 @@ def write_config_file( options ):
 
 def read_data_file():
     if not exists( DATA_FILE ):
-        write_log_file( 'Data File does not exist', True )
-        write_log_file( 'Program halted', True )
+        write_log_file( s[ 'dat-fl-ms' ], True )
+        write_log_file( s[ 'prgm-halt' ], True )
         write_log_file( '---------------------------------------' )
-        exit( 'Data File does not exist.' )
+        exit( s[ 'dat-fl-ms' ] )
 
-    write_log_file( 'Data File is being read' )
+    write_log_file( s[ 'dat-fl-rd' ] )
 
     data_file = open( DATA_FILE, 'r' )
 
@@ -226,7 +239,7 @@ def read_data_file():
 
     data_file.close()
 
-    write_log_file( 'Data is being processed' )
+    write_log_file( s[ 'data-prcs' ] )
 
     #Break up into links, titles currencies, pictures and prices
 
@@ -256,7 +269,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
         try:
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
-            data_file.write( dumps( [ links[ index] , 'Encountered error' , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
+            data_file.write( dumps( [ links[ index] , s[ 'err-gener' ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
 
@@ -289,8 +302,8 @@ def write_log_file( string, output=False ):
 
 if __name__ == '__main__':
 
-    write_log_file( '-------------------------------' )
-    write_log_file( 'Started Program' )
+    write_log_file( s[ 'dashes' ] )
+    write_log_file( s[ 'str-prgm' ] )
 
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
@@ -299,40 +312,40 @@ if __name__ == '__main__':
     if len( argv ) == 2 and argv[1] == 'show':
         ( not_used, titles, currencies, not_used, prices ) = read_data_file()
 
-        write_log_file( 'Showing list' )
+        write_log_file( s[ 'sh-art-ls'] )
 
         print_result( titles, currencies, prices )
 
-        write_log_file( 'Program halted after output' )
-        write_log_file( '-------------------------------' )
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
         exit(0)
 
     if len( argv ) == 2 and (argv[1] == 'help' or argv[1] == '-h' or argv[1] == '--help'):
-        write_log_file( 'Showing help-text' )
+        write_log_file( s[ 'sh-hlp-mn' ] )
 
         print_help_text()
 
-        write_log_file( 'Program halted after output' )
-        write_log_file( '-------------------------------' )
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
         exit(0)
 
     if len( argv ) == 2 and (argv[1] == 'delete' or argv[1] == '-d' or argv[1] == '--delete'):
-        write_log_file( 'Showing delete menu' )
+        write_log_file( s[ 'sh-del-mn' ] )
 
         print_delete_menu()
 
-        write_log_file( 'Program halted after output' )
-        write_log_file( '-------------------------------' )
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
         exit(0)
 
 
     if len( argv ) > 2:
         if argv[1] == '-a' or argv[1] == 'add':
             url = shorten_amazon_link( argv[2] )
-            write_log_file( 'Adding article from: ' + url )
+            write_log_file( s[ 'add-artcl' ] + url )
             add_article( url )
-            write_log_file( 'Program halted after adding article' )
-            write_log_file( '---------------------------------------' )
+            write_log_file( s[ 'pg-hlt-ad' ] )
+            write_log_file( s[ 'dashes' ] )
             exit(0)
 
 
@@ -342,7 +355,7 @@ if __name__ == '__main__':
 
         for argument in argv[ 1 : ]:
 
-            write_log_file( 'Program called with \'' + argument + '\'' )
+            write_log_file( s[ 'prgm-clld' ] + ' \'' + argument + '\'' )
 
             if argument == '-s' or argument == '--silent':
 
@@ -351,7 +364,7 @@ if __name__ == '__main__':
                 SILENT = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to SILENT', True )
+                write_log_file( s[ 'ch-silent' ], True )
 
             elif argument == '-v' or argument == '--verbose':
 
@@ -360,7 +373,7 @@ if __name__ == '__main__':
                 VERBOSE = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to VERBOSE', True )
+                write_log_file( s[ 'ch-verbos' ], True )
 
             elif argument == '-u' or argument == '--updates_only':
 
@@ -369,7 +382,7 @@ if __name__ == '__main__':
                 UPDATES_ONLY = True
 
                 write_config = True
-                write_log_file( 'Changed output-mode to UPDATES_ONLY', True )
+                write_log_file( s[ 'ch-updonl' ], True )
 
             elif argument.find( '--min_sleep=' ) != -1:
 
@@ -377,10 +390,10 @@ if __name__ == '__main__':
                     MIN_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
-                    write_log_file( 'Changed MIN_SLEEP_TIME to ' + str( MIN_SLEEP_TIME ), True )
+                    write_log_file( s[ 'ch-mn-slp' ] + str( MIN_SLEEP_TIME ), True )
 
                 except ValueError:
-                    write_log_file( 'Given min_sleep argument was not a number', True )
+                    write_log_file( s[ 'mn-slpnan' ], True )
 
             elif argument.find( '--max_sleep=' ) != -1:
 
@@ -388,14 +401,14 @@ if __name__ == '__main__':
                     MAX_SLEEP_TIME = int( argument[ 12 : ] )
 
                     write_config = True
-                    write_log_file( 'Changed MAX_SLEEP_TIME to ' + str( MAX_SLEEP_TIME ), True )
+                    write_log_file( s[ 'ch-mx-slp' ] + str( MAX_SLEEP_TIME ), True )
 
                 except ValueError:
-                    write_log_file( 'Given max_sleep argument was not a number', True )
+                    write_log_file( s[ 'mx-slpnan' ], True )
 
             else:
 
-                write_log_file( 'Illegal argument \'' + argument + '\' detected', True )
+                write_log_file( s[ 'ill-argmt' ] + '\'' + argument + '\'', True )
                 continue
 
     if write_config:
@@ -405,7 +418,7 @@ if __name__ == '__main__':
 
     try:
 
-        write_log_file( 'Starting main loop' )
+        write_log_file( s[ 'str-mn-lp' ] )
 
         while 1:
             #Reading data
@@ -420,7 +433,7 @@ if __name__ == '__main__':
 
             runs = runs + 1
 
-            write_log_file( 'Starting run ' + str( runs ) + ':', True )
+            write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
 
             #Getting the start time
 
@@ -428,7 +441,7 @@ if __name__ == '__main__':
 
             #Updates the information
 
-            write_log_file( '  Getting data', True )
+            write_log_file( s[ 'getng-dat' ], True )
 
             for index in range( 0, len( links ) ):
 
@@ -437,13 +450,13 @@ if __name__ == '__main__':
                     info = get_info_for( links[ index ] )
                     timeout( 0 )
                 except Exception:
-                    write_log_file( '  Connection timed out. ', True )
-                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped', True )
+                    write_log_file( s[ 'con-tmout' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
                 if info == ( -1, -1, -1, -1 ):
-                    write_log_file( '  Error while connecting', True )
-                    write_log_file( '    Article from ' + str( links[ index ] ) + ' was skipped', True )
+                    write_log_file( s[ 'err-con-s' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
                 titles[ index ] = info[0]
@@ -453,17 +466,17 @@ if __name__ == '__main__':
                     pass
                 else:
                     if UPDATES_ONLY:
-                        if prices[ index ][-1][0] == 'N/A' and not info[2] == 'N/A':
-                            title = 'Just became ' + GREEN + 'available' + NOCOLOR + ':'
+                        if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                            title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
-                        elif info[2] == 'N/A':
-                            title = 'Just became ' + RED + 'not available' + NOCOLOR + ':'
+                        elif info[2] == s[ 'N/A' ]:
+                            title = s[ 'bec-unava' ] + NOCOLOR + ':'
 
                         elif info[2] < prices[ index ][-1][0]:
-                            title = 'Price went ' + GREEN + 'down ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                            title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         elif info[2] > prices[ index ][-1][0]:
-                            title = 'Price went ' + RED + 'up ( ' + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                            title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         body = str( info[0] )
 
@@ -479,7 +492,7 @@ if __name__ == '__main__':
 
             #Saving data to file
 
-            write_log_file( '  Saving data', True )
+            write_log_file( s[ 'svng-data' ], True )
 
             write_data_file( links, titles, currencies, pictures, prices )
 
@@ -491,7 +504,7 @@ if __name__ == '__main__':
 
             diff_time = round( end_time - start_time, 2 )
 
-            write_log_file( '  It took ' + str( int( diff_time ) ) + ' seconds', True )
+            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
 
             #Calculating sleeptime
 
@@ -504,14 +517,14 @@ if __name__ == '__main__':
 
             #Sleeping for agreed amount
 
-            write_log_file( '  Sleeping for ' + str( int( round( sleeptime ) ) ) + ' seconds', True )
+            write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
 
             sleep( sleeptime )
 
     except KeyboardInterrupt:
-        write_log_file( 'Program halted by user', True )
-        write_log_file( 'Exited normally', True )
-        write_log_file( '---------------------------------------' )
+        write_log_file( s[ 'pg-hlt-us' ], True )
+        write_log_file( s[ 'exit-norm' ], True )
+        write_log_file( s[ 'dashes' ] )
         exit(0)
     #except:
         #write_log_file( 'Something went wrong' )

@@ -1,6 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
+from amazonCheckTrans import strings as s
 from pynotify import init, Notification
 from os.path import abspath
 from urllib import urlopen
@@ -8,29 +9,6 @@ from time import strftime, time
 from sys import argv, exit
 from re import search
 from os import name
-
-if name == 'posix':
-    BOLD_WHITE = '\033[1;97m'
-    GRAY = '\033[90m'
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    PURPLE = '\033[95m'
-    LIGHT_BLUE = '\033[96m'
-    NOCOLOR = '\033[0m'
-
-else:
-    BOLD_WHITE = ''
-    GRAY = ''
-    RED = ''
-    GREEN = ''
-    YELLOW = ''
-    BLUE = ''
-    PURPLE = ''
-    LIGHT_BLUE = ''
-    NOCOLOR = ''
-
 
 
 def format_price( string ):
@@ -45,9 +23,9 @@ def format_price( string ):
     try:
         price = float( search( '[0-9]+[.][0-9]+', string ).group() )
     except ValueError:
-        price = 'N/A'
+        price = s[ 'N/A' ]
     except AttributeError:
-        price = 'N/A'
+        price = s[ 'N/A' ]
 
     return ( price, currency )
 
@@ -69,7 +47,7 @@ def get_min_price( price_list ):
     changed = False
 
     for price in price_list:
-        if price[0] == 'N/A':
+        if price[0] == s[ 'N/A' ]:
             continue
         else:
             if price[0] < min_price:
@@ -89,14 +67,14 @@ def get_avg_price( price_list ):
     changed = False
 
     if length == 1:
-        if price_list[0][0] == 'N/A':
+        if price_list[0][0] == s[ 'N/A' ]:
             return -1
         else:
             return price_list[0][0]
 
     div_time = int( round( time() ) ) - price_list[0][1]
 
-    if price_list[-1][0] == 'N/A':
+    if price_list[-1][0] == s[ 'N/A' ]:
         div_time -= int( round( time() ) ) - price_list[-1][1]
     else:
         changed = True
@@ -107,7 +85,7 @@ def get_avg_price( price_list ):
 
         index = length - i
 
-        if price_list[ index ][0] == 'N/A':
+        if price_list[ index ][0] == s[ 'N/A' ]:
             div_time -= price_list[ index + 1 ][1] - price_list[ index ][1]
             continue
 
@@ -129,7 +107,7 @@ def get_max_price( price_list ):
     changed = False
 
     for price in price_list:
-        if price[0] == 'N/A':
+        if price[0] == s[ 'N/A' ]:
             continue
         else:
             if price[0] > max_price:
@@ -171,7 +149,7 @@ def get_info_for( url ):
         price = temp_file[ price_pos : temp_file.find( '</b>', price_pos ) ]
 
     else:
-        price = 'N/A'
+        price = s[ 'N/A' ]
 
 
     #Formating price and currency
@@ -195,23 +173,23 @@ def get_info_for( url ):
 
 
 def get_time():
-    return strftime( '[%d.%m.%y - %H:%M:%S]' )
+    return strftime( s[ 'date-frmt' ] )
 
 
 
 def print_help_text():
     print( '' )
-    print( 'add "amazon_link"        adds an article to the list' )
-    print( 'delete                   shows the delete menu' )
-    print( 'show                     shows an overview of all articles' )
-    print( 'help, -h, --help         displays this help text' )
+    print( s[ 'help-add' ] )
+    print( s[ 'help del' ] )
+    print( s[ 'help-show' ] )
+    print( s[ 'help-help' ] )
     print( '' )
-    print( '-s, --silent             runs in the background completely silent' )
-    print( '-u, --updates_only       shows notification bubbles, otherwise silent' )
-    print( '-v, --verbose            mirrors the logfile to the commandline' )
+    print( s[ 'help-slnt' ] )
+    print( s[ 'help-upon' ] )
+    print( s[ 'help-verb' ] )
     print( '' )
-    print( '--min_sleep=1234         sets the min. time between updates to 1234s' )
-    print( '--max_sleep=1234         sets the max. time between updates to 1234s' )
+    print( s[ 'help-mnsl' ] )
+    print( s[ 'help-mxsl' ] )
     print( '' )
 
 
