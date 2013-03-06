@@ -133,10 +133,10 @@ def print_result( titles, currencies, prices ):
     for index in range( 0, len( titles ) ):
         price = prices[ index ][-1][0]
 
-        if len( prices ) == 1:
-            avgs = prices
-            mins = prices
-            maxs = prices
+        if len( prices[ index ] ) == 1:
+            avgs = prices[ index ][0][0]
+            mins = prices[ index ][0][0]
+            maxs = prices[ index ][0][0]
             #progs = prices
         else:
             avgs = get_avg_price( prices[ index ] )
@@ -227,7 +227,7 @@ def write_config_file( options ):
 def read_data_file():
     if not exists( DATA_FILE ):
         write_log_file( s[ 'dat-fl-ms' ], True )
-        write_log_file( s[ 'prgm-halt' ], True )
+        write_log_file( s[ 'prgm-hltd' ], True )
         write_log_file( '---------------------------------------' )
         exit( s[ 'dat-fl-ms' ] )
 
