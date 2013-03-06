@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from amazonCheckTrans import strings as s
+from colors import RED, GREEN, NOCOLOR
+
 from pynotify import init, Notification
 from os.path import abspath
 from urllib import urlopen
