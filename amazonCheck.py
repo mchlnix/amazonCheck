@@ -448,6 +448,10 @@ if __name__ == '__main__':
 
             ( links, titles, currencies, pictures, prices ) = read_data_file()
 
+            if len( links ) == 0:
+                write_log_file( s[ 'dat-empty' ] )
+                exit( s[ 'dat-empty' ] )
+
             sleeptime = MIN_SLEEP_TIME
             avgs = []
             mins = []

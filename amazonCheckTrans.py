@@ -19,6 +19,7 @@ strings = {
 'no-conect' : 'Could not connect to website. Please check the provided link or your internet connection.',    #Exit message
 'dat-fl-ms' : 'Data File does not exist.',                                                                    #Exit #Log+
 'dat-fl-rd' : 'Data File is being read',                                                                      #Log
+'dat-empty' : 'Data file is empty.',                                                                          #Log+
 'data-prcs' : 'Data is being processed',                                                                      #Log
 'del-mn-cl' : 'Delete Menu called',                                                                           #Log
 'opt-types' : 'Did not write to Config File. Options did not match necessary types',                          #Log+
