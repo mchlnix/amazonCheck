@@ -148,9 +148,8 @@ def get_info_for( url ):
 
     elif title.find( 'Amazon.com: ' ) != -1:
         title = format_title( title[ title.find( 'Amazon.com: ' ) + 12 : ] )
-
-    else:
-        title = format_title( title ) + '\0'
+    elif title.find( 'Amazon.de: ' ) != -1:
+        title = format_title( title[ title.find( 'Amazon.de: ' ) + 11 : ] )
 
 
     #Finding the price
