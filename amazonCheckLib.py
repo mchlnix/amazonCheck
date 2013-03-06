@@ -198,7 +198,7 @@ def get_time():
 def print_help_text():
     print( '' )
     print( s[ 'help-add' ] )
-    print( s[ 'help del' ] )
+    print( s[ 'help-del' ] )
     print( s[ 'help-show' ] )
     print( s[ 'help-help' ] )
     print( '' )

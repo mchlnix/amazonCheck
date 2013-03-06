@@ -163,6 +163,131 @@ def print_result( titles, currencies, prices ):
 
 
 
+def process_arguments( argv ):
+    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+
+    add_activated = False
+    operation_mode = False
+    write_config = False
+
+    for argument in argv:
+        write_log_file( s[ 'prgm-clld' ] + ' \'' + argument + '\'' )
+
+        #Add articles
+        if argument == 'add' or argument == '-a' or argument == '--add':
+            add_activated = True
+            continue
+
+        if argument.find( 'amazon' ) != -1 and add_activated:
+            url = shorten_amazon_link( argument )
+            write_log_file( s[ 'add-artcl' ] + url )
+            add_article( url )
+            continue
+
+        #Determine operation mode
+        if argument == 'delete' or argument == '-d' or argument == '--delete':
+            operation_mode = 'delete_mode'
+            continue
+
+        if argument == 'show' or argument == '--show':
+            operation_mode = 'show_mode'
+            continue
+
+        if argument == 'help' or argument == '-h' or argument == '--help':
+            operation_mode = 'help_mode'
+            continue
+
+        #Determine output mode
+        if argument == '-s' or argument == '--silent':
+
+            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( True, False, False )
+
+            write_config = True
+            write_log_file( s[ 'ch-silent' ], True )
+            continue
+
+        if argument == '-v' or argument == '--verbose':
+
+            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( False, True, True )
+
+            write_config = True
+            write_log_file( s[ 'ch-verbos' ], True )
+            continue
+
+        if argument == '-u' or argument == '--updates_only':
+
+            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( False, False, True )
+
+            write_config = True
+            write_log_file( s[ 'ch-updonl' ], True )
+            continue
+
+        #Determine sleep times
+        if argument.find( '--min_sleep=' ) != -1:
+            try:
+                MIN_SLEEP_TIME = int( argument[ 12 : ] )
+
+                write_config = True
+                write_log_file( s[ 'ch-mn-slp' ] + str( MIN_SLEEP_TIME ), True )
+            except ValueError:
+                write_log_file( s[ 'mn-slpnan' ], True )
+
+            continue
+
+        if argument.find( '--max_sleep=' ) != -1:
+            try:
+                MAX_SLEEP_TIME = int( argument[ 12 : ] )
+
+                write_config = True
+                write_log_file( s[ 'ch-mx-slp' ] + str( MAX_SLEEP_TIME ), True )
+            except ValueError:
+                write_log_file( s[ 'mx-slpnan' ], True )
+
+            continue
+
+        #Illegal Argument
+        write_log_file( s[ 'ill-argmt' ] + '\'' + argument + '\'', True )
+        continue
+
+    #Write config file if necessary
+    if write_config:
+        write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+
+    #Act on operation mode ( or not )
+    if operation_mode == 'delete_mode':
+        write_log_file( s[ 'sh-del-mn' ] )
+
+        print_delete_menu()
+
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
+        exit(0)
+
+    if operation_mode == 'show_mode':
+        ( not_used, titles, currencies, not_used, prices ) = read_data_file()
+
+        write_log_file( s[ 'sh-art-ls'] )
+
+        print_result( titles, currencies, prices )
+
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
+        exit(0)
+
+    if operation_mode == 'help_mode':
+        write_log_file( s[ 'sh-hlp-mn' ] )
+
+        print_help_text()
+
+        write_log_file( s[ 'pg-hlt-op' ] )
+        write_log_file( s[ 'dashes' ] )
+        exit(0)
+
+    if operation_mode == False and add_activated == False:
+        return
+
+
+
 def read_config_file():
 
     if not exists( CONFIG_FILE ):
@@ -264,7 +389,6 @@ def read_data_file():
         try:
             info = loads( data[ index ] )
         except ValueError:
-            print( 'Bad Json found.' )
             continue
             #exit( 'Problem encoding the value' )                        #Translating
 
@@ -328,116 +452,13 @@ if __name__ == '__main__':
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
 
-    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+    signal( SIGALRM, timeout_handler )
 
     runs = 0
 
-    if len( argv ) == 2 and argv[1] == 'show':
-        ( not_used, titles, currencies, not_used, prices ) = read_data_file()
+    process_arguments( argv )
 
-        write_log_file( s[ 'sh-art-ls'] )
-
-        print_result( titles, currencies, prices )
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-    if len( argv ) == 2 and (argv[1] == 'help' or argv[1] == '-h' or argv[1] == '--help'):
-        write_log_file( s[ 'sh-hlp-mn' ] )
-
-        print_help_text()
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-    if len( argv ) == 2 and (argv[1] == 'delete' or argv[1] == '-d' or argv[1] == '--delete'):
-        write_log_file( s[ 'sh-del-mn' ] )
-
-        print_delete_menu()
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-
-    if len( argv ) > 2:
-        if argv[1] == '-a' or argv[1] == 'add':
-            url = shorten_amazon_link( argv[2] )
-            write_log_file( s[ 'add-artcl' ] + url )
-            add_article( url )
-            write_log_file( s[ 'pg-hlt-ad' ] )
-            write_log_file( s[ 'dashes' ] )
-            exit(0)
-
-
-    write_config = False
-
-    if len( argv ) > 1:
-
-        for argument in argv[ 1 : ]:
-
-            write_log_file( s[ 'prgm-clld' ] + ' \'' + argument + '\'' )
-
-            if argument == '-s' or argument == '--silent':
-
-                UPDATES_ONLY = False
-                VERBOSE = False
-                SILENT = True
-
-                write_config = True
-                write_log_file( s[ 'ch-silent' ], True )
-
-            elif argument == '-v' or argument == '--verbose':
-
-                UPDATES_ONLY = True
-                SILENT = False
-                VERBOSE = True
-
-                write_config = True
-                write_log_file( s[ 'ch-verbos' ], True )
-
-            elif argument == '-u' or argument == '--updates_only':
-
-                SILENT = False
-                VERBOSE = False
-                UPDATES_ONLY = True
-
-                write_config = True
-                write_log_file( s[ 'ch-updonl' ], True )
-
-            elif argument.find( '--min_sleep=' ) != -1:
-
-                try:
-                    MIN_SLEEP_TIME = int( argument[ 12 : ] )
-
-                    write_config = True
-                    write_log_file( s[ 'ch-mn-slp' ] + str( MIN_SLEEP_TIME ), True )
-
-                except ValueError:
-                    write_log_file( s[ 'mn-slpnan' ], True )
-
-            elif argument.find( '--max_sleep=' ) != -1:
-
-                try:
-                    MAX_SLEEP_TIME = int( argument[ 12 : ] )
-
-                    write_config = True
-                    write_log_file( s[ 'ch-mx-slp' ] + str( MAX_SLEEP_TIME ), True )
-
-                except ValueError:
-                    write_log_file( s[ 'mx-slpnan' ], True )
-
-            else:
-
-                write_log_file( s[ 'ill-argmt' ] + '\'' + argument + '\'', True )
-                continue
-
-    if write_config:
-        write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
-
-    signal( SIGALRM, timeout_handler )
+    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     try:
 

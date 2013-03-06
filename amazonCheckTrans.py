@@ -67,13 +67,13 @@ strings = {
 'input-nan' : 'Your input was not interpreted.',                                                              #NaN
 #amazonCheckLib.py
 'date-frmt' : '[%d.%m.%y - %H:%M:%S]',                                                                        #Date Format
-'help-add'  : 'add "amazon_link"        adds an article to the list',                                         #add_link #helptext
-'help-del'  : 'delete                   shows the delete menu',                                               #delete_menu #helptext
-'help-show' : 'show                     shows an overview of all articles',                                   #show_artcls #helptext
-'help-help' : 'help, -h, --help         displays this help text',                                             #show_help #helptext
-'help-slnt' : '-s, --silent             runs in the background completely silent',                            #silent_mode #helptext
-'help-upon' : '-u, --updates_only       shows notification bubbles, otherwise silent',                        #updates_only_mode #helptext
-'help-verb' : '-v, --verbose            mirrors the logfile to the commandline',                              #verbose_mode #helptext
-'help-mnsl' : '--min_sleep=1234         sets the min. time between updates to 1234s',                         #min_time #helptext
-'help-mxsl' : '--max_sleep=1234         sets the max. time between updates to 1234s',                         #max_time #helptext
+'help-add'  : 'add, --add "amazon_link"     adds an article to the list',                                 #add_link #helptext
+'help-del'  : 'delete, --delete             shows the delete menu',                                       #delete_menu #helptext
+'help-show' : 'show. --show                 shows an overview of all articles',                           #show_artcls #helptext
+'help-help' : 'help, -h, --help                 displays this help text',                                     #show_help #helptext
+'help-slnt' : '-s, --silent                     runs in the background completely silent',                    #silent_mode #helptext
+'help-upon' : '-u, --updates_only               shows notification bubbles, otherwise silent',                #updates_only_mode #helptext
+'help-verb' : '-v, --verbose                    mirrors the logfile to the commandline',                      #verbose_mode #helptext
+'help-mnsl' : '--min_sleep=1234                 sets the min. time between updates to 1234s',                 #min_time #helptext
+'help-mxsl' : '--max_sleep=1234                 sets the max. time between updates to 1234s',                 #max_time #helptext
 }
