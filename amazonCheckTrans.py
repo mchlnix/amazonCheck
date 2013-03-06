@@ -47,7 +47,7 @@ strings = {
 'indx-nofd' : 'Provided index was not found.',
 'rd-cf-fil' : 'Read from Config File at ',                                                                    #Log
 'rs-cf-fil' : 'Reset Config File at ',                                                                        #Log
-'svng-data' : 'Saving data',                                                                                  #Spaces, #Log+
+'svng-data' : '  Saving data',                                                                                #Spaces, #Log+
 'seconds'   : ' seconds',                                                                                     #Spaces #Log+
 'slctn-nan' : 'Selection not an Integer',                                                                     #Log
 'slctn-nir' : 'Selection not in range of article list',                                                       #Log
@@ -58,10 +58,11 @@ strings = {
 'str-mn-lp' : 'Starting main loop',                                                                           #Log
 'str-prgm'  : 'Started Program',                                                                              #Log
 'strtg-run' : 'Starting run ',                                                                                #Number #Log+
-'us-def-op' : 'Using default options',                                                                        #Log
+'us-def-op' : 'Using default options',                                                                        #Log+
 'wrt-cf-fl' : 'Wrote to Config File at ',                                                                     #Log
-'cnf-no-pm' : 'You are not permitted access to the config file. See \'man chmod\' for more information.',     #Log
-'dat-no-pm' : 'You are not permitted access to the data file. See \'man chmod\' for more information.',       #Log
+'cnf-no-pm' : 'You are not permitted access to the config file. See \'man chmod\' for more information.',     #Log+
+'dat-no-pm' : 'You are not permitted access to the data file. See \'man chmod\' for more information.',       #Log+
+'log-no-pm' : 'You are not permitted access to the log file. See \'man chmod\' for more information.',        #Log+
 'input-nan' : 'Your input was not interpreted.',                                                              #NaN
 #amazonCheckLib.py
 'date-frmt' : '[%d.%m.%y - %H:%M:%S]',                                                                        #Date Format

@@ -214,7 +214,11 @@ def write_config_file( options ):
 
     if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
 
-        config_file = open( CONFIG_FILE, 'w' )
+        try:
+            config_file = open( CONFIG_FILE, 'w' )
+        except IOError:
+            write_log_file( s[ 'cnf-no-pm' ], True )
+            return False
 
         config_file.write( dumps( options ) )
 
@@ -241,7 +245,7 @@ def read_data_file():
     try:
         data_file = open( DATA_FILE, 'r' )
     except IOError:
-        write_log_file( s[ 'dat-no-pm' ] )
+        write_log_file( s[ 'dat-no-pm' ], True )
         exit( s[ 'dat-no-pm' ] )
 
     data = data_file.readlines()
@@ -271,8 +275,22 @@ def read_data_file():
 
 
 
+def timeout( seconds ):
+    alarm( seconds )
+
+
+
+def timeout_handler( signum, frame ):
+    raise TimeoutException( Exception )
+
+
+
 def write_data_file( links, titles, currencies, pictures, prices ):
-    data_file = open( DATA_FILE, 'w' )
+    try:
+        data_file = open( DATA_FILE, 'w' )
+    except IOError:
+        write_log_file( s[ 'dat-no-pm' ], True )
+        return false
 
     for index in range( 0, len( links ) ):
         try:
@@ -284,26 +302,19 @@ def write_data_file( links, titles, currencies, pictures, prices ):
 
 
 
-def timeout( seconds ):
-    alarm( seconds )
-
-
-
-def timeout_handler( signum, frame ):
-    raise TimeoutException( Exception )
-
-
-
 def write_log_file( string, output=False ):
-    logfile = open( LOG_FILE, 'a' )
-
     if VERBOSE and output:
         print( get_time() + ' ' + string + '\n' ),
 
+    try:
+        logfile = open( LOG_FILE, 'a' )
+
+    except IOError:
+        #write_log_file( s[ 'log-no-pm' ] )
+        return false
+
     logfile.write( get_time() + ' ' + string + '\n' )
-
     logfile.close()
-
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
@@ -488,9 +499,6 @@ if __name__ == '__main__':
                             title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         body = str( info[0] )
-
-                        print( IMAGE_PATH + pictures[ index ] )
-
 
                         notify( title, body, IMAGE_PATH + pictures[ index ] )
 
