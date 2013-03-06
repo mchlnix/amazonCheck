@@ -180,7 +180,10 @@ def read_config_file():
         write_log_file( s[ 'us-def-op' ], True )
         return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
-    options = loads( config_file.read() )
+    try:
+        options = loads( config_file.read() )
+    except ValueError:
+        exit( 'Problem encoding the value' )                            #Translating
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -263,7 +266,10 @@ def read_data_file():
     prices = []
 
     for index in range( 0,  len( data ) ):
-        info = loads( data[ index ] )
+        try:
+            info = loads( data[ index ] )
+        except ValueError:
+            exit( 'Problem encoding the value' )                        #Translating
 
         links.append( info[0] )
         titles.append( info[1] )
@@ -479,8 +485,8 @@ if __name__ == '__main__':
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
-                titles[ index ] = info[0]
-                currencies[ index ] = info[1]
+                #titles[ index ] = info[0]
+                #currencies[ index ] = info[1]
 
                 if info[2] == prices[ index ][-1][0]:
                     pass
