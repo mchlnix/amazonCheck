@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from amazonCheckTrans import strings as s
-from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
+from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link, TimeoutException
 from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
 from os.path import exists, expanduser
@@ -281,7 +281,7 @@ def timeout( seconds ):
 
 
 def timeout_handler( signum, frame ):
-    raise Exception
+    raise TimeoutException( Exception )
 
 
 
@@ -449,7 +449,7 @@ if __name__ == '__main__':
                     timeout( TIMEOUT_TIME )
                     info = get_info_for( links[ index ] )
                     timeout( 0 )
-                except Exception:
+                except TimeoutException:
                     write_log_file( s[ 'con-tmout' ], True )
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
@@ -479,6 +479,8 @@ if __name__ == '__main__':
                             title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
                         body = str( info[0] )
+
+                        print( IMAGE_PATH + pictures[ index ] )
 
 
                         notify( title, body, IMAGE_PATH + pictures[ index ] )

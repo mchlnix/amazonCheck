@@ -6,16 +6,25 @@ from colors import RED, GREEN, NOCOLOR
 
 from pynotify import init, Notification
 from os.path import abspath
-from urllib import urlopen
+from urllib2 import Request, urlopen
 from time import strftime, time
 from sys import argv, exit
 from re import search
 from os import name
 
 
+class TimeoutException( Exception ):
+    pass
+
+
+
+USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
+
+
+
 def format_price( string ):
-    format_from = [ '\n', '\t', '  ', ',' ]
-    format_to = [ '', '', '', '.' ]
+    format_from = [ '\n', '\t', '  ', ',', '+' ]
+    format_to = [ '', '', '', '.', '' ]
 
     for index in range( 0, len( format_from ) ):
         string = string.replace( format_from[ index ], format_to[ index ] )
@@ -34,8 +43,8 @@ def format_price( string ):
 
 
 def format_title( string ):
-    format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;' ]
-    format_to = [ 'ä', 'Ä', 'Ä',  'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ß','ß', 'ß', '&', '\'', '\'' ]
+    format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\u00df', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;', '\0', '\u0000' ]
+    format_to = [ 'ä', 'Ä', 'Ä', 'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ss', 'ss', 'ss', 'ss', '&', '\'', '\'', '', '' ]
 
     for i in range( 0, len( format_from ) ):
         string = string.replace( format_from[ i ], format_to[ i ] )
@@ -125,7 +134,7 @@ def get_max_price( price_list ):
 
 def get_info_for( url ):
     try:
-        temp_file = urlopen( url ).read()
+        temp_file = urlopen( Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ) ).read()
 
     except IOError:
         return ( -1, -1, -1, -1 )
@@ -145,32 +154,40 @@ def get_info_for( url ):
 
 
     #Finding the price
-    price_pos = temp_file.find( '<b class="priceLarge">') + 22
+    price_pos = temp_file.find( '<span class="price">' ) + 20
 
-    if  price_pos != -1 + 22:
-        price = temp_file[ price_pos : temp_file.find( '</b>', price_pos ) ]
+    if  price_pos != -1 + 20:
+        price = temp_file[ price_pos : temp_file.find( '</span>', price_pos ) ]
 
     else:
         price = s[ 'N/A' ]
 
+    #Finding shipping
+    shipping_pos = temp_file.find( '<span class="price_shipping">', price_pos ) + 29
+
+    if  shipping_pos != -1 + 29:
+        shipping = temp_file[ shipping_pos : temp_file.find( '</span>', shipping_pos ) ]
+
+    else:
+        shipping = s[ 'N/A' ]
+
 
     #Formating price and currency
     ( price, currency ) = format_price( price )
-
+    ( shipping, unused ) = format_price( shipping )
 
     #Finding picture
-    pic_pos = temp_file.find( '<div class="main-image-inner-wrapper">' ) + 38
+    pic_pos = temp_file.find( '<div id="productheader">' ) + 24
 
-    if pic_pos != -1:
-        picture = temp_file[ pic_pos : temp_file.find( '</div>', pic_pos ) ]
+    if pic_pos != -1 + 24:
+        pic_pos = temp_file.find( '<img src="', pic_pos ) + 10
+        picture = temp_file[ pic_pos : temp_file.find( '"', pic_pos ) ]
 
-        url_pos = picture.find( 'src="' ) + 5
-        picture = picture[ url_pos : picture.find( '"', url_pos ) ]
     else:
         picture = ''
 
 
-    return ( title, currency, price, picture )
+    return ( title, currency, price + shipping, picture )
 
 
 
@@ -210,7 +227,7 @@ def send_notification( title, body, picture ):
             title = title.replace( color, '' )
             body = body.replace( color, '' )
 
-        Notification ( title, body, abspath( picture ) ).show()
+        Notification ( title, format_title( body ), abspath( picture ) ).show()
     else:
         return false
 
