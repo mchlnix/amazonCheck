@@ -58,7 +58,10 @@ strings = {
 'str-mn-lp' : 'Starting main loop',                                                                           #Log
 'str-prgm'  : 'Started Program',                                                                              #Log
 'strtg-run' : 'Starting run ',                                                                                #Number #Log+
+'us-def-op' : 'Using default options',                                                                        #Log
 'wrt-cf-fl' : 'Wrote to Config File at ',                                                                     #Log
+'cnf-no-pm' : 'You are not permitted access to the config file. See \'man chmod\' for more information.',     #Log
+'dat-no-pm' : 'You are not permitted access to the data file. See \'man chmod\' for more information.',       #Log
 'input-nan' : 'Your input was not interpreted.',                                                              #NaN
 #amazonCheckLib.py
 'date-frmt' : '[%d.%m.%y - %H:%M:%S]',                                                                        #Date Format

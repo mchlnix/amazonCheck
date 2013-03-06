@@ -173,7 +173,12 @@ def read_config_file():
 
         return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
-    config_file = open( CONFIG_FILE, 'r' )
+    try:
+        config_file = open( CONFIG_FILE, 'r' )
+    except IOError:
+        write_log_file( s[ 'cnf-no-pm' ], True )
+        write_log_file( s[ 'us-def-op' ], True )
+        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     options = loads( config_file.read() )
 
@@ -233,7 +238,11 @@ def read_data_file():
 
     write_log_file( s[ 'dat-fl-rd' ] )
 
-    data_file = open( DATA_FILE, 'r' )
+    try:
+        data_file = open( DATA_FILE, 'r' )
+    except IOError:
+        write_log_file( s[ 'dat-no-pm' ] )
+        exit( s[ 'dat-no-pm' ] )
 
     data = data_file.readlines()
 
