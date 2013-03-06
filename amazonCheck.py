@@ -88,8 +88,7 @@ def print_delete_menu():
         selection = int( selection )
     except ValueError:
         write_log_file( s[ 'slctn-nan' ] )
-        print( s[ 'input-nan' ] )
-        exit()
+        exit( s[ 'input-nan' ] )
 
     if selection == 0:
         exit()
@@ -97,8 +96,7 @@ def print_delete_menu():
     elif selection > len( titles ):
         pass
         write_log_file( s[ 'slctn-nir' ] )
-        print( s[ 'indx-nofd' ] )
-        exit()
+        exit( s[ 'indx-nofd' ] )
 
     else:
         selection -= 1
@@ -183,7 +181,8 @@ def read_config_file():
     try:
         options = loads( config_file.read() )
     except ValueError:
-        exit( 'Problem encoding the value' )                            #Translating
+        reset_config_file()
+        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -201,13 +200,9 @@ def read_config_file():
 
 def reset_config_file():
 
-    new_config_file = open( CONFIG_FILE, 'w' )
-
     options = [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
-    new_config_file.write( dumps( options ) )
-
-    new_config_file.close()
+    write_config_file( options )
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -269,7 +264,9 @@ def read_data_file():
         try:
             info = loads( data[ index ] )
         except ValueError:
-            exit( 'Problem encoding the value' )                        #Translating
+            print( 'Bad Json found.' )
+            continue
+            #exit( 'Problem encoding the value' )                        #Translating
 
         links.append( info[0] )
         titles.append( info[1] )
