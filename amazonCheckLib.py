@@ -143,13 +143,10 @@ def get_info_for( url ):
     #Finding the title
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
 
-    if title.find( ': Amazon' ) != -1:
-        title = format_title( title[ 0 : title.find( ': Amazon' ) ] )
 
-    elif title.find( 'Amazon.com: ' ) != -1:
-        title = format_title( title[ title.find( 'Amazon.com: ' ) + 12 : ] )
-    elif title.find( 'Amazon.de: ' ) != -1:
-        title = format_title( title[ title.find( 'Amazon.de: ' ) + 11 : ] )
+    #Shortening it
+    for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ' ]:
+        title.replace( string, '' )
 
 
     #Finding the price
