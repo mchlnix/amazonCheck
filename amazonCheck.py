@@ -5,6 +5,11 @@ from amazonCheckTrans import strings as s
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link, TimeoutException
 from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
+import pygtk
+pygtk.require( '2.0' )
+import gtk
+import gobject
+
 from os.path import exists, expanduser
 from signal import alarm, signal, SIGALRM
 from urllib import urlopen
@@ -42,6 +47,70 @@ CONFIG_VARS = 5
 open( LOG_FILE, 'w' ).close()
 
 
+
+class MainWindow:
+    def destroy( self, wigdet, data=None):
+        gtk.main_quit()
+
+    def __init__( self ):
+        #Setting up the Liststore
+        self.data_store = gtk.ListStore( bool, str, float, float, float, float, str )
+
+        #Setting up the TreeView
+        self.data_view = gtk.TreeView( self.data_store )
+
+        toggle_renderer = gtk.CellRendererToggle()
+        toggle_renderer.connect( 'toggled', self.toggle_handler )
+
+        text_renderer = gtk.CellRendererText()
+
+        self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,  active=0 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', text_renderer,    active=1 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    text_renderer,    active=2 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  text_renderer,    active=3 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  text_renderer,    active=4 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  text_renderer,    active=5 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    text_renderer,    active=6 ) )
+
+        #Setting up control buttons
+        self.add_button = gtk.Button( 'Add' )
+        self.delete_button = gtk.Button( 'Delete' )
+        self.op_mode_change_button = gtk.Button( 'Change' )
+
+        #Setting up the GUI boxes
+        self.outer_layer = gtk.VBox()
+        self.inner_layer = gtk.HBox()
+
+        #Setting up inner layer
+        self.inner_layer.pack_start( self.add_button )
+        self.inner_layer.pack_start( self.delete_button )
+        self.inner_layer.pack_start( self.op_mode_change_button )
+
+        #Setting up outer layer
+
+        self.outer_layer.pack_start( self.data_view )
+        self.outer_layer.pack_start( self.inner_layer )
+
+        #Setting up the main window
+        self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        self.window.connect( 'destroy', self.destroy )
+
+
+
+        self.window.add( self.outer_layer )
+        self.window.show_all()
+
+        #Setting up the data thread
+        self.data_refresher = gobject.timeout_add( 1, self.refresh_data )
+
+    def toggle_handler( self, widget, data=None ):
+        pass
+
+    def refresh_data():
+        pass
+
+    def main( self ):
+        gtk.main()
 
 def add_article( url ):
     data_file = open( DATA_FILE, 'a' )
@@ -464,109 +533,113 @@ if __name__ == '__main__':
 
         write_log_file( s[ 'str-mn-lp' ] )
 
-        while 1:
-            #Reading data
+        #while 1:
+            ##Reading data
 
-            ( links, titles, currencies, pictures, prices ) = read_data_file()
+            #( links, titles, currencies, pictures, prices ) = read_data_file()
 
-            if len( links ) == 0:
-                write_log_file( s[ 'dat-empty' ] )
-                exit( s[ 'dat-empty' ] )
+            #if len( links ) == 0:
+                #write_log_file( s[ 'dat-empty' ] )
+                #exit( s[ 'dat-empty' ] )
 
-            sleeptime = MIN_SLEEP_TIME
-            avgs = []
-            mins = []
-            maxs = []
-            progs = []
+            #sleeptime = MIN_SLEEP_TIME
+            #avgs = []
+            #mins = []
+            #maxs = []
+            #progs = []
 
-            runs = runs + 1
+            #runs = runs + 1
 
-            write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
+            #write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
 
-            #Getting the start time
+            ##Getting the start time
 
-            start_time = time()
+            #start_time = time()
 
-            #Updates the information
+            ##Updates the information
 
-            write_log_file( s[ 'getng-dat' ], True )
+            #write_log_file( s[ 'getng-dat' ], True )
 
-            for index in range( 0, len( links ) ):
+            #for index in range( 0, len( links ) ):
 
-                try:
-                    timeout( TIMEOUT_TIME )
-                    info = get_info_for( links[ index ] )
-                    timeout( 0 )
-                except TimeoutException:
-                    write_log_file( s[ 'con-tmout' ], True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
+                #try:
+                    #timeout( TIMEOUT_TIME )
+                    #info = get_info_for( links[ index ] )
+                    #timeout( 0 )
+                #except TimeoutException:
+                    #write_log_file( s[ 'con-tmout' ], True )
+                    #write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    #continue
 
-                if info == ( -1, -1, -1, -1 ):
-                    write_log_file( s[ 'err-con-s' ], True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
+                #if info == ( -1, -1, -1, -1 ):
+                    #write_log_file( s[ 'err-con-s' ], True )
+                    #write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    #continue
 
-                #titles[ index ] = info[0]
-                #currencies[ index ] = info[1]
+                ##titles[ index ] = info[0]
+                ##currencies[ index ] = info[1]
 
-                if info[2] == prices[ index ][-1][0]:
-                    pass
-                else:
-                    if UPDATES_ONLY:
-                        if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
-                            title = s[ 'bec-avail' ] + NOCOLOR + ':'
+                #if info[2] == prices[ index ][-1][0]:
+                    #pass
+                #else:
+                    #if UPDATES_ONLY:
+                        #if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                            #title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
-                        elif info[2] == s[ 'N/A' ]:
-                            title = s[ 'bec-unava' ] + NOCOLOR + ':'
+                        #elif info[2] == s[ 'N/A' ]:
+                            #title = s[ 'bec-unava' ] + NOCOLOR + ':'
 
-                        elif info[2] < prices[ index ][-1][0]:
-                            title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                        #elif info[2] < prices[ index ][-1][0]:
+                            #title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
-                        elif info[2] > prices[ index ][-1][0]:
-                            title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                        #elif info[2] > prices[ index ][-1][0]:
+                            #title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
-                        body = str( info[0] )
+                        #body = str( info[0] )
 
-                        notify( title, body, IMAGE_PATH + pictures[ index ] )
+                        #notify( title, body, IMAGE_PATH + pictures[ index ] )
 
-                        if VERBOSE:
-                            print_notification( title, body, '' )
+                        #if VERBOSE:
+                            #print_notification( title, body, '' )
 
-                    prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+                    #prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
 
 
-            #Saving data to file
+            ##Saving data to file
 
-            write_log_file( s[ 'svng-data' ], True )
+            #write_log_file( s[ 'svng-data' ], True )
 
-            write_data_file( links, titles, currencies, pictures, prices )
+            #write_data_file( links, titles, currencies, pictures, prices )
 
-            #Getting the time the operation finished
+            ##Getting the time the operation finished
 
-            end_time = time()
+            #end_time = time()
 
-            #Calculating the length of operating
+            ##Calculating the length of operating
 
-            diff_time = round( end_time - start_time, 2 )
+            #diff_time = round( end_time - start_time, 2 )
 
-            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
+            #write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
 
-            #Calculating sleeptime
+            ##Calculating sleeptime
 
-            if 2 * diff_time > MAX_SLEEP_TIME:
-                sleeptime = MAX_SLEEP_TIME
-            elif 2 * diff_time < MIN_SLEEP_TIME:
-                sleeptime = MIN_SLEEP_TIME
-            else:
-                sleeptime = 2 * diff_time
+            #if 2 * diff_time > MAX_SLEEP_TIME:
+                #sleeptime = MAX_SLEEP_TIME
+            #elif 2 * diff_time < MIN_SLEEP_TIME:
+                #sleeptime = MIN_SLEEP_TIME
+            #else:
+                #sleeptime = 2 * diff_time
 
-            #Sleeping for agreed amount
+            ##Sleeping for agreed amount
 
-            write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
+            #write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
 
-            sleep( sleeptime )
+            #sleep( sleeptime )
+
+
+        mywindow = MainWindow()
+        mywindow.main()
 
     except KeyboardInterrupt:
         write_log_file( s[ 'pg-hlt-us' ], True )
