@@ -9,6 +9,7 @@ import pygtk
 pygtk.require( '2.0' )
 import gtk
 import gobject
+from multiprocessing import Process
 
 from os.path import exists, expanduser
 from signal import alarm, signal, SIGALRM
@@ -52,9 +53,10 @@ class MainWindow:
     def destroy( self, wigdet, data=None):
         gtk.main_quit()
 
+
     def __init__( self ):
         #Setting up the Liststore
-        self.data_store = gtk.ListStore( bool, str, float, float, float, float, str )
+        self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
 
         #Setting up the TreeView
         self.data_view = gtk.TreeView( self.data_store )
@@ -65,12 +67,17 @@ class MainWindow:
         text_renderer = gtk.CellRendererText()
 
         self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,  active=0 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', text_renderer,    active=1 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    text_renderer,    active=2 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  text_renderer,    active=3 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  text_renderer,    active=4 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  text_renderer,    active=5 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    text_renderer,    active=6 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', text_renderer,    text=1 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    text_renderer,    text=2 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  text_renderer,    text=3 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  text_renderer,    text=4 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  text_renderer,    text=5 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    text_renderer,    text=6 ) )
+
+        #Fill the TreeView
+        ( links, titles, currencies, not_used, prices ) = read_data_file()
+
+        self.update_list_store( links, titles, currencies, prices )
 
         #Setting up control buttons
         self.add_button = gtk.Button( 'Add' )
@@ -82,32 +89,197 @@ class MainWindow:
         self.inner_layer = gtk.HBox()
 
         #Setting up inner layer
-        self.inner_layer.pack_start( self.add_button )
-        self.inner_layer.pack_start( self.delete_button )
-        self.inner_layer.pack_start( self.op_mode_change_button )
+        self.inner_layer.pack_start( self.add_button,            False, False, 5 )
+        self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
+        self.inner_layer.pack_start( self.op_mode_change_button, False, False, 5 )
 
         #Setting up outer layer
 
         self.outer_layer.pack_start( self.data_view )
-        self.outer_layer.pack_start( self.inner_layer )
+        self.outer_layer.pack_start( self.inner_layer, False, False, 5 )
 
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.connect( 'destroy', self.destroy )
 
-
-
         self.window.add( self.outer_layer )
         self.window.show_all()
 
         #Setting up the data thread
-        self.data_refresher = gobject.timeout_add( 1, self.refresh_data )
+        self.data_refresher = gobject.timeout_add( 5000, Process( None, self.refresh_data, None, [], {} ).start )
+
 
     def toggle_handler( self, widget, data=None ):
         pass
 
-    def refresh_data():
-        pass
+
+    def refresh_data( self ):
+        #Reading data
+        print( 'running' )
+
+        ( links, titles, currencies, pictures, prices ) = read_data_file()
+
+        if len( links ) == 0:
+            write_log_file( s[ 'dat-empty' ] )
+            exit( s[ 'dat-empty' ] )
+
+        sleeptime = MIN_SLEEP_TIME
+        avgs = []
+        mins = []
+        maxs = []
+        progs = []
+
+        #runs = runs + 1
+
+        write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
+
+        #Getting the start time
+
+        start_time = time()
+
+        #Updates the information
+
+        write_log_file( s[ 'getng-dat' ], True )
+
+        for index in range( 0, len( links ) ):
+
+            try:
+                timeout( TIMEOUT_TIME )
+                info = get_info_for( links[ index ] )
+                timeout( 0 )
+            except TimeoutException:
+                write_log_file( s[ 'con-tmout' ], True )
+                write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                continue
+
+            if info == ( -1, -1, -1, -1 ):
+                write_log_file( s[ 'err-con-s' ], True )
+                write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                continue
+
+            #titles[ index ] = info[0]
+            #currencies[ index ] = info[1]
+
+            if info[2] == prices[ index ][-1][0]:
+                pass
+            else:
+                if UPDATES_ONLY:
+                    if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                        title = s[ 'bec-avail' ] + NOCOLOR + ':'
+
+                    elif info[2] == s[ 'N/A' ]:
+                        title = s[ 'bec-unava' ] + NOCOLOR + ':'
+
+                    elif info[2] < prices[ index ][-1][0]:
+                        title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                    elif info[2] > prices[ index ][-1][0]:
+                        title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                    body = str( info[0] )
+
+                    notify( title, body, IMAGE_PATH + pictures[ index ] )
+
+                    if VERBOSE:
+                        print_notification( title, body, '' )
+
+                prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+
+        #Saving data to file
+
+        self.update_list_store( links, titles, currencies, prices )
+
+        write_log_file( s[ 'svng-data' ], True )
+
+        write_data_file( links, titles, currencies, pictures, prices )
+
+        #Getting the time the operation finished
+
+        end_time = time()
+
+        #Calculating the length of operating
+
+        diff_time = round( end_time - start_time, 2 )
+
+        write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
+
+        #Calculating sleeptime
+
+        if 2 * diff_time > MAX_SLEEP_TIME:
+            sleeptime = MAX_SLEEP_TIME
+        elif 2 * diff_time < MIN_SLEEP_TIME:
+            sleeptime = MIN_SLEEP_TIME
+        else:
+            sleeptime = 2 * diff_time
+
+        #Sleeping for agreed amount
+
+        write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
+
+        #sleep( sleeptime )
+
+        return True
+
+
+    def update_list_store( self, links, titles, currencies, prices ):
+        #print( BOLD_WHITE + s[ 'show-head' ] + NOCOLOR )
+#
+        #color_min = GREEN
+        #color_max = RED
+        #color_avg = YELLOW
+#
+        #color_plain = NOCOLOR
+#
+        #color_price = NOCOLOR
+#
+        #print( '' )
+
+        for index in range( 0, len( titles ) ):
+            price = prices[ index ][-1][0]
+
+            if len( prices[ index ] ) == 1:
+                avgs = prices[ index ][0][0]
+                mins = prices[ index ][0][0]
+                maxs = prices[ index ][0][0]
+                #progs = prices
+            else:
+                avgs = get_avg_price( prices[ index ] )
+                if avgs == -1: avgs = s[ 'N/A' ]
+                mins = get_min_price( prices[ index ] )
+                if mins == -1: mins = s[ 'N/A' ]
+                maxs = get_max_price( prices[ index ] )
+                if maxs == -1: maxs = s[ 'N/A' ]
+                #progs.append( get_prognosis( prices[ index ] ) )
+
+            try:
+                self.data_store[ index ][2] = price
+                self.data_store[ index ][3] = mins
+                self.data_store[ index ][4] = avgs
+                self.data_store[ index ][5] = maxs
+            except IndexError:
+                self.data_store.append( [ False, currencies[ index ], price, mins, avgs, maxs, titles[ index ] ] )
+
+
+
+
+            #if maxs == mins:
+                #color_price = NOCOLOR
+#
+            #elif price == mins:
+                #color_price = BLUE
+#
+            #elif price > avgs:
+                #color_price = RED
+#
+            #elif price < avgs:
+                #color_price = GREEN
+
+
+
+            #print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
+#
+        #print( '' )
+
 
     def main( self ):
         gtk.main()
@@ -181,54 +353,6 @@ def print_delete_menu():
 
         print( s[ 'add-succs' ] )
         exit()
-
-
-
-def print_result( titles, currencies, prices ):
-    print( BOLD_WHITE + s[ 'show-head' ] + NOCOLOR )
-
-    color_min = GREEN
-    color_max = RED
-    color_avg = YELLOW
-
-    color_plain = NOCOLOR
-
-    color_price = NOCOLOR
-
-    print( '' )
-
-    for index in range( 0, len( titles ) ):
-        price = prices[ index ][-1][0]
-
-        if len( prices[ index ] ) == 1:
-            avgs = prices[ index ][0][0]
-            mins = prices[ index ][0][0]
-            maxs = prices[ index ][0][0]
-            #progs = prices
-        else:
-            avgs = get_avg_price( prices[ index ] )
-            if avgs == -1: avgs = s[ 'N/A' ]
-            mins = get_min_price( prices[ index ] )
-            if mins == -1: mins = s[ 'N/A' ]
-            maxs = get_max_price( prices[ index ] )
-            if maxs == -1: maxs = s[ 'N/A' ]
-            #progs.append( get_prognosis( prices[ index ] ) )
-
-        if maxs == mins:
-            color_price = NOCOLOR
-
-        elif price == mins:
-            color_price = BLUE
-
-        elif price > avgs:
-            color_price = RED
-
-        elif price < avgs:
-            color_price = GREEN
-
-        print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
-
-    print( '' )
 
 
 
@@ -532,111 +656,6 @@ if __name__ == '__main__':
     try:
 
         write_log_file( s[ 'str-mn-lp' ] )
-
-        #while 1:
-            ##Reading data
-
-            #( links, titles, currencies, pictures, prices ) = read_data_file()
-
-            #if len( links ) == 0:
-                #write_log_file( s[ 'dat-empty' ] )
-                #exit( s[ 'dat-empty' ] )
-
-            #sleeptime = MIN_SLEEP_TIME
-            #avgs = []
-            #mins = []
-            #maxs = []
-            #progs = []
-
-            #runs = runs + 1
-
-            #write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
-
-            ##Getting the start time
-
-            #start_time = time()
-
-            ##Updates the information
-
-            #write_log_file( s[ 'getng-dat' ], True )
-
-            #for index in range( 0, len( links ) ):
-
-                #try:
-                    #timeout( TIMEOUT_TIME )
-                    #info = get_info_for( links[ index ] )
-                    #timeout( 0 )
-                #except TimeoutException:
-                    #write_log_file( s[ 'con-tmout' ], True )
-                    #write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    #continue
-
-                #if info == ( -1, -1, -1, -1 ):
-                    #write_log_file( s[ 'err-con-s' ], True )
-                    #write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    #continue
-
-                ##titles[ index ] = info[0]
-                ##currencies[ index ] = info[1]
-
-                #if info[2] == prices[ index ][-1][0]:
-                    #pass
-                #else:
-                    #if UPDATES_ONLY:
-                        #if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
-                            #title = s[ 'bec-avail' ] + NOCOLOR + ':'
-
-                        #elif info[2] == s[ 'N/A' ]:
-                            #title = s[ 'bec-unava' ] + NOCOLOR + ':'
-
-                        #elif info[2] < prices[ index ][-1][0]:
-                            #title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                        #elif info[2] > prices[ index ][-1][0]:
-                            #title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                        #body = str( info[0] )
-
-                        #notify( title, body, IMAGE_PATH + pictures[ index ] )
-
-                        #if VERBOSE:
-                            #print_notification( title, body, '' )
-
-                    #prices[ index ].append( [ info[2], int( round( time() ) ) ] )
-
-
-
-            ##Saving data to file
-
-            #write_log_file( s[ 'svng-data' ], True )
-
-            #write_data_file( links, titles, currencies, pictures, prices )
-
-            ##Getting the time the operation finished
-
-            #end_time = time()
-
-            ##Calculating the length of operating
-
-            #diff_time = round( end_time - start_time, 2 )
-
-            #write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
-
-            ##Calculating sleeptime
-
-            #if 2 * diff_time > MAX_SLEEP_TIME:
-                #sleeptime = MAX_SLEEP_TIME
-            #elif 2 * diff_time < MIN_SLEEP_TIME:
-                #sleeptime = MIN_SLEEP_TIME
-            #else:
-                #sleeptime = 2 * diff_time
-
-            ##Sleeping for agreed amount
-
-            #write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
-
-            #sleep( sleeptime )
-
 
         mywindow = MainWindow()
         mywindow.main()
