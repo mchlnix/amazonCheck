@@ -10,6 +10,8 @@ pygtk.require( '2.0' )
 import gtk
 import gobject
 from multiprocessing import Process
+import threading
+import thread
 
 from os.path import exists, expanduser
 from signal import alarm, signal, SIGALRM
@@ -20,6 +22,8 @@ from sys import argv, exit
 from re import search
 from os import name
 
+
+gobject.threads_init()
 
 
 if name == 'nt':
@@ -35,13 +39,15 @@ LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
 
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
-SILENT = True
+SILENT = False
 UPDATES_ONLY = False
-VERBOSE = False
+VERBOSE = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
 TIMEOUT_TIME = 15
+
+SLEEP_TIME = 2
 
 CONFIG_VARS = 5
 
@@ -49,9 +55,151 @@ open( LOG_FILE, 'w' ).close()
 
 
 
+def timeout( seconds ):
+    alarm( seconds )
+
+
+def timeout_handler( signum, frame ):
+    raise TimeoutException( Exception )
+
+
+class RefreshThread( threading.Thread ):
+
+    def __init__( self, wind_obj ):
+        self.stop_flag = False
+        self.wind_obj = wind_obj
+        threading.Thread.__init__(self)
+
+
+    def stop( self ):
+        self.stop_flag = True
+
+    def run( self ):
+        global SLEEP_TIME, VERBOSE, SILENT
+
+        print( 'Refresh-Thread is running' )
+        print( 'Sleeptime: ' + str( SLEEP_TIME ) )
+        print( 'Derp' )
+
+        runs = 0
+
+        while not self.stop_flag:
+
+            #Reading data
+            print( 'Reading data' )
+
+            ( links, titles, currencies, pictures, prices ) = read_data_file()
+
+            start_time = time()
+
+            if len( links ) == 0:
+                write_log_file( s[ 'dat-empty' ] )
+                exit( s[ 'dat-empty' ] )
+
+            runs = runs + 1
+
+            write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
+
+            #Updates the information
+
+            write_log_file( s[ 'getng-dat' ], True )
+
+            for index in range( 0, len( links ) ):
+                if self.stop_flag:
+                    print( 'Refresh-Thread was stopped - For loop' )
+                    return
+
+                try:
+                    timeout( TIMEOUT_TIME )
+                    info = get_info_for( links[ index ] )
+                    timeout( 0 )
+                except TimeoutException:
+                    write_log_file( s[ 'con-tmout' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
+
+                if info == ( -1, -1, -1, -1 ):
+                    write_log_file( s[ 'err-con-s' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
+
+                if info[2] == prices[ index ][-1][0]:
+                    pass
+                else:
+                    if UPDATES_ONLY:
+                        if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                            title = s[ 'bec-avail' ] + NOCOLOR + ':'
+
+                        elif info[2] == s[ 'N/A' ]:
+                            title = s[ 'bec-unava' ] + NOCOLOR + ':'
+
+                        elif info[2] < prices[ index ][-1][0]:
+                            title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                        elif info[2] > prices[ index ][-1][0]:
+                            title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                        body = str( info[0] )
+
+                        try:
+                            notify( title, body, IMAGE_PATH + pictures[ index ] )
+
+                            if VERBOSE:
+                                print_notification( title, body, '' )
+                        except:
+                            print_notification( title, body, '' )
+
+                    prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+
+            end_time = time()
+
+            #Calculating the length of operating
+
+            diff_time = round( end_time - start_time, 2 )
+
+            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
+
+            #Calculating sleeptime
+
+            if 2 * diff_time > MAX_SLEEP_TIME:
+                SLEEP_TIME = MAX_SLEEP_TIME
+            elif 2 * diff_time < MIN_SLEEP_TIME:
+                SLEEP_TIME = MIN_SLEEP_TIME
+            else:
+                SLEEP_TIME = 2 * diff_time
+
+            #Sleeping for agreed amount
+
+            write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ], True )
+
+            #Saving data to file
+
+            write_log_file( s[ 'svng-data' ], True )
+
+            gobject.idle_add( self.wind_obj.update_list_store )
+            write_data_file( links, titles, currencies, pictures, prices )
+
+            if self.stop_flag:
+                print( 'Refresh-Thread was stopped - Sleep' )
+                return
+
+            print( 'Sleeping' )
+
+            for i in range( 0, 10 * SLEEP_TIME ):
+                if not self.stop_flag:
+                    sleep( 1/10. )
+                else:
+                    print( 'Stopped, while sleeping' )
+                    return
+
+        print( 'Refresh-Thread was stopped - While' )
+
+
 class MainWindow:
     def destroy( self, wigdet, data=None):
+        self.refresh_thread.stop()
         gtk.main_quit()
+        self.refresh_thread.join()
 
 
     def __init__( self ):
@@ -64,39 +212,62 @@ class MainWindow:
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.connect( 'toggled', self.toggle_handler )
 
+        price_renderer = gtk.CellRendererText()
         text_renderer = gtk.CellRendererText()
+        min_renderer = gtk.CellRendererText()
+        avg_renderer = gtk.CellRendererText()
+        max_renderer = gtk.CellRendererText()
+
+        min_renderer.set_property( 'foreground', '#27B81F' )
+        avg_renderer.set_property( 'foreground', '#FCCA00' )
+        max_renderer.set_property( 'foreground', '#FF3D3D' )
 
         self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,  active=0 ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Currency', text_renderer,    text=1 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    text_renderer,    text=2 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  text_renderer,    text=3 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  text_renderer,    text=4 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  text_renderer,    text=5 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    price_renderer,   markup=2 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,     text=3 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,     text=4 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,     text=5 ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Title',    text_renderer,    text=6 ) )
 
         #Fill the TreeView
         ( links, titles, currencies, not_used, prices ) = read_data_file()
 
-        self.update_list_store( links, titles, currencies, prices )
+        self.update_list_store()
+
+        #Setting up text box for add_article
+        self.add_text_box = gtk.Entry( 0 )
 
         #Setting up control buttons
         self.add_button = gtk.Button( 'Add' )
+        self.add_button.connect( 'clicked', self.add_article )
+
         self.delete_button = gtk.Button( 'Delete' )
-        self.op_mode_change_button = gtk.Button( 'Change' )
+        self.delete_button.connect( 'clicked', self.delete_selection )
+
+        self.op_mode_change_button = gtk.Button()
+
+        if VERBOSE:
+            self.op_mode_change_button.set_label( 'Verbose' )
+        elif SILENT:
+            self.op_mode_change_button.set_label( 'Silent' )
+
+        self.op_mode_change_button.connect( 'clicked', self.change_op_mode )
 
         #Setting up the GUI boxes
         self.outer_layer = gtk.VBox()
         self.inner_layer = gtk.HBox()
 
         #Setting up inner layer
-        self.inner_layer.pack_start( self.add_button,            False, False, 5 )
         self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
         self.inner_layer.pack_start( self.op_mode_change_button, False, False, 5 )
+        self.inner_layer.pack_start( self.add_button,            False, False, 5 )
+        self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
 
         #Setting up outer layer
 
         self.outer_layer.pack_start( self.data_view )
-        self.outer_layer.pack_start( self.inner_layer, False, False, 5 )
+        self.outer_layer.pack_start( self.inner_layer,           False, False, 5 )
 
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
@@ -105,134 +276,103 @@ class MainWindow:
         self.window.add( self.outer_layer )
         self.window.show_all()
 
-        #Setting up the data thread
-        self.data_refresher = gobject.timeout_add( 5000, Process( None, self.refresh_data, None, [], {} ).start )
+        #Hide text box
+        self.add_text_box.hide()
+
+        #Setting up refresh thread
+        self.refresh_thread = RefreshThread( self )
 
 
-    def toggle_handler( self, widget, data=None ):
-        pass
+    def change_op_mode( self, widget ):
+        global VERBOSE
+        global SILENT
+
+        if VERBOSE:
+            self.op_mode_change_button.set_label( 'Silent' )
+        if SILENT:
+            self.op_mode_change_button.set_label( 'Verbose' )
+
+        VERBOSE = not VERBOSE
+        SILENT = not SILENT
 
 
-    def refresh_data( self ):
-        #Reading data
-        print( 'running' )
+    def add_article( self, widget ):
 
+        self.refresh_thread.stop()
+
+        self.add_text_box.set_visible( not self.add_text_box.get_visible() )
+
+        if self.add_text_box.get_visible():
+            self.start_thread()
+            return
+
+        url = shorten_amazon_link( self.add_text_box.get_text() )
+
+        data_file = open( DATA_FILE, 'a' )
+
+        ( title, currency, price, pic_url ) = get_info_for( url )
+
+        if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
+            print( 'Site couldn\'t be decoded' )
+            self.start_thread()
+            return False
+
+        pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
+
+        open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
+
+        try:
+            data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
+        except UnicodeDecodeError:
+            data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
+
+        data_file.close()
+
+        self.update_list_store()
+
+        self.start_thread()
+
+
+    def start_thread( self ):
+        self.refresh_thread = RefreshThread( self )
+        self.refresh_thread.start()
+
+
+
+    def toggle_handler( self, widget, path ):
+        self.data_store[path][0] = not self.data_store[path][0]
+
+
+    def delete_selection( self, widget ):
+
+        self.refresh_thread.stop()
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
-        if len( links ) == 0:
-            write_log_file( s[ 'dat-empty' ] )
-            exit( s[ 'dat-empty' ] )
+        tree_length = len( self.data_store )
 
-        sleeptime = MIN_SLEEP_TIME
-        avgs = []
-        mins = []
-        maxs = []
-        progs = []
-
-        #runs = runs + 1
-
-        write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
-
-        #Getting the start time
-
-        start_time = time()
-
-        #Updates the information
-
-        write_log_file( s[ 'getng-dat' ], True )
-
-        for index in range( 0, len( links ) ):
-
-            try:
-                timeout( TIMEOUT_TIME )
-                info = get_info_for( links[ index ] )
-                timeout( 0 )
-            except TimeoutException:
-                write_log_file( s[ 'con-tmout' ], True )
-                write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                continue
-
-            if info == ( -1, -1, -1, -1 ):
-                write_log_file( s[ 'err-con-s' ], True )
-                write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                continue
-
-            #titles[ index ] = info[0]
-            #currencies[ index ] = info[1]
-
-            if info[2] == prices[ index ][-1][0]:
-                pass
-            else:
-                if UPDATES_ONLY:
-                    if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
-                        title = s[ 'bec-avail' ] + NOCOLOR + ':'
-
-                    elif info[2] == s[ 'N/A' ]:
-                        title = s[ 'bec-unava' ] + NOCOLOR + ':'
-
-                    elif info[2] < prices[ index ][-1][0]:
-                        title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                    elif info[2] > prices[ index ][-1][0]:
-                        title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                    body = str( info[0] )
-
-                    notify( title, body, IMAGE_PATH + pictures[ index ] )
-
-                    if VERBOSE:
-                        print_notification( title, body, '' )
-
-                prices[ index ].append( [ info[2], int( round( time() ) ) ] )
-
-        #Saving data to file
-
-        self.update_list_store( links, titles, currencies, prices )
-
-        write_log_file( s[ 'svng-data' ], True )
-
-        write_data_file( links, titles, currencies, pictures, prices )
-
-        #Getting the time the operation finished
-
-        end_time = time()
-
-        #Calculating the length of operating
-
-        diff_time = round( end_time - start_time, 2 )
-
-        write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
-
-        #Calculating sleeptime
-
-        if 2 * diff_time > MAX_SLEEP_TIME:
-            sleeptime = MAX_SLEEP_TIME
-        elif 2 * diff_time < MIN_SLEEP_TIME:
-            sleeptime = MIN_SLEEP_TIME
-        else:
-            sleeptime = 2 * diff_time
-
-        #Sleeping for agreed amount
-
-        write_log_file( s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ], True )
-
-        #sleep( sleeptime )
-
-        return True
+        for index in range( 0, tree_length ):
+            index = tree_length - 1 - index
+            if self.data_store[ index ][0] == True:
 
 
-    def update_list_store( self, links, titles, currencies, prices ):
-        #print( BOLD_WHITE + s[ 'show-head' ] + NOCOLOR )
-#
-        #color_min = GREEN
-        #color_max = RED
-        #color_avg = YELLOW
-#
-        #color_plain = NOCOLOR
-#
-        #color_price = NOCOLOR
-#
-        #print( '' )
+                links.pop( index )
+                titles.pop( index )
+                currencies.pop( index )
+                pictures.pop( index )
+                prices.pop( index )
+
+                self.data_store.remove( self.data_store.get_iter( index ) )
+
+                write_data_file( links, titles, currencies, pictures, prices )
+
+        self.start_thread()
+
+
+    def update_list_store( self ):
+
+        print( 'Update' )
+
+        ( links, titles, currencies, pictures, prices ) = read_data_file()
 
         for index in range( 0, len( titles ) ):
             price = prices[ index ][-1][0]
@@ -251,233 +391,37 @@ class MainWindow:
                 if maxs == -1: maxs = s[ 'N/A' ]
                 #progs.append( get_prognosis( prices[ index ] ) )
 
+            if maxs == mins:
+                color = '#000000'
+
+            elif price == mins:
+                color = '#0000C7'
+
+            elif price > avgs:
+                color = '#FF3D3D'
+
+            elif price < avgs:
+                color = '#27B81F'
+
+            elif price == avgs:
+                color = '#FCCA00'
+
             try:
-                self.data_store[ index ][2] = price
+                self.data_store[ index ][2] = '<span foreground="' + color + '">' + str( price ) + '</span>'
                 self.data_store[ index ][3] = mins
                 self.data_store[ index ][4] = avgs
                 self.data_store[ index ][5] = maxs
             except IndexError:
-                self.data_store.append( [ False, currencies[ index ], price, mins, avgs, maxs, titles[ index ] ] )
-
-
-
-
-            #if maxs == mins:
-                #color_price = NOCOLOR
-#
-            #elif price == mins:
-                #color_price = BLUE
-#
-            #elif price > avgs:
-                #color_price = RED
-#
-            #elif price < avgs:
-                #color_price = GREEN
-
-
-
-            #print( str( currencies[ index ] ) + '\t' + color_price + str( price ) + '\t' + color_min + str( mins ) + '\t' + color_avg + str( avgs ) + '\t' + color_max + str( maxs ) + '\t' + color_plain + titles[ index ] )
-#
-        #print( '' )
+                self.data_store.append( [ False, currencies[ index ], '<span foreground="' + color + '">' + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
 
     def main( self ):
+        print( 'Main' )
+
+        #Starting the data thread
+        self.start_thread()
+
         gtk.main()
-
-def add_article( url ):
-    data_file = open( DATA_FILE, 'a' )
-    ( title, currency, price, pic_url ) = get_info_for( url )
-
-    if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
-        write_log_file( s[ 'err-conec' ], True )
-        write_log_file( s[ 'prgm-term' ], True )
-        write_log_file( s[ 'dashes' ] )
-        data_file.close()
-        exit( s[ 'no-conect' ] )
-
-    pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
-
-    open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
-
-    try:
-        data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
-    except UnicodeDecodeError:
-        data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
-
-    data_file.close()
-
-
-
-def print_delete_menu():
-
-    write_log_file( s[ 'del-mn-cl' ] )
-
-    ( links, titles, currencies, pictures, prices ) = read_data_file()
-
-    selection = 0
-
-    print( '' )
-
-    for index in range(0, len( titles ) ):
-        print( str( index + 1 ) + '\t' + currencies[ index ] + '\t' + str( prices[ index ][-1][0] ) + '\t' + titles[ index ] )
-
-    print( '' )
-    print( s[ 'del-selct' ] ),
-    selection = raw_input()
-
-    try:
-        selection = int( selection )
-    except ValueError:
-        write_log_file( s[ 'slctn-nan' ] )
-        exit( s[ 'input-nan' ] )
-
-    if selection == 0:
-        exit()
-
-    elif selection > len( titles ):
-        pass
-        write_log_file( s[ 'slctn-nir' ] )
-        exit( s[ 'indx-nofd' ] )
-
-    else:
-        selection -= 1
-        links.pop( selection )
-        titles.pop( selection )
-        currencies.pop( selection )
-        pictures.pop( selection )
-        prices.pop( selection )
-
-        write_data_file( links, titles, currencies, pictures, prices )
-
-        write_log_file( s[ 'add-succs' ] )
-
-        print( s[ 'add-succs' ] )
-        exit()
-
-
-
-def process_arguments( argv ):
-    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
-
-    add_activated = False
-    operation_mode = False
-    write_config = False
-
-    for argument in argv:
-        write_log_file( s[ 'prgm-clld' ] + ' \'' + argument + '\'' )
-
-        #Add articles
-        if argument == 'add' or argument == '-a' or argument == '--add':
-            add_activated = True
-            continue
-
-        if argument.find( 'amazon' ) != -1 and add_activated:
-            url = shorten_amazon_link( argument )
-            write_log_file( s[ 'add-artcl' ] + url )
-            add_article( url )
-            continue
-
-        #Determine operation mode
-        if argument == 'delete' or argument == '-d' or argument == '--delete':
-            operation_mode = 'delete_mode'
-            continue
-
-        if argument == 'show' or argument == '--show':
-            operation_mode = 'show_mode'
-            continue
-
-        if argument == 'help' or argument == '-h' or argument == '--help':
-            operation_mode = 'help_mode'
-            continue
-
-        #Determine output mode
-        if argument == '-s' or argument == '--silent':
-
-            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( True, False, False )
-
-            write_config = True
-            write_log_file( s[ 'ch-silent' ], True )
-            continue
-
-        if argument == '-v' or argument == '--verbose':
-
-            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( False, True, True )
-
-            write_config = True
-            write_log_file( s[ 'ch-verbos' ], True )
-            continue
-
-        if argument == '-u' or argument == '--updates_only':
-
-            ( SILENT, VERBOSE, UPDATES_ONLY ) = ( False, False, True )
-
-            write_config = True
-            write_log_file( s[ 'ch-updonl' ], True )
-            continue
-
-        #Determine sleep times
-        if argument.find( '--min_sleep=' ) != -1:
-            try:
-                MIN_SLEEP_TIME = int( argument[ 12 : ] )
-
-                write_config = True
-                write_log_file( s[ 'ch-mn-slp' ] + str( MIN_SLEEP_TIME ), True )
-            except ValueError:
-                write_log_file( s[ 'mn-slpnan' ], True )
-
-            continue
-
-        if argument.find( '--max_sleep=' ) != -1:
-            try:
-                MAX_SLEEP_TIME = int( argument[ 12 : ] )
-
-                write_config = True
-                write_log_file( s[ 'ch-mx-slp' ] + str( MAX_SLEEP_TIME ), True )
-            except ValueError:
-                write_log_file( s[ 'mx-slpnan' ], True )
-
-            continue
-
-        #Illegal Argument
-        write_log_file( s[ 'ill-argmt' ] + '\'' + argument + '\'', True )
-        continue
-
-    #Write config file if necessary
-    if write_config:
-        write_config_file( [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
-
-    #Act on operation mode ( or not )
-    if operation_mode == 'delete_mode':
-        write_log_file( s[ 'sh-del-mn' ] )
-
-        print_delete_menu()
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-    if operation_mode == 'show_mode':
-        ( not_used, titles, currencies, not_used, prices ) = read_data_file()
-
-        write_log_file( s[ 'sh-art-ls'] )
-
-        print_result( titles, currencies, prices )
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-    if operation_mode == 'help_mode':
-        write_log_file( s[ 'sh-hlp-mn' ] )
-
-        print_help_text()
-
-        write_log_file( s[ 'pg-hlt-op' ] )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-
-    if operation_mode == False and add_activated == False:
-        return
 
 
 
@@ -595,16 +539,6 @@ def read_data_file():
 
 
 
-def timeout( seconds ):
-    alarm( seconds )
-
-
-
-def timeout_handler( signum, frame ):
-    raise TimeoutException( Exception )
-
-
-
 def write_data_file( links, titles, currencies, pictures, prices ):
     try:
         data_file = open( DATA_FILE, 'w' )
@@ -647,26 +581,20 @@ if __name__ == '__main__':
 
     signal( SIGALRM, timeout_handler )
 
-    runs = 0
-
-    process_arguments( argv )
-
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
-    try:
+    write_log_file( s[ 'str-mn-lp' ] )
 
-        write_log_file( s[ 'str-mn-lp' ] )
+    mywindow = MainWindow()
+    mywindow.main()
 
-        mywindow = MainWindow()
-        mywindow.main()
-
-    except KeyboardInterrupt:
-        write_log_file( s[ 'pg-hlt-us' ], True )
-        write_log_file( s[ 'exit-norm' ], True )
-        write_log_file( s[ 'dashes' ] )
-        exit(0)
-    #except:
-        #write_log_file( 'Something went wrong' )
-        #write_log_file( 'Exited abnormally' )
-        #exit(1)
+#except KeyboardInterrupt:
+    #write_log_file( s[ 'pg-hlt-us' ], True )
+    #write_log_file( s[ 'exit-norm' ], True )
+    #write_log_file( s[ 'dashes' ] )
+    #exit(0)
+#except:
+    #write_log_file( 'Something went wrong' )
+    #write_log_file( 'Exited abnormally' )
+    #exit(1)
 

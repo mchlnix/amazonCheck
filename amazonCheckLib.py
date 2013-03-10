@@ -139,6 +139,9 @@ def get_info_for( url ):
     except IOError:
         return ( -1, -1, -1, -1 )
 
+    except ValueError:
+        return ( -1, -1, -1, -1 )
+
 
     #Finding the title
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
@@ -146,7 +149,7 @@ def get_info_for( url ):
 
     #Shortening it
     for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ' ]:
-        title.replace( string, '' )
+        title = title.replace( string, '' )
 
 
     #Finding the price
@@ -165,7 +168,7 @@ def get_info_for( url ):
         shipping = temp_file[ shipping_pos : temp_file.find( '</span>', shipping_pos ) ]
 
     else:
-        shipping = s[ 'N/A' ]
+        shipping = '0.00'
 
 
     #Formating price and currency
