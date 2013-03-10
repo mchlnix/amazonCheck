@@ -33,7 +33,6 @@ else:
     IMAGE_WRITE_MODE = 'w'
 
 
-
 CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
 DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
 LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
@@ -70,7 +69,7 @@ class RefreshThread( threading.Thread ):
     def run( self ):
         global SLEEP_TIME, VERBOSE, SILENT
 
-        write_log_file( 'Refresh Thread started', True )
+        write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' started', True )
 
         runs = 0
 
@@ -86,7 +85,7 @@ class RefreshThread( threading.Thread ):
 
             runs = runs + 1
 
-            write_log_file( s[ 'strtg-run' ] + str( runs ) + ':', True )
+            write_log_file( 'Thread ' + str( threading.active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':', True )
 
             #Updates the information
 
@@ -94,7 +93,7 @@ class RefreshThread( threading.Thread ):
 
             for index in range( 0, len( links ) ):
                 if self.stop_flag:
-                    write_log_file( 'Refresh Thread halted', True )
+                    write_log_file( 'Halted Refresh Thread ' + str( threading.active_count() - 1 ), True )
                     return
 
                 info = get_info_for( links[ index ] )
@@ -140,6 +139,14 @@ class RefreshThread( threading.Thread ):
 
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
+            #Saving data to file
+
+            write_log_file( s[ 'svng-data' ], True )
+
+            write_data_file( links, titles, currencies, pictures, prices )
+
+            #End time
+
             end_time = time()
 
             #Calculating the length of operating
@@ -161,33 +168,27 @@ class RefreshThread( threading.Thread ):
 
             write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ], True )
 
-            #Saving data to file
-
-            write_log_file( s[ 'svng-data' ], True )
-
             gobject.idle_add( self.wind_obj.update_list_store )
 
-            write_data_file( links, titles, currencies, pictures, prices )
-
             if self.stop_flag:
-                write_log_file( 'Refresh Thread was halted while sleeping', True )
+                write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' was halted before sleeping', True )
                 return
 
             for i in range( 0, 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    write_log_file( 'Refresh Thread was halted while sleeping', True )
+                    write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' was halted while sleeping', True )
                     return
 
-        print( 'Refresh-Thread was stopped' )
+        print( 'Refresh-Thread ' + str( threading.active_count() - 1 ) + ' was stopped' )
 
 
 class MainWindow:
     def destroy( self, wigdet, data=None):
         self.refresh_thread.stop()
-        gtk.main_quit()
         self.refresh_thread.join()
+        gtk.main_quit()
 
 
     def __init__( self ):
@@ -243,6 +244,11 @@ class MainWindow:
         self.op_mode_change_button.connect( 'clicked', self.change_op_mode )
 
         #Setting up the GUI boxes
+
+        self.scroll = gtk.ScrolledWindow()
+        self.scroll.set_size_request( 640, 480 )
+        self.scroll.add( self.data_view )
+
         self.outer_layer = gtk.VBox()
         self.inner_layer = gtk.HBox()
 
@@ -254,7 +260,7 @@ class MainWindow:
 
         #Setting up outer layer
 
-        self.outer_layer.pack_start( self.data_view )
+        self.outer_layer.pack_start( self.scroll )
         self.outer_layer.pack_start( self.inner_layer,           False, False, 5 )
 
         #Setting up the main window
@@ -286,13 +292,13 @@ class MainWindow:
 
     def add_article( self, widget ):
 
-        self.refresh_thread.stop()
-
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
 
         if self.add_text_box.get_visible():
-            self.start_thread()
             return
+
+        self.refresh_thread.stop()
+        self.refresh_thread.join()
 
         url = shorten_amazon_link( self.add_text_box.get_text() )
 
@@ -302,17 +308,14 @@ class MainWindow:
 
         if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
             write_log_file( s[ 'err-con-s' ], True )
-            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
             self.start_thread()
             return False
         elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
             write_log_file( 'ValueError happened', True )
-            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
             self.start_thread()
             return False
         elif ( title, currency, price, pic_url ) == ( -3, -3, -3, -3 ):
             write_log_file( s[ 'con-tmout' ], True )
-            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
             self.start_thread()
             return False
 
@@ -326,6 +329,8 @@ class MainWindow:
             data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
         data_file.close()
+
+        self.add_text_box.set_text( '' )
 
         self.update_list_store()
 
@@ -345,6 +350,7 @@ class MainWindow:
     def delete_selection( self, widget ):
 
         self.refresh_thread.stop()
+        self.refresh_thread.join()
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
         tree_length = len( self.data_store )
@@ -369,7 +375,7 @@ class MainWindow:
 
     def update_list_store( self ):
 
-        write_log_file( 'Gui is updated', True )
+        write_log_file( 'Gui is updating', True )
 
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
@@ -391,40 +397,39 @@ class MainWindow:
                 #progs.append( get_prognosis( prices[ index ] ) )
 
             if maxs == mins:
-                color = '#000000'
+                color = '<span>'
 
             elif price == mins:
-                color = '#0000C7'
+                color = '<span foreground="#0000C7">'
 
             elif price > avgs:
-                color = '#FF3D3D'
+                color = '<span foreground="#FF3D3D">'
 
             elif price < avgs:
-                color = '#27B81F'
+                color = '<span foreground="#27B81F">'
 
             elif price == avgs:
-                color = '#FCCA00'
-
-            print( 'Before try' )
+                color = '<span foreground="#FCCA00">'
 
             try:
-                self.data_store[ index ][2] = '<span foreground="' + color + '">' + str( price ) + '</span>'
+                self.data_store[ index ][2] = color + str( price ) + '</span>'
                 self.data_store[ index ][3] = mins
                 self.data_store[ index ][4] = avgs
                 self.data_store[ index ][5] = maxs
             except IndexError:
-                print( 'Index Error' )
-                self.data_store.append( [ False, currencies[ index ], '<span foreground="' + color + '">' + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
+                self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
-        write_log_file( 'Gui updated' )
+        write_log_file( 'Gui updated', True )
 
 
     def main( self ):
         #Starting the data thread
         self.start_thread()
-
-        gtk.main()
-
+        try:
+            gtk.main()
+        except KeyboardInterrupt as k:
+            print( k.args )
+            print( k.message )
 
 
 def read_config_file():
