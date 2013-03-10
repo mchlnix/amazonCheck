@@ -23,6 +23,7 @@ from re import search
 from os import name
 
 
+gtk.gdk.threads_init()
 gobject.threads_init()
 
 
@@ -154,7 +155,7 @@ class RefreshThread( threading.Thread ):
             elif 2 * diff_time < MIN_SLEEP_TIME:
                 SLEEP_TIME = MIN_SLEEP_TIME
             else:
-                SLEEP_TIME = 2 * diff_time
+                SLEEP_TIME = int( 2 * diff_time )
 
             #Sleeping for agreed amount
 
@@ -165,6 +166,7 @@ class RefreshThread( threading.Thread ):
             write_log_file( s[ 'svng-data' ], True )
 
             gobject.idle_add( self.wind_obj.update_list_store )
+
             write_data_file( links, titles, currencies, pictures, prices )
 
             if self.stop_flag:
@@ -299,7 +301,18 @@ class MainWindow:
         ( title, currency, price, pic_url ) = get_info_for( url )
 
         if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
-            write_log_file( 'Site couldn\'t be decoded', True )
+            write_log_file( s[ 'err-con-s' ], True )
+            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+            self.start_thread()
+            return False
+        elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
+            write_log_file( 'ValueError happened', True )
+            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+            self.start_thread()
+            return False
+        elif ( title, currency, price, pic_url ) == ( -3, -3, -3, -3 ):
+            write_log_file( s[ 'con-tmout' ], True )
+            write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
             self.start_thread()
             return False
 
@@ -392,13 +405,18 @@ class MainWindow:
             elif price == avgs:
                 color = '#FCCA00'
 
+            print( 'Before try' )
+
             try:
                 self.data_store[ index ][2] = '<span foreground="' + color + '">' + str( price ) + '</span>'
                 self.data_store[ index ][3] = mins
                 self.data_store[ index ][4] = avgs
                 self.data_store[ index ][5] = maxs
             except IndexError:
+                print( 'Index Error' )
                 self.data_store.append( [ False, currencies[ index ], '<span foreground="' + color + '">' + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
+
+        write_log_file( 'Gui updated' )
 
 
     def main( self ):
