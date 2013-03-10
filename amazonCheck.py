@@ -54,15 +54,6 @@ CONFIG_VARS = 5
 open( LOG_FILE, 'w' ).close()
 
 
-
-def timeout( seconds ):
-    alarm( seconds )
-
-
-def timeout_handler( signum, frame ):
-    raise TimeoutException( Exception )
-
-
 class RefreshThread( threading.Thread ):
 
     def __init__( self, wind_obj ):
@@ -74,20 +65,16 @@ class RefreshThread( threading.Thread ):
     def stop( self ):
         self.stop_flag = True
 
+
     def run( self ):
         global SLEEP_TIME, VERBOSE, SILENT
 
-        print( 'Refresh-Thread is running' )
-        print( 'Sleeptime: ' + str( SLEEP_TIME ) )
-        print( 'Derp' )
+        write_log_file( 'Refresh Thread started', True )
 
         runs = 0
 
         while not self.stop_flag:
-
             #Reading data
-            print( 'Reading data' )
-
             ( links, titles, currencies, pictures, prices ) = read_data_file()
 
             start_time = time()
@@ -106,20 +93,21 @@ class RefreshThread( threading.Thread ):
 
             for index in range( 0, len( links ) ):
                 if self.stop_flag:
-                    print( 'Refresh-Thread was stopped - For loop' )
+                    write_log_file( 'Refresh Thread halted', True )
                     return
 
-                try:
-                    timeout( TIMEOUT_TIME )
-                    info = get_info_for( links[ index ] )
-                    timeout( 0 )
-                except TimeoutException:
-                    write_log_file( s[ 'con-tmout' ], True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
+                info = get_info_for( links[ index ] )
 
                 if info == ( -1, -1, -1, -1 ):
                     write_log_file( s[ 'err-con-s' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
+                elif info == ( -2, -2, -2, -2 ):
+                    write_log_file( s[ 'ValueError happened' ], True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
+                elif info == ( -3, -3, -3, -3 ):
+                    write_log_file( s[ 'con-tmout' ], True )
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
@@ -180,19 +168,17 @@ class RefreshThread( threading.Thread ):
             write_data_file( links, titles, currencies, pictures, prices )
 
             if self.stop_flag:
-                print( 'Refresh-Thread was stopped - Sleep' )
+                write_log_file( 'Refresh Thread was halted while sleeping', True )
                 return
-
-            print( 'Sleeping' )
 
             for i in range( 0, 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    print( 'Stopped, while sleeping' )
+                    write_log_file( 'Refresh Thread was halted while sleeping', True )
                     return
 
-        print( 'Refresh-Thread was stopped - While' )
+        print( 'Refresh-Thread was stopped' )
 
 
 class MainWindow:
@@ -313,7 +299,7 @@ class MainWindow:
         ( title, currency, price, pic_url ) = get_info_for( url )
 
         if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
-            print( 'Site couldn\'t be decoded' )
+            write_log_file( 'Site couldn\'t be decoded', True )
             self.start_thread()
             return False
 
@@ -370,7 +356,7 @@ class MainWindow:
 
     def update_list_store( self ):
 
-        print( 'Update' )
+        write_log_file( 'Gui is updated', True )
 
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
@@ -416,8 +402,6 @@ class MainWindow:
 
 
     def main( self ):
-        print( 'Main' )
-
         #Starting the data thread
         self.start_thread()
 
@@ -578,8 +562,6 @@ if __name__ == '__main__':
 
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
-
-    signal( SIGALRM, timeout_handler )
 
     [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
