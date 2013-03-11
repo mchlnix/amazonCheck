@@ -181,7 +181,7 @@ class RefreshThread( threading.Thread ):
                     write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' was halted while sleeping', True )
                     return
 
-        print( 'Refresh-Thread ' + str( threading.active_count() - 1 ) + ' was stopped' )
+        write_log_file( 'Refresh-Thread ' + str( threading.active_count() - 1 ) + ' was stopped' )
 
 
 class MainWindow:
@@ -302,6 +302,8 @@ class MainWindow:
 
         url = shorten_amazon_link( self.add_text_box.get_text() )
 
+        self.add_text_box.set_text( '' )
+
         data_file = open( DATA_FILE, 'a' )
 
         ( title, currency, price, pic_url ) = get_info_for( url )
@@ -327,10 +329,9 @@ class MainWindow:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
             data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
+            print( title )
 
         data_file.close()
-
-        self.add_text_box.set_text( '' )
 
         self.update_list_store()
 
@@ -427,9 +428,9 @@ class MainWindow:
         self.start_thread()
         try:
             gtk.main()
-        except KeyboardInterrupt as k:
-            print( k.args )
-            print( k.message )
+        except KeyboardInterrupt:
+            print( 'Gui crashed' )
+            self.refresh_thread.join()
 
 
 def read_config_file():
@@ -558,6 +559,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
             data_file.write( dumps( [ links[ index] , s[ 'err-gener' ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
+            print( titles[ index ] )
 
     data_file.close()
 

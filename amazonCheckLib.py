@@ -55,13 +55,13 @@ def format_price( string ):
 
 
 def format_title( string ):
-    format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\u00df', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;', '\0', '\u0000' ]
-    format_to = [ 'ä', 'Ä', 'Ä', 'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ss', 'ss', 'ss', 'ss', '&', '\'', '\'', '', '' ]
+    #format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\u00df', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;', '\0', '\u0000' ]
+    #format_to = [ 'ä', 'Ä', 'Ä', 'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ss', 'ss', 'ss', 'ss', '&', '\'', '\'', '', '' ]
+#
+    #for i in range( 0, len( format_from ) ):
+        #string = string.replace( format_from[ i ], format_to[ i ] )
 
-    for i in range( 0, len( format_from ) ):
-        string = string.replace( format_from[ i ], format_to[ i ] )
-
-    return string
+    return string.decode( 'ascii', 'replace' )
 
 
 
