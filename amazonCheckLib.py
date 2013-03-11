@@ -179,8 +179,9 @@ def get_info_for( url ):
 
     #Finding shipping
     shipping_pos = temp_file.find( '<span class="price_shipping">', price_pos ) + 29
+    end_pos = temp_file.find( '</td>', price_pos ) + 5
 
-    if  shipping_pos != -1 + 29:
+    if  shipping_pos != -1 + 29 and shipping_pos < end_pos:
         shipping = temp_file[ shipping_pos : temp_file.find( '</span>', shipping_pos ) ]
 
     else:
