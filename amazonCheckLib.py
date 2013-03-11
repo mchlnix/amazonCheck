@@ -7,28 +7,12 @@ from colors import RED, GREEN, NOCOLOR
 from pynotify import init, Notification
 from os.path import abspath
 from urllib2 import Request, urlopen
-from signal import alarm, signal, SIGALRM
 from time import strftime, time
 from sys import argv, exit
 from re import search
 from os import name
 
 TIMEOUT_TIME = 5
-
-
-def timeout( seconds ):
-    alarm( seconds )
-
-
-def timeout_handler( signum, frame ):
-    raise TimeoutException( Exception )
-
-
-signal( SIGALRM, timeout_handler )
-
-
-class TimeoutException( Exception ):
-    pass
 
 
 USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
@@ -146,17 +130,12 @@ def get_max_price( price_list ):
 
 def get_info_for( url ):
     try:
-        timeout( TIMEOUT_TIME )
-        temp_file = urlopen( Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ) ).read()
-        timeout( 0 )
+        temp_file = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
     except IOError:
         return ( -1, -1, -1, -1 )
 
     except ValueError:
         return ( -2, -2, -2, -2 )
-
-    except TimeoutException:
-        return ( -3, -3, -3, -3 )
 
 
     #Finding the title

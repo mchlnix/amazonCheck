@@ -2,19 +2,16 @@
 # -*- coding: utf-8 -*-
 
 from amazonCheckTrans import strings as s
-from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link, TimeoutException
+from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
 from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
 import pygtk
 pygtk.require( '2.0' )
 import gtk
 import gobject
-from multiprocessing import Process
 import threading
-import thread
 
 from os.path import exists, expanduser
-from signal import alarm, signal, SIGALRM
 from urllib import urlopen
 from time import ctime, time, sleep
 from json import dumps, loads
@@ -45,7 +42,7 @@ VERBOSE = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
-TIMEOUT_TIME = 15
+TIMEOUT_TIME = 5
 
 SLEEP_TIME = 2
 
@@ -103,11 +100,7 @@ class RefreshThread( threading.Thread ):
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
                 elif info == ( -2, -2, -2, -2 ):
-                    write_log_file( s[ 'ValueError happened' ], True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
-                elif info == ( -3, -3, -3, -3 ):
-                    write_log_file( s[ 'con-tmout' ], True )
+                    write_log_file( 'ValueError happened', True )
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
@@ -185,7 +178,7 @@ class RefreshThread( threading.Thread ):
 
 
 class MainWindow:
-    def destroy( self, wigdet, data=None):
+    def destroy( self, wigdet, data=None ):
         self.refresh_thread.stop()
         self.refresh_thread.join()
         gtk.main_quit()
@@ -244,7 +237,6 @@ class MainWindow:
         self.op_mode_change_button.connect( 'clicked', self.change_op_mode )
 
         #Setting up the GUI boxes
-
         self.scroll = gtk.ScrolledWindow()
         self.scroll.set_size_request( 640, 480 )
         self.scroll.add( self.data_view )
@@ -259,7 +251,6 @@ class MainWindow:
         self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
 
         #Setting up outer layer
-
         self.outer_layer.pack_start( self.scroll )
         self.outer_layer.pack_start( self.inner_layer,           False, False, 5 )
 
@@ -291,7 +282,6 @@ class MainWindow:
 
 
     def add_article( self, widget ):
-
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
 
         if self.add_text_box.get_visible():
@@ -314,10 +304,6 @@ class MainWindow:
             return False
         elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
             write_log_file( 'ValueError happened', True )
-            self.start_thread()
-            return False
-        elif ( title, currency, price, pic_url ) == ( -3, -3, -3, -3 ):
-            write_log_file( s[ 'con-tmout' ], True )
             self.start_thread()
             return False
 
@@ -349,7 +335,6 @@ class MainWindow:
 
 
     def delete_selection( self, widget ):
-
         self.refresh_thread.stop()
         self.refresh_thread.join()
         ( links, titles, currencies, pictures, prices ) = read_data_file()
@@ -375,7 +360,6 @@ class MainWindow:
 
 
     def update_list_store( self ):
-
         write_log_file( 'Gui is updating', True )
 
         ( links, titles, currencies, pictures, prices ) = read_data_file()
@@ -429,12 +413,12 @@ class MainWindow:
         try:
             gtk.main()
         except KeyboardInterrupt:
-            print( 'Gui crashed' )
+            write_log_file( 'Gui crashed', True )
+            self.refresh_thread.stop()
             self.refresh_thread.join()
 
 
 def read_config_file():
-
     if not exists( CONFIG_FILE ):
 
         reset_config_file()
@@ -469,7 +453,6 @@ def read_config_file():
 
 
 def reset_config_file():
-
     options = [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_config_file( options )
@@ -479,7 +462,6 @@ def reset_config_file():
 
 
 def write_config_file( options ):
-
     if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
 
         try:
@@ -573,7 +555,7 @@ def write_log_file( string, output=False ):
         logfile = open( LOG_FILE, 'a' )
 
     except IOError:
-        #write_log_file( s[ 'log-no-pm' ] )
+        print( s[ 'log-no-pm' ] )
         return false
 
     logfile.write( get_time() + ' ' + string + '\n' )
@@ -584,7 +566,6 @@ def write_log_file( string, output=False ):
 
 
 if __name__ == '__main__':
-
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
 
