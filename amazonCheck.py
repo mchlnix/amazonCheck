@@ -401,6 +401,18 @@ class MainWindow:
             elif price == avgs:
                 color = '<span foreground="#FCCA00">'
 
+            if mins != s[ 'N/A' ]:
+                mins = '%.2f' % mins
+
+            if maxs != s[ 'N/A' ]:
+                maxs = '%.2f' % maxs
+
+            if avgs != s[ 'N/A' ]:
+                avgs = '%.2f' % avgs
+
+            if price != s[ 'N/A' ]:
+                price = '%.2f' % price
+
             try:
                 self.data_store[ index ][2] = color + str( price ) + '</span>'
                 self.data_store[ index ][3] = mins
