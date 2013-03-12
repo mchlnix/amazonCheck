@@ -76,8 +76,7 @@ class RefreshThread( threading.Thread ):
             start_time = time()
 
             if len( links ) == 0:
-                write_log_file( s[ 'dat-empty' ] )
-                exit( s[ 'dat-empty' ] )
+                write_log_file( s[ 'dat-empty' ], True )
 
             runs = runs + 1
 
@@ -354,7 +353,6 @@ class MainWindow:
         for index in range( 0, tree_length ):
             index = tree_length - 1 - index
             if self.data_store[ index ][0] == True:
-
 
                 links.pop( index )
                 titles.pop( index )
