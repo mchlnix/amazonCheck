@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.5
+Type=Application
+Terminal=false
+StartupNotify=true
+Icon=/usr/share/pixmaps/amazonCheck.png
+Name=amazonCheck
+Comment=Monitors Amazon Offers
+Exec=/usr/bin/amazonCheck
+Categories=Network;Application;
+
