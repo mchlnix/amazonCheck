@@ -4,13 +4,12 @@
 from amazonCheckTrans import strings as s
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
 from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
-
 import pygtk
 pygtk.require( '2.0' )
 import gtk
 import gobject
 import threading
-
+from webbrowser import open as open_in_browser
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -53,7 +52,6 @@ open( LOG_FILE, 'w' ).close()
 
 
 class RefreshThread( threading.Thread ):
-
     def __init__( self, wind_obj ):
         self.stop_flag = False
         self.wind_obj = wind_obj
@@ -195,23 +193,26 @@ class MainWindow:
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.connect( 'toggled', self.toggle_handler )
 
+        currency_renderer = gtk.CellRendererText()
         price_renderer = gtk.CellRendererText()
-        text_renderer = gtk.CellRendererText()
+        title_renderer = gtk.CellRendererText()
         min_renderer = gtk.CellRendererText()
         avg_renderer = gtk.CellRendererText()
         max_renderer = gtk.CellRendererText()
+
+        #self.data_view.connect( 'row-activated', self.visit_page )
 
         min_renderer.set_property( 'foreground', '#27B81F' )
         avg_renderer.set_property( 'foreground', '#FCCA00' )
         max_renderer.set_property( 'foreground', '#FF3D3D' )
 
-        self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,  active=0 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', text_renderer,    text=1 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    price_renderer,   markup=2 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,     text=3 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,     text=4 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,     text=5 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    text_renderer,    text=6 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,   active=0 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', currency_renderer, text=1 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    price_renderer,    markup=2 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 ) )
 
         #Fill the TreeView
         ( links, titles, currencies, not_used, prices ) = read_data_file()
@@ -222,6 +223,9 @@ class MainWindow:
         self.add_text_box = gtk.Entry( 0 )
 
         #Setting up control buttons
+        self.visit_button = gtk.Button( 'Visit' )
+        self.visit_button.connect( 'clicked', self.visit_page )
+
         self.add_button = gtk.Button( 'Add' )
         self.add_button.connect( 'clicked', self.add_article )
 
@@ -246,6 +250,7 @@ class MainWindow:
         self.inner_layer = gtk.HBox()
 
         #Setting up inner layer
+        self.inner_layer.pack_start( self.visit_button,          False, False, 5 )
         self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
         self.inner_layer.pack_start( self.op_mode_change_button, False, False, 5 )
         self.inner_layer.pack_start( self.add_button,            False, False, 5 )
@@ -362,6 +367,17 @@ class MainWindow:
                 write_data_file( links, titles, currencies, pictures, prices )
 
         self.start_thread()
+
+
+    def visit_page( self, widget ):
+        ( links, titles, currencies, pictures, prices ) = read_data_file()
+
+        tree_length = len( self.data_store )
+
+        for index in range( 0, tree_length ):
+            index = tree_length - 1 - index
+            if self.data_store[ index ][0] == True:
+                open_in_browser( links[ index ] )
 
 
     def update_list_store( self ):
