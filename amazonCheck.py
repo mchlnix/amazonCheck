@@ -296,9 +296,6 @@ class MainWindow:
         if self.add_text_box.get_visible():
             return
 
-        self.refresh_thread.stop()
-        self.refresh_thread.join()
-
         url = shorten_amazon_link( self.add_text_box.get_text() )
 
         self.add_text_box.set_text( '' )
@@ -309,22 +306,24 @@ class MainWindow:
 
         if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
             write_log_file( s[ 'err-con-s' ], True )
-            self.start_thread()
             return False
         elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
             write_log_file( 'ValueError happened', True )
-            self.start_thread()
             return False
+
+        self.refresh_thread.stop()
 
         pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
 
         open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
 
+        self.refresh_thread.join()
+
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
             data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
-            print( title )
+            write_log_file( 'Title could not get written: ' + title )
 
         data_file.close()
 
@@ -344,26 +343,34 @@ class MainWindow:
 
 
     def delete_selection( self, widget ):
-        self.refresh_thread.stop()
-        self.refresh_thread.join()
-        ( links, titles, currencies, pictures, prices ) = read_data_file()
+        delete_queue = []
 
         tree_length = len( self.data_store )
 
         for index in range( 0, tree_length ):
             index = tree_length - 1 - index
             if self.data_store[ index ][0] == True:
+                delete_queue.append( index )
 
-                links.pop( index )
-                titles.pop( index )
-                currencies.pop( index )
-                pictures.pop( index )
-                prices.pop( index )
+        if len( delete_queue ) == 0:
+            return False
 
-                self.data_store.remove( self.data_store.get_iter( index ) )
+        self.refresh_thread.stop()
 
-                write_data_file( links, titles, currencies, pictures, prices )
+        ( links, titles, currencies, pictures, prices ) = read_data_file()
 
+        for index in delete_queue:
+            links.pop( index )
+            titles.pop( index )
+            currencies.pop( index )
+            pictures.pop( index )
+            prices.pop( index )
+
+            self.data_store.remove( self.data_store.get_iter( index ) )
+
+        write_data_file( links, titles, currencies, pictures, prices )
+
+        self.refresh_thread.join()
         self.start_thread()
 
 
