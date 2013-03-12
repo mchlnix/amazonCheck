@@ -33,6 +33,7 @@ else:
 CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
 DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
 LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
+ICON_FILE = expanduser( '~/.amazonCheck/aC.png' )
 
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
@@ -259,6 +260,8 @@ class MainWindow:
         self.window.connect( 'destroy', self.destroy )
 
         self.window.add( self.outer_layer )
+        self.window.set_icon_from_file( ICON_FILE )
+
         self.window.show_all()
 
         #Hide text box
