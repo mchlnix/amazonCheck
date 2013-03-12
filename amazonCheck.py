@@ -259,8 +259,10 @@ class MainWindow:
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.connect( 'destroy', self.destroy )
 
-        self.window.add( self.outer_layer )
         self.window.set_icon_from_file( ICON_FILE )
+        self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
+
+        self.window.add( self.outer_layer )
 
         self.window.show_all()
 
