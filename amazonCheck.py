@@ -178,7 +178,6 @@ class RefreshThread( threading.Thread ):
 class MainWindow:
     def destroy( self, wigdet, data=None ):
         self.refresh_thread.stop()
-        self.refresh_thread.join()
         gtk.main_quit()
 
 
