@@ -179,6 +179,7 @@ class RefreshThread( threading.Thread ):
 class MainWindow:
     def exit_application( self, widget ):
         self.window.set_visible( False )
+        self.indicator.set_status( appindicator.STATUS_PASSIVE )
         self.refresh_thread.stop()
         gtk.main_quit()
 
@@ -194,7 +195,6 @@ class MainWindow:
 
 
     def __init__( self ):
-        self.window_visible = True
         #Setting up the indicator
         self.indicator = appindicator.Indicator( 'amazonCheck-indicator', 'amazonCheck', appindicator.CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
         self.indicator.set_status( appindicator.STATUS_ACTIVE )
@@ -299,6 +299,8 @@ class MainWindow:
         self.window.add( self.outer_layer )
 
         self.window.show_all()
+
+        self.window_visible = True
 
         #Hide text box
         self.add_text_box.hide()
