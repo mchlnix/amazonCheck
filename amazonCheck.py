@@ -4,13 +4,15 @@
 from amazonCheckTrans import strings as s
 from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_help_text, print_notification, shorten_amazon_link
 from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
+
 import pygtk
 pygtk.require( '2.0' )
 import gtk
 import gobject
-import threading
-import appindicator
+
+from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, CATEGORY_APPLICATION_STATUS
 from webbrowser import open as open_in_browser
+from threading import Thread, active_count
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -52,11 +54,11 @@ CONFIG_VARS = 5
 open( LOG_FILE, 'w' ).close()
 
 
-class RefreshThread( threading.Thread ):
+class RefreshThread( Thread ):
     def __init__( self, wind_obj ):
         self.stop_flag = False
         self.wind_obj = wind_obj
-        threading.Thread.__init__(self)
+        Thread.__init__(self)
 
 
     def stop( self ):
@@ -66,7 +68,7 @@ class RefreshThread( threading.Thread ):
     def run( self ):
         global SLEEP_TIME, VERBOSE, SILENT
 
-        write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' started', True )
+        write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started', True )
 
         runs = 0
 
@@ -81,7 +83,7 @@ class RefreshThread( threading.Thread ):
 
             runs = runs + 1
 
-            write_log_file( 'Thread ' + str( threading.active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':', True )
+            write_log_file( 'Thread ' + str( active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':', True )
 
             #Updates the information
 
@@ -89,7 +91,7 @@ class RefreshThread( threading.Thread ):
 
             for index in range( 0, len( links ) ):
                 if self.stop_flag:
-                    write_log_file( 'Halted Refresh Thread ' + str( threading.active_count() - 1 ), True )
+                    write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ), True )
                     return
 
                 info = get_info_for( links[ index ] )
@@ -163,23 +165,23 @@ class RefreshThread( threading.Thread ):
             gobject.idle_add( self.wind_obj.update_list_store )
 
             if self.stop_flag:
-                write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' was halted before sleeping', True )
+                write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping', True )
                 return
 
             for i in range( 0, 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    write_log_file( 'Refresh Thread ' + str( threading.active_count() - 1 ) + ' was halted while sleeping', True )
+                    write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping', True )
                     return
 
-        write_log_file( 'Refresh-Thread ' + str( threading.active_count() - 1 ) + ' was stopped' )
+        write_log_file( 'Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
 
 
 class MainWindow:
     def exit_application( self, widget ):
         self.window.set_visible( False )
-        self.indicator.set_status( appindicator.STATUS_PASSIVE )
+        self.indicator.set_status( STATUS_PASSIVE )
         self.refresh_thread.stop()
         gtk.main_quit()
 
@@ -196,8 +198,8 @@ class MainWindow:
 
     def __init__( self ):
         #Setting up the indicator
-        self.indicator = appindicator.Indicator( 'amazonCheck-indicator', 'amazonCheck', appindicator.CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
-        self.indicator.set_status( appindicator.STATUS_ACTIVE )
+        self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        self.indicator.set_status( STATUS_ACTIVE )
 
         indicator_menu = gtk.Menu()
 
