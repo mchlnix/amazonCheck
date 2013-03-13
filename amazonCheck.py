@@ -9,6 +9,7 @@ pygtk.require( '2.0' )
 import gtk
 import gobject
 import threading
+import appindicator
 from webbrowser import open as open_in_browser
 from os.path import exists, expanduser
 from urllib import urlopen
@@ -176,12 +177,42 @@ class RefreshThread( threading.Thread ):
 
 
 class MainWindow:
-    def destroy( self, wigdet, data=None ):
+    def exit_application( self, widget ):
+        self.window.set_visible( False )
         self.refresh_thread.stop()
         gtk.main_quit()
 
+    def toggle_window_visibility( self, widget ):
+        if self.window_visible:
+            self.window.set_visible( False )
+            self.window_visible = False
+            self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
+        else:
+            self.window.set_visible( True )
+            self.window_visible = True
+            self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
+
 
     def __init__( self ):
+        self.window_visible = True
+        #Setting up the indicator
+        self.indicator = appindicator.Indicator( 'amazonCheck-indicator', 'amazonCheck', appindicator.CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        self.indicator.set_status( appindicator.STATUS_ACTIVE )
+
+        indicator_menu = gtk.Menu()
+
+        menu_item_show = gtk.MenuItem( 'Hide window' )
+        menu_item_exit = gtk.MenuItem( 'Exit' )
+        menu_item_show.connect( 'activate', self.toggle_window_visibility )
+        menu_item_exit.connect( 'activate', self.exit_application )
+
+        indicator_menu.append( menu_item_show )
+        indicator_menu.append( menu_item_exit )
+
+        indicator_menu.show_all()
+
+        self.indicator.set_menu( indicator_menu )
+
         #Setting up the Liststore
         self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
 
@@ -260,7 +291,7 @@ class MainWindow:
 
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.window.connect( 'destroy', self.destroy )
+        self.window.connect( 'destroy', self.exit_application )
 
         self.window.set_icon_from_file( ICON_FILE )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
