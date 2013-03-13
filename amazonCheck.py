@@ -183,15 +183,15 @@ class MainWindow:
         self.refresh_thread.stop()
         gtk.main_quit()
 
-    def toggle_window_visibility( self, widget ):
-        if self.window_visible:
+    def toggle_window_visibility( self, widget, event=None ):
+        if self.window.get_visible():
             self.window.set_visible( False )
-            self.window_visible = False
             self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
         else:
             self.window.set_visible( True )
-            self.window_visible = True
             self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
+
+        return True
 
 
     def __init__( self ):
@@ -291,7 +291,7 @@ class MainWindow:
 
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.window.connect( 'destroy', self.exit_application )
+        self.window.connect( 'delete-event', self.toggle_window_visibility )
 
         self.window.set_icon_from_file( ICON_FILE )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
