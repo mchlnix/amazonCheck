@@ -10,26 +10,19 @@ pygtk.require( '2.0' )
 import gtk
 import gobject
 
+from dbus.mainloop.glib import DBusGMainLoop
 from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, STATUS_ATTENTION, CATEGORY_APPLICATION_STATUS
+from dbus.service import Object as dbusServiceObject, BusName, method as dbusServiceMethod
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
 from json import dumps, loads
+from dbus import SessionBus
 from sys import argv, exit
 from re import search
 from os import name
-
-
-gtk.gdk.threads_init()
-gobject.threads_init()
-
-
-if name == 'nt':
-    IMAGE_WRITE_MODE = 'wb'
-else:
-    IMAGE_WRITE_MODE = 'w'
 
 
 CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
@@ -51,7 +44,33 @@ SLEEP_TIME = 2
 
 CONFIG_VARS = 5
 
+SERVICE_NAME = 'org.amazonCheck.alive'
+
+
+DBusGMainLoop( set_as_default=True )
+
+
+for service_name in SessionBus().list_names():
+    if service_name == SERVICE_NAME:
+        exit( 'Program already running' )
+
+
+gtk.gdk.threads_init()
+gobject.threads_init()
+
+
 open( LOG_FILE, 'w' ).close()
+
+
+class MyDBUSService( dbusServiceObject ):
+    def __init__(self):
+        bus_name = BusName( SERVICE_NAME, bus=SessionBus() )
+        dbusServiceObject.__init__( self, bus_name, '/alive' )
+
+
+    @dbusServiceMethod( SERVICE_NAME )
+    def is_alive(self):
+        return True
 
 
 class RefreshThread( Thread ):
@@ -200,6 +219,9 @@ class MainWindow:
 
 
     def __init__( self ):
+        #Setting up the dbus service
+        self.dbus_service = MyDBUSService()
+
         #Setting up the indicator
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
         self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
