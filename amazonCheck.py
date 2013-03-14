@@ -125,7 +125,7 @@ class RefreshThread( Thread ):
 
                         try:
                             notify( title, body, IMAGE_PATH + pictures[ index ] )
-                            gobject.idle_add( self.wind_obj.indicator.set_status, STATUS_ATTENTION )
+                            gobject.idle_add( self.wind_obj.set_indicator_attention )
 
                             if VERBOSE:
                                 print_notification( title, body, '' )
@@ -208,11 +208,16 @@ class MainWindow:
 
         menu_item_show = gtk.MenuItem( 'Hide window' )
         menu_item_exit = gtk.MenuItem( 'Exit' )
+        menu_item_seperator = gtk.SeparatorMenuItem()
+        menu_item_reset = gtk.MenuItem( 'Reset' )
         menu_item_show.connect( 'activate', self.toggle_window_visibility )
         menu_item_exit.connect( 'activate', self.exit_application )
+        menu_item_reset.connect( 'activate', self.set_indicator_active )
 
         indicator_menu.append( menu_item_show )
         indicator_menu.append( menu_item_exit )
+        indicator_menu.append( menu_item_seperator )
+        indicator_menu.append( menu_item_reset )
 
         indicator_menu.show_all()
 
@@ -315,8 +320,13 @@ class MainWindow:
         self.refresh_thread = RefreshThread( self )
 
 
-    def set_indicator_active( self, widget, direction ):
+    def set_indicator_active( self, widget, direction=None ):
+        self.indicator.get_menu().get_children()[3].set_sensitive( False )
         self.indicator.set_status( STATUS_ACTIVE )
+
+    def set_indicator_attention( self ):
+        self.indicator.get_menu().get_children()[3].set_sensitive( True )
+        self.indicator.set_status( STATUS_ATTENTION )
 
 
     def change_op_mode( self, widget ):
