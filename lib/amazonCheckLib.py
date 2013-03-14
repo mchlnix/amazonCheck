@@ -14,7 +14,6 @@ from os import name
 
 TIMEOUT_TIME = 5
 
-
 USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
 
 
@@ -39,13 +38,21 @@ def format_price( string ):
 
 
 def format_title( string ):
-    #format_from = [ '&auml;', '&Auml;', '\xc3\x84', '&ouml;', '&Ouml;', '\xc3\x96', '&uuml;', '\xc3\xbc', '&Uuml;', '\xc3\x9c', '&szlig;', '\u00df', '\xdf', '\xc3\x9f', '&amp;', '&quot;', '&#39;', '\0', '\u0000' ]
-    #format_to = [ 'ä', 'Ä', 'Ä', 'ö', 'Ö', 'Ö', 'ü', 'ü', 'Ü', 'Ü', 'ss', 'ss', 'ss', 'ss', '&', '\'', '\'', '', '' ]
-#
-    #for i in range( 0, len( format_from ) ):
-        #string = string.replace( format_from[ i ], format_to[ i ] )
+    format_from_html =    [ '&auml;', '&Auml;', '&ouml;', '&Ouml;', '&uuml;', '&Uuml;', '&szlig;', '&amp;', '&quot;', '&#39;', '\0']
+    format_from_unicode1 = [ '\xc3\xa4', '\xc3\x84', '\xc3\xb6', '\xc3\x96', '\xc3\xbc', '\xc3\x9c', '\xc3\x9f' ]
+    format_from_unicode2 = [ '\xe4', '\xc4', '\xf6', '\xd6', '\xfc', '\xdc', 'xdf' ]
+    format_to = [ 'ae', 'Ae', 'oe', 'Oe', 'ue', 'Ue', 'ss', 'ss', 'ss', '&', '\'', '\'', '' ]
 
-    return string.decode( 'ascii', 'replace' )
+    for i in range( 0, len( format_from_html ) ):
+        string = string.replace( format_from_html[ i ], format_to[ i ] )
+
+    for i in range( 0, len( format_from_unicode1 ) ):
+        string = string.replace( format_from_unicode1[ i ], format_to[ i ] )
+
+    for i in range( 0, len( format_from_unicode2 ) ):
+        string = string.replace( format_from_unicode2[ i ], format_to[ i ] )
+
+    return string
 
 
 
@@ -141,10 +148,12 @@ def get_info_for( url ):
     #Finding the title
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
 
-
     #Shortening it
     for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ' ]:
         title = title.replace( string, '' )
+
+    #Formating it as best as possible
+    title = format_title( title )
 
 
     #Finding the price
@@ -155,6 +164,7 @@ def get_info_for( url ):
 
     else:
         price = s[ 'N/A' ]
+
 
     #Finding shipping
     shipping_pos = temp_file.find( '<span class="price_shipping">', price_pos ) + 29
@@ -170,6 +180,7 @@ def get_info_for( url ):
     #Formating price and currency
     ( price, currency ) = format_price( price )
     ( shipping, unused ) = format_price( shipping )
+
 
     #Finding picture
     pic_pos = temp_file.find( '<div id="productheader">' ) + 24

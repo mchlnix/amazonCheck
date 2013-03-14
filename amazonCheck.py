@@ -640,7 +640,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
 
 
 
-def write_log_file( string, output=False ):
+def write_log_file( string, output=True ):
     if VERBOSE and output:
         print( get_time() + ' ' + string + '\n' ),
 
