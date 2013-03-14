@@ -30,6 +30,7 @@ DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
 LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
 ICON_FILE = expanduser( '~/.amazonCheck/aC.png' )
 
+IMAGE_WRITE_MODE = 'w'
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
 SILENT = False
