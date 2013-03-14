@@ -68,11 +68,6 @@ class MyDBUSService( dbusServiceObject ):
         dbusServiceObject.__init__( self, bus_name, '/alive' )
 
 
-    @dbusServiceMethod( SERVICE_NAME )
-    def is_alive(self):
-        return True
-
-
 class RefreshThread( Thread ):
     def __init__( self, wind_obj ):
         self.stop_flag = False
