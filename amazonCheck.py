@@ -52,6 +52,10 @@ DBusGMainLoop( set_as_default=True )
 
 for service_name in SessionBus().list_names():
     if service_name == SERVICE_NAME:
+        to_execute = SessionBus().get_object( SERVICE_NAME, '/alive' ).get_dbus_method( 'toggle_window', SERVICE_NAME )
+
+        to_execute()
+
         exit( 'Program already running' )
 
 
@@ -63,16 +67,22 @@ open( LOG_FILE, 'w' ).close()
 
 
 class MyDBUSService( dbusServiceObject ):
-    def __init__(self):
-        bus_name = BusName( SERVICE_NAME, bus=SessionBus() )
-        dbusServiceObject.__init__( self, bus_name, '/alive' )
+    def __init__( self, wind_obj ):
+        self.wind_obj = wind_obj
+        self.bus_name = BusName( SERVICE_NAME, bus=SessionBus() )
+        dbusServiceObject.__init__( self, self.bus_name, '/alive' )
+
+
+    @dbusServiceMethod( SERVICE_NAME )
+    def toggle_window( self ):
+        self.wind_obj.toggle_window_visibility( )
 
 
 class RefreshThread( Thread ):
     def __init__( self, wind_obj ):
         self.stop_flag = False
         self.wind_obj = wind_obj
-        Thread.__init__(self)
+        Thread.__init__( self )
 
 
     def stop( self ):
@@ -201,7 +211,7 @@ class MainWindow:
         gtk.main_quit()
 
 
-    def toggle_window_visibility( self, widget, event=None ):
+    def toggle_window_visibility( self, widget=None, event=None ):
         if self.window.get_visible():
             self.window.set_visible( False )
             self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
@@ -215,7 +225,7 @@ class MainWindow:
 
     def __init__( self ):
         #Setting up the dbus service
-        self.dbus_service = MyDBUSService()
+        self.dbus_service = MyDBUSService( self )
 
         #Setting up the indicator
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
