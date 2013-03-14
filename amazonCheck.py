@@ -10,7 +10,7 @@ pygtk.require( '2.0' )
 import gtk
 import gobject
 
-from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, CATEGORY_APPLICATION_STATUS
+from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, STATUS_ATTENTION, CATEGORY_APPLICATION_STATUS
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from os.path import exists, expanduser
@@ -125,6 +125,7 @@ class RefreshThread( Thread ):
 
                         try:
                             notify( title, body, IMAGE_PATH + pictures[ index ] )
+                            gobject.idle_add( self.wind_obj.indicator.set_status, STATUS_ATTENTION )
 
                             if VERBOSE:
                                 print_notification( title, body, '' )
@@ -191,6 +192,7 @@ class MainWindow:
             self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
         else:
             self.window.set_visible( True )
+            self.indicator.set_status( STATUS_ACTIVE )
             self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
 
         return True
@@ -198,7 +200,8 @@ class MainWindow:
 
     def __init__( self ):
         #Setting up the indicator
-        self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         self.indicator.set_status( STATUS_ACTIVE )
 
         indicator_menu = gtk.Menu()
@@ -294,6 +297,7 @@ class MainWindow:
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.connect( 'delete-event', self.toggle_window_visibility )
+        self.window.connect( 'focus-in-event', self.set_indicator_active )
 
         self.window.set_icon_from_file( ICON_FILE )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
@@ -309,6 +313,10 @@ class MainWindow:
 
         #Setting up refresh thread
         self.refresh_thread = RefreshThread( self )
+
+
+    def set_indicator_active( self, widget, direction ):
+        self.indicator.set_status( STATUS_ACTIVE )
 
 
     def change_op_mode( self, widget ):
