@@ -299,7 +299,7 @@ class MainWindow:
         self.window.connect( 'delete-event', self.toggle_window_visibility )
         self.window.connect( 'focus-in-event', self.set_indicator_active )
 
-        self.window.set_icon_from_file( ICON_FILE )
+        self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
 
         self.window.add( self.outer_layer )
