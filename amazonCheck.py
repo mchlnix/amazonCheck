@@ -186,6 +186,7 @@ class MainWindow:
         self.refresh_thread.stop()
         gtk.main_quit()
 
+
     def toggle_window_visibility( self, widget, event=None ):
         if self.window.get_visible():
             self.window.set_visible( False )
@@ -239,7 +240,7 @@ class MainWindow:
         avg_renderer = gtk.CellRendererText()
         max_renderer = gtk.CellRendererText()
 
-        #self.data_view.connect( 'row-activated', self.visit_page )
+        self.data_view.connect( 'row-activated', self.visit_page )
 
         min_renderer.set_property( 'foreground', '#27B81F' )
         avg_renderer.set_property( 'foreground', '#FCCA00' )
@@ -262,9 +263,6 @@ class MainWindow:
         self.add_text_box = gtk.Entry( 0 )
 
         #Setting up control buttons
-        self.visit_button = gtk.Button( 'Visit' )
-        self.visit_button.connect( 'clicked', self.visit_page )
-
         self.add_button = gtk.Button( 'Add' )
         self.add_button.connect( 'clicked', self.add_article )
 
@@ -323,6 +321,7 @@ class MainWindow:
     def set_indicator_active( self, widget, direction=None ):
         self.indicator.get_menu().get_children()[3].set_sensitive( False )
         self.indicator.set_status( STATUS_ACTIVE )
+
 
     def set_indicator_attention( self ):
         self.indicator.get_menu().get_children()[3].set_sensitive( True )
@@ -426,15 +425,15 @@ class MainWindow:
         self.start_thread()
 
 
-    def visit_page( self, widget ):
+    def visit_page( self, widget, path, column ):
+        if column.get_title() == '':
+            return
+
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
-        tree_length = len( self.data_store )
+        open_in_browser( links[ path[0] ] )
 
-        for index in range( 0, tree_length ):
-            index = tree_length - 1 - index
-            if self.data_store[ index ][0] == True:
-                open_in_browser( links[ index ] )
+
 
 
     def update_list_store( self ):
