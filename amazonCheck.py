@@ -269,15 +269,6 @@ class MainWindow:
         self.delete_button = gtk.Button( 'Delete' )
         self.delete_button.connect( 'clicked', self.delete_selection )
 
-        self.op_mode_change_button = gtk.Button()
-
-        if VERBOSE:
-            self.op_mode_change_button.set_label( 'Verbose' )
-        elif SILENT:
-            self.op_mode_change_button.set_label( 'Silent' )
-
-        self.op_mode_change_button.connect( 'clicked', self.change_op_mode )
-
         #Setting up the GUI boxes
         self.scroll = gtk.ScrolledWindow()
         self.scroll.set_size_request( 640, 480 )
@@ -287,9 +278,7 @@ class MainWindow:
         self.inner_layer = gtk.HBox()
 
         #Setting up inner layer
-        self.inner_layer.pack_start( self.visit_button,          False, False, 5 )
         self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
-        self.inner_layer.pack_start( self.op_mode_change_button, False, False, 5 )
         self.inner_layer.pack_start( self.add_button,            False, False, 5 )
         self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
 
@@ -326,19 +315,6 @@ class MainWindow:
     def set_indicator_attention( self ):
         self.indicator.get_menu().get_children()[3].set_sensitive( True )
         self.indicator.set_status( STATUS_ATTENTION )
-
-
-    def change_op_mode( self, widget ):
-        global VERBOSE
-        global SILENT
-
-        if VERBOSE:
-            self.op_mode_change_button.set_label( 'Silent' )
-        if SILENT:
-            self.op_mode_change_button.set_label( 'Verbose' )
-
-        VERBOSE = not VERBOSE
-        SILENT = not SILENT
 
 
     def add_article( self, widget ):
