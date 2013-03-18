@@ -232,34 +232,39 @@ class MainWindow:
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.config_window.connect( 'delete-event', self.hide_config_window )
 
-        self.config_vbox = gtk.VBox( spacing=5 )
-        self.config_hbox = gtk.HBox()
+        self.config_outer_layer = gtk.VBox()
 
-        self.config_hbox.pack_start( gtk.Label( 'Show notification bubbles: ' ), False, False, 5 )
-        self.config_hbox.pack_start( gtk.CheckButton(), False, False, 5 )
-        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+        self.config_config_box = gtk.HBox()
+        self.config_button_box = gtk.HBox()
 
-        self.config_hbox = gtk.HBox()
+        self.config_config_box_left = gtk.VBox()
+        self.config_config_box_right = gtk.VBox()
 
-        self.config_hbox.pack_start( gtk.Label( 'Confirm deleting articles: ' ), False, False, 5 )
-        self.config_hbox.pack_start( gtk.CheckButton(), False, False, 5 )
-        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+        self.config_config_box_left.pack_start( gtk.Label( 'Show notification bubbles: ' ), False, False, 5 )
+        self.config_config_box_left.pack_start( gtk.Label( 'Confirm deleting articles: ' ), False, False, 5 )
 
-        self.config_vbox.pack_start( gtk.Label( '' ) )
+        self.config_config_box_right.pack_start( gtk.CheckButton(), False, False, 5 )
+        self.config_config_box_right.pack_start( gtk.CheckButton(), False, False, 5 )
 
-        self.config_hbox = gtk.HBox( spacing=5 )
+        self.config_config_box_left.pack_start( gtk.Label( '' ) )
+        self.config_config_box_right.pack_start( gtk.Label( '' ) )
 
-        self.config_button_ok = gtk.Button( 'OK' )
         self.config_button_cancel = gtk.Button( 'Cancel' )
+        self.config_button_cancel.connect( 'clicked', self.hide_config_window )
+        self.config_button_ok = gtk.Button( 'OK' )
+        self.config_button_ok.connect( 'clicked', self.confirm_config )
 
-        self.config_hbox.pack_start( self.config_button_cancel, False, False, 5 )
-        self.config_hbox.pack_start( self.config_button_ok, False, False, 5 )
+        self.config_button_box.pack_start( self.config_button_cancel )
+        self.config_button_box.pack_start( self.config_button_ok )
 
-        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+        self.config_config_box.pack_start( self.config_config_box_left )
+        self.config_config_box.pack_start( self.config_config_box_right )
 
-        self.config_window.add( self.config_vbox )
+        self.config_outer_layer.pack_start( self.config_config_box )
 
-        self.config_window.hide()
+        self.config_outer_layer.pack_start( self.config_button_box )
+
+        self.config_window.add( self.config_outer_layer )
 
         #Setting up the indicator
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
@@ -372,11 +377,15 @@ class MainWindow:
         self.refresh_thread = RefreshThread( self )
 
 
+    def confirm_config( self, widget ):
+        pass
+
+
     def show_config_window( self, widget ):
         self.config_window.show_all()
 
 
-    def hide_config_window( self, widget, event ):
+    def hide_config_window( self, widget, event=None ):
         self.config_window.hide()
 
         return True
