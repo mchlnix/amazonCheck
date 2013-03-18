@@ -133,21 +133,21 @@ class RefreshThread( Thread ):
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
+                    if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                        title = s[ 'bec-avail' ] + NOCOLOR + ':'
+
+                    elif info[2] == s[ 'N/A' ]:
+                        title = s[ 'bec-unava' ] + NOCOLOR + ':'
+
+                    elif info[2] < prices[ index ][-1][0]:
+                        title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                    elif info[2] > prices[ index ][-1][0]:
+                        title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+
+                    body = str( info[0] )
+
                     if SHOW_NOTIFICATIONS:
-                        if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
-                            title = s[ 'bec-avail' ] + NOCOLOR + ':'
-
-                        elif info[2] == s[ 'N/A' ]:
-                            title = s[ 'bec-unava' ] + NOCOLOR + ':'
-
-                        elif info[2] < prices[ index ][-1][0]:
-                            title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                        elif info[2] > prices[ index ][-1][0]:
-                            title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
-
-                        body = str( info[0] )
-
                         try:
                             notify( title, body, IMAGE_PATH + pictures[ index ] )
                         except:
