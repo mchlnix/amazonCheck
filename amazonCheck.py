@@ -68,7 +68,7 @@ gobject.threads_init()
 open( LOG_FILE, 'w' ).close()
 
 
-class MyDBUSService( dbusServiceObject ):
+class DBusService( dbusServiceObject ):
     def __init__( self, wind_obj ):
         self.wind_obj = wind_obj
         self.bus_name = BusName( SERVICE_NAME, bus=SessionBus() )
@@ -206,28 +206,9 @@ class RefreshThread( Thread ):
 
 
 class MainWindow:
-    def exit_application( self, widget ):
-        self.window.set_visible( False )
-        self.indicator.set_status( STATUS_PASSIVE )
-        self.refresh_thread.stop()
-        gtk.main_quit()
-
-
-    def toggle_window_visibility( self, widget=None, event=None ):
-        if self.window.get_visible():
-            self.window.set_visible( False )
-            self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
-        else:
-            self.window.set_visible( True )
-            self.indicator.set_status( STATUS_ACTIVE )
-            self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
-
-        return True
-
-
     def __init__( self ):
         #Setting up the dbus service
-        self.dbus_service = MyDBUSService( self )
+        self.dbus_service = DBusService( self )
 
         #Setting up config window
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
@@ -376,6 +357,25 @@ class MainWindow:
         self.refresh_thread = RefreshThread( self )
 
 
+    def main( self ):
+        self.start_thread()        #Starting the data thread
+
+        try:
+            gtk.main()
+
+        except KeyboardInterrupt:
+            write_log_file( 'Gui crashed', True )
+            self.refresh_thread.stop()
+            self.refresh_thread.join()
+
+
+    def exit_application( self, widget ):
+        self.window.set_visible( False )
+        self.indicator.set_status( STATUS_PASSIVE )
+        self.refresh_thread.stop()
+        gtk.main_quit()
+
+
     def on_config_confirm( self, widget ):
         self.config_window.hide()
 
@@ -388,16 +388,6 @@ class MainWindow:
         self.config_window.hide()
 
         return True
-
-
-    def set_indicator_active( self, widget, direction=None ):
-        self.indicator.get_menu().get_children()[3].set_sensitive( False )
-        self.indicator.set_status( STATUS_ACTIVE )
-
-
-    def set_indicator_attention( self ):
-        self.indicator.get_menu().get_children()[3].set_sensitive( True )
-        self.indicator.set_status( STATUS_ATTENTION )
 
 
     def on_add_article( self, widget ):
@@ -440,12 +430,6 @@ class MainWindow:
         self.update_list_store()
 
         self.start_thread()
-
-
-    def start_thread( self ):
-        self.refresh_thread = RefreshThread( self )
-        self.refresh_thread.start()
-
 
 
     def on_cell_toggled( self, widget, path ):
@@ -499,6 +483,31 @@ class MainWindow:
         open_in_browser( links[ path[0] ] )
 
 
+    def set_indicator_active( self, widget, direction=None ):
+        self.indicator.get_menu().get_children()[3].set_sensitive( False )
+        self.indicator.set_status( STATUS_ACTIVE )
+
+
+    def set_indicator_attention( self ):
+        self.indicator.get_menu().get_children()[3].set_sensitive( True )
+        self.indicator.set_status( STATUS_ATTENTION )
+
+
+    def start_thread( self ):
+        self.refresh_thread = RefreshThread( self )
+        self.refresh_thread.start()
+
+
+    def toggle_window_visibility( self, widget=None, event=None ):
+        if self.window.get_visible():
+            self.window.set_visible( False )
+            self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
+        else:
+            self.window.set_visible( True )
+            self.indicator.set_status( STATUS_ACTIVE )
+            self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
+
+        return True
 
 
     def update_list_store( self ):
@@ -559,17 +568,6 @@ class MainWindow:
                 self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
         write_log_file( 'Gui updated', True )
-
-
-    def main( self ):
-        #Starting the data thread
-        self.start_thread()
-        try:
-            gtk.main()
-        except KeyboardInterrupt:
-            write_log_file( 'Gui crashed', True )
-            self.refresh_thread.stop()
-            self.refresh_thread.join()
 
 
 def read_config_file():
