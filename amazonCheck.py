@@ -34,9 +34,8 @@ IMAGE_WRITE_MODE = 'w'
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
 SHOW_NOTIFICATIONS = False
-UPDATES_ONLY = False
-VERBOSE = True
 SHOW_DEL_DIALOG = True
+VERBOSE = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
@@ -226,6 +225,26 @@ class MainWindow:
         self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
         self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG )
 
+
+        self.config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+        self.config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+
+        self.config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
+        self.config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
+
+        self.config_hbox_min_sleep = gtk.HBox()
+        self.config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
+        self.config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        self.config_hbox_min_sleep.pack_start( self.config_spinbutton_min_sleep,               False, False, 5 )
+
+        self.config_hbox_max_sleep = gtk.HBox()
+        self.config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
+        self.config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        self.config_hbox_max_sleep.pack_start( self.config_spinbutton_max_sleep,               False, False, 5 )
+
+
+        self.config_config_box.pack_start( self.config_hbox_min_sleep, False, False, 5 )
+        self.config_config_box.pack_start( self.config_hbox_max_sleep, False, False, 5 )
         self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
         self.config_config_box.pack_start( self.config_checkbutton_delete_dialog, False, False, 5 )
 
@@ -440,15 +459,39 @@ class MainWindow:
         self.data_store[path][0] = not self.data_store[path][0]
 
 
+    def on_changed_max_sleep( self, widget ):
+        min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
+        max_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[1].get_children()[2]
+
+        if ( max_spin_button.get_value() < min_spin_button.get_value() ):
+            min_spin_button.set_value( max_spin_button.get_value() )
+
+        return
+
+
+    def on_changed_min_sleep( self, widget ):
+        min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
+        max_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[1].get_children()[2]
+
+        if ( min_spin_button.get_value() > max_spin_button.get_value() ):
+            max_spin_button.set_value( min_spin_button.get_value() )
+
+        return
+
+
     def on_config_confirm( self, widget ):
         global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG
 
         checkboxes = self.config_window.get_children()[0].get_children()[0].get_children()
+        min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
+        max_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[1].get_children()[2]
 
-        SHOW_NOTIFICATIONS = checkboxes[0].get_active()
-        SHOW_DEL_DIALOG    = checkboxes[1].get_active()
+        SHOW_NOTIFICATIONS = checkboxes[2].get_active()
+        SHOW_DEL_DIALOG    = checkboxes[3].get_active()
+        MIN_SLEEP_TIME     = min_spin_button.get_value_as_int()
+        MAX_SLEEP_TIME     = max_spin_button.get_value_as_int()
 
-        write_config_file( [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+        write_config_file( [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
         self.config_window.hide()
 
@@ -602,20 +645,20 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         config_file = open( CONFIG_FILE, 'r' )
     except IOError:
         write_log_file( s[ 'cnf-no-pm' ], True )
         write_log_file( s[ 'us-def-op' ], True )
-        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         options = loads( config_file.read() )
     except ValueError:
         reset_config_file()
-        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -625,14 +668,14 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
     else:
         return options
 
 
 
 def reset_config_file():
-    options = [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+    options = [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_config_file( options )
 
@@ -748,7 +791,7 @@ if __name__ == '__main__':
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
 
-    [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+    [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     write_log_file( s[ 'str-mn-lp' ] )
 
