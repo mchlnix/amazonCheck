@@ -33,9 +33,10 @@ ICON_FILE = expanduser( '~/.amazonCheck/aC.png' )
 IMAGE_WRITE_MODE = 'w'
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
-SILENT = False
+SHOW_NOTIFICATIONS = False
 UPDATES_ONLY = False
 VERBOSE = True
+SHOW_DEL_DIALOG = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
@@ -91,7 +92,7 @@ class RefreshThread( Thread ):
 
 
     def run( self ):
-        global SLEEP_TIME, VERBOSE, SILENT
+        global SLEEP_TIME, VERBOSE, SHOW_NOTIFICATIONS
 
         write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started', True )
 
@@ -234,20 +235,21 @@ class MainWindow:
 
         self.config_outer_layer = gtk.VBox()
 
-        self.config_config_box = gtk.HBox()
+        self.config_config_box = gtk.VBox()
         self.config_button_box = gtk.HBox()
 
-        self.config_config_box_left = gtk.VBox()
-        self.config_config_box_right = gtk.VBox()
+        self.config_checkbutton_notifications = gtk.CheckButton( label='Show notification bubbles?' )
+        self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
 
-        self.config_config_box_left.pack_start( gtk.Label( 'Show notification bubbles: ' ), False, False, 5 )
-        self.config_config_box_left.pack_start( gtk.Label( 'Confirm deleting articles: ' ), False, False, 5 )
+        self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
 
-        self.config_config_box_right.pack_start( gtk.CheckButton(), False, False, 5 )
-        self.config_config_box_right.pack_start( gtk.CheckButton(), False, False, 5 )
+        self.config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
+        self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG )
 
-        self.config_config_box_left.pack_start( gtk.Label( '' ) )
-        self.config_config_box_right.pack_start( gtk.Label( '' ) )
+        self.config_config_box.pack_start( self.config_checkbutton_delete_dialog, False, False, 5 )
+
+        self.config_config_box.pack_start( gtk.Label( '' ) )
+        self.config_config_box.pack_start( gtk.Label( '' ) )
 
         self.config_button_cancel = gtk.Button( 'Cancel' )
         self.config_button_cancel.connect( 'clicked', self.hide_config_window )
@@ -256,9 +258,6 @@ class MainWindow:
 
         self.config_button_box.pack_start( self.config_button_cancel )
         self.config_button_box.pack_start( self.config_button_ok )
-
-        self.config_config_box.pack_start( self.config_config_box_left )
-        self.config_config_box.pack_start( self.config_config_box_right )
 
         self.config_outer_layer.pack_start( self.config_config_box )
 
@@ -378,7 +377,7 @@ class MainWindow:
 
 
     def confirm_config( self, widget ):
-        pass
+        self.config_window.hide()
 
 
     def show_config_window( self, widget ):
@@ -578,20 +577,20 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         config_file = open( CONFIG_FILE, 'r' )
     except IOError:
         write_log_file( s[ 'cnf-no-pm' ], True )
         write_log_file( s[ 'us-def-op' ], True )
-        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         options = loads( config_file.read() )
     except ValueError:
         reset_config_file()
-        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -601,14 +600,14 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
     else:
         return options
 
 
 
 def reset_config_file():
-    options = [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+    options = [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_config_file( options )
 
@@ -724,7 +723,7 @@ if __name__ == '__main__':
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
 
-    [ SILENT, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+    [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     write_log_file( s[ 'str-mn-lp' ] )
 
