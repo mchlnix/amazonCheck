@@ -231,7 +231,7 @@ class MainWindow:
 
         #Setting up config window
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.config_window.connect( 'delete-event', self.hide_config_window )
+        self.config_window.connect( 'delete-event', self.on_hide_config_window )
 
         self.config_outer_layer = gtk.VBox()
 
@@ -252,9 +252,9 @@ class MainWindow:
         self.config_config_box.pack_start( gtk.Label( '' ) )
 
         self.config_button_cancel = gtk.Button( 'Cancel' )
-        self.config_button_cancel.connect( 'clicked', self.hide_config_window )
+        self.config_button_cancel.connect( 'clicked', self.on_hide_config_window )
         self.config_button_ok = gtk.Button( 'OK' )
-        self.config_button_ok.connect( 'clicked', self.confirm_config )
+        self.config_button_ok.connect( 'clicked', self.on_config_confirm )
 
         self.config_button_box.pack_start( self.config_button_cancel )
         self.config_button_box.pack_start( self.config_button_ok )
@@ -296,7 +296,7 @@ class MainWindow:
         self.data_view = gtk.TreeView( self.data_store )
 
         toggle_renderer = gtk.CellRendererToggle()
-        toggle_renderer.connect( 'toggled', self.toggle_handler )
+        toggle_renderer.connect( 'toggled', self.on_cell_toggled )
 
         currency_renderer = gtk.CellRendererText()
         price_renderer = gtk.CellRendererText()
@@ -305,7 +305,7 @@ class MainWindow:
         avg_renderer = gtk.CellRendererText()
         max_renderer = gtk.CellRendererText()
 
-        self.data_view.connect( 'row-activated', self.visit_page )
+        self.data_view.connect( 'row-activated', self.on_visit_page )
 
         min_renderer.set_property( 'foreground', '#27B81F' )
         avg_renderer.set_property( 'foreground', '#FCCA00' )
@@ -324,18 +324,18 @@ class MainWindow:
 
         self.update_list_store()
 
-        #Setting up text box for add_article
+        #Setting up text box for on_add_article
         self.add_text_box = gtk.Entry( 0 )
 
         #Setting up control buttons
         self.add_button = gtk.Button( 'Add' )
-        self.add_button.connect( 'clicked', self.add_article )
+        self.add_button.connect( 'clicked', self.on_add_article )
 
         self.delete_button = gtk.Button( 'Delete' )
-        self.delete_button.connect( 'clicked', self.delete_selection )
+        self.delete_button.connect( 'clicked', self.on_delete_articles )
 
         self.config_button = gtk.Button( 'Config' )
-        self.config_button.connect( 'clicked', self.show_config_window )
+        self.config_button.connect( 'clicked', self.on_show_config_window )
 
         #Setting up the GUI boxes
         self.scroll = gtk.ScrolledWindow()
@@ -376,15 +376,15 @@ class MainWindow:
         self.refresh_thread = RefreshThread( self )
 
 
-    def confirm_config( self, widget ):
+    def on_config_confirm( self, widget ):
         self.config_window.hide()
 
 
-    def show_config_window( self, widget ):
+    def on_show_config_window( self, widget ):
         self.config_window.show_all()
 
 
-    def hide_config_window( self, widget, event=None ):
+    def on_hide_config_window( self, widget, event=None ):
         self.config_window.hide()
 
         return True
@@ -400,7 +400,7 @@ class MainWindow:
         self.indicator.set_status( STATUS_ATTENTION )
 
 
-    def add_article( self, widget ):
+    def on_add_article( self, widget ):
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
 
         if self.add_text_box.get_visible():
@@ -448,11 +448,11 @@ class MainWindow:
 
 
 
-    def toggle_handler( self, widget, path ):
+    def on_cell_toggled( self, widget, path ):
         self.data_store[path][0] = not self.data_store[path][0]
 
 
-    def delete_selection( self, widget ):
+    def on_delete_articles( self, widget ):
         delete_queue = []
 
         tree_length = len( self.data_store )
@@ -490,7 +490,7 @@ class MainWindow:
         self.start_thread()
 
 
-    def visit_page( self, widget, path, column ):
+    def on_visit_page( self, widget, path, column ):
         if column.get_title() == '':
             return
 
