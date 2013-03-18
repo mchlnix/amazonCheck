@@ -133,6 +133,7 @@ class RefreshThread( Thread ):
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
+                    gobject.idle_add( self.wind_obj.set_indicator_attention )
                     if SHOW_NOTIFICATIONS:
                         if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
                             title = s[ 'bec-avail' ] + NOCOLOR + ':'
@@ -150,7 +151,6 @@ class RefreshThread( Thread ):
 
                         try:
                             notify( title, body, IMAGE_PATH + pictures[ index ] )
-                            gobject.idle_add( self.wind_obj.set_indicator_attention )
 
                             if VERBOSE:
                                 print_notification( title, body, '' )
@@ -243,10 +243,10 @@ class MainWindow:
         self.config_hbox_max_sleep.pack_start( self.config_spinbutton_max_sleep,               False, False, 5 )
 
 
-        self.config_config_box.pack_start( self.config_hbox_min_sleep, False, False, 5 )
-        self.config_config_box.pack_start( self.config_hbox_max_sleep, False, False, 5 )
-        self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
-        self.config_config_box.pack_start( self.config_checkbutton_delete_dialog, False, False, 5 )
+        self.config_config_box.pack_start( self.config_hbox_min_sleep,                         False, False, 5 )
+        self.config_config_box.pack_start( self.config_hbox_max_sleep,                         False, False, 5 )
+        self.config_config_box.pack_start( self.config_checkbutton_notifications,              False, False, 5 )
+        self.config_config_box.pack_start( self.config_checkbutton_delete_dialog,              False, False, 5 )
 
 
         self.config_button_cancel = gtk.Button( 'Cancel'     )
@@ -340,13 +340,17 @@ class MainWindow:
 
 
         #Setting up control buttons
-        self.delete_button = gtk.Button( 'Delete' )
-        self.config_button = gtk.Button( 'Config' )
-        self.add_button = gtk.Button(    'Add'    )
+        self.delete_button               = gtk.Button( 'Delete'          )
+        self.really_delete_button        = gtk.Button( 'Really delete?'  )
+        self.not_really_delete_button    = gtk.Button( 'Changed my mind' )
+        self.config_button               = gtk.Button( 'Config'          )
+        self.add_button                  = gtk.Button(    'Add'          )
 
-        self.delete_button.connect( 'clicked', self.on_delete_articles    )
-        self.config_button.connect( 'clicked', self.on_show_config_window )
-        self.add_button.connect(    'clicked', self.on_add_article        )
+        self.delete_button.connect(               'clicked', self.on_delete_articles        )
+        self.really_delete_button.connect(        'clicked', self.on_really_delete_articles )
+        self.not_really_delete_button.connect(    'clicked', self.on_reset_delete_button    )
+        self.config_button.connect(               'clicked', self.on_show_config_window     )
+        self.add_button.connect(                  'clicked', self.on_add_article            )
 
 
         #Setting up the GUI boxes
@@ -359,15 +363,17 @@ class MainWindow:
 
 
         #Setting up inner layer
-        self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
-        self.inner_layer.pack_start( self.config_button,         False, False, 5 )
-        self.inner_layer.pack_start( self.add_button,            False, False, 5 )
-        self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
+        self.inner_layer.pack_start( self.delete_button,               False, False, 5 )
+        self.inner_layer.pack_start( self.really_delete_button,        False, False, 5 )
+        self.inner_layer.pack_start( self.not_really_delete_button,    False, False, 5 )
+        self.inner_layer.pack_start( self.config_button,               False, False, 5 )
+        self.inner_layer.pack_start( self.add_button,                  False, False, 5 )
+        self.inner_layer.pack_start( self.add_text_box,                True,  True,  5 )
 
 
         #Setting up outer layer
         self.outer_layer.pack_start( self.scroll )
-        self.outer_layer.pack_start( self.inner_layer,           False, False, 5 )
+        self.outer_layer.pack_start( self.inner_layer,          False, False, 5 )
 
 
         #Setting up the main window
@@ -385,8 +391,10 @@ class MainWindow:
         self.window_visible = True
 
 
-        #Hide text box
+        #Hide hidden widgets
         self.add_text_box.hide()
+        self.really_delete_button.hide()
+        self.not_really_delete_button.hide()
 
 
         #Setting up refresh thread
@@ -504,6 +512,12 @@ class MainWindow:
 
 
     def on_delete_articles( self, widget ):
+        self.delete_button.hide()
+        self.really_delete_button.show()
+        self.not_really_delete_button.show()
+
+
+    def on_really_delete_articles( self, widget ):
         delete_queue = []
         tree_length = len( self.data_store )
 
@@ -513,6 +527,7 @@ class MainWindow:
                 delete_queue.append( index )
 
         if len( delete_queue ) == 0:
+            self.on_reset_delete_button()
             return False
 
         self.refresh_thread.stop()
@@ -538,6 +553,14 @@ class MainWindow:
 
         self.refresh_thread.join()
         self.start_thread()
+
+        self.on_reset_delete_button()
+
+
+    def on_reset_delete_button( self, widget=None ):
+        self.really_delete_button.hide()
+        self.not_really_delete_button.hide()
+        self.delete_button.show()
 
 
     def on_show_config_window( self, widget ):
