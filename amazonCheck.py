@@ -512,12 +512,15 @@ class MainWindow:
 
 
     def on_delete_articles( self, widget ):
-        self.delete_button.hide()
-        self.really_delete_button.show()
-        self.not_really_delete_button.show()
+        if SHOW_DEL_DIALOG:
+            self.delete_button.hide()
+            self.really_delete_button.show()
+            self.not_really_delete_button.show()
+        else:
+            self.on_really_delete_articles()
 
 
-    def on_really_delete_articles( self, widget ):
+    def on_really_delete_articles( self, widget=None ):
         delete_queue = []
         tree_length = len( self.data_store )
 
