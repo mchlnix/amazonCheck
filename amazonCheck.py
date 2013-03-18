@@ -223,7 +223,7 @@ class MainWindow:
         self.config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
 
         self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
-        self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG )
+        self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG    )
 
 
         self.config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
@@ -252,7 +252,7 @@ class MainWindow:
         self.config_button_cancel = gtk.Button( 'Cancel'     )
         self.config_button_ok     = gtk.Button( '    OK    ' )
 
-        self.config_button_cancel.connect( 'clicked', self.on_config_cancel )
+        self.config_button_cancel.connect( 'clicked', self.on_config_cancel      )
         self.config_button_ok.connect(     'clicked', self.on_config_confirm     )
 
         self.config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
@@ -363,6 +363,7 @@ class MainWindow:
 
 
         #Setting up inner layer
+        self.inner_layer.pack_start( gtk.Label( '' ),                  False, False, 2 )
         self.inner_layer.pack_start( self.delete_button,               False, False, 5 )
         self.inner_layer.pack_start( self.really_delete_button,        False, False, 5 )
         self.inner_layer.pack_start( self.not_really_delete_button,    False, False, 5 )
@@ -372,8 +373,8 @@ class MainWindow:
 
 
         #Setting up outer layer
-        self.outer_layer.pack_start( self.scroll )
-        self.outer_layer.pack_start( self.inner_layer,          False, False, 5 )
+        self.outer_layer.pack_start( self.scroll,                      True,  True,  0  )
+        self.outer_layer.pack_start( self.inner_layer,                 False, False, 10 )
 
 
         #Setting up the main window
