@@ -133,7 +133,6 @@ class RefreshThread( Thread ):
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
-                    gobject.idle_add( self.wind_obj.set_indicator_attention )
                     if SHOW_NOTIFICATIONS:
                         if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
                             title = s[ 'bec-avail' ] + NOCOLOR + ':'
@@ -151,12 +150,11 @@ class RefreshThread( Thread ):
 
                         try:
                             notify( title, body, IMAGE_PATH + pictures[ index ] )
-
-                            if VERBOSE:
-                                print_notification( title, body, '' )
                         except:
-                            print_notification( title, body, '' )
+                            write_log_file( 'Notification bubble failed', True )
 
+                    print_notification( title, body, '' )
+                    gobject.idle_add( self.wind_obj.set_indicator_attention )
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
 
             #Saving data to file
