@@ -22,7 +22,7 @@ from json import dumps, loads
 from dbus import SessionBus
 from sys import argv, exit
 from re import search
-from os import name
+from os import name, remove
 
 
 CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
@@ -415,6 +415,12 @@ class MainWindow:
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
         for index in delete_queue:
+
+            try:
+                remove( IMAGE_PATH + pictures[ index ] )
+            except OSError:
+                write_log_file( 'Picture file was already deleted', True )
+
             links.pop( index )
             titles.pop( index )
             currencies.pop( index )
