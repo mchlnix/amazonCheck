@@ -214,83 +214,95 @@ class MainWindow:
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.config_window.connect( 'delete-event', self.on_hide_config_window )
 
-        self.config_outer_layer = gtk.VBox()
 
-        self.config_config_box = gtk.VBox()
-        self.config_button_box = gtk.HBox()
+        self.config_outer_layer = gtk.VBox()
+        self.config_config_box  = gtk.VBox()
+        self.config_button_box  = gtk.HBox()
+
 
         self.config_checkbutton_notifications = gtk.CheckButton( label='Show notification bubbles?' )
-        self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
-
-        self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
-
         self.config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
+
+        self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
         self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG )
 
+        self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
         self.config_config_box.pack_start( self.config_checkbutton_delete_dialog, False, False, 5 )
 
         self.config_config_box.pack_start( gtk.Label( '' ) )
         self.config_config_box.pack_start( gtk.Label( '' ) )
 
-        self.config_button_cancel = gtk.Button( 'Cancel' )
+
+        self.config_button_cancel = gtk.Button( 'Cancel'     )
+        self.config_button_ok     = gtk.Button( '    OK    ' )
+
         self.config_button_cancel.connect( 'clicked', self.on_hide_config_window )
-        self.config_button_ok = gtk.Button( 'OK' )
-        self.config_button_ok.connect( 'clicked', self.on_config_confirm )
+        self.config_button_ok.connect(     'clicked', self.on_config_confirm     )
 
-        self.config_button_box.pack_start( self.config_button_cancel )
-        self.config_button_box.pack_start( self.config_button_ok )
+        self.config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
+        self.config_button_box.pack_start( self.config_button_cancel, False, False, 5 )
+        self.config_button_box.pack_start( self.config_button_ok,     False, False, 5 )
 
-        self.config_outer_layer.pack_start( self.config_config_box )
 
-        self.config_outer_layer.pack_start( self.config_button_box )
+        self.config_outer_layer.pack_start( self.config_config_box, False, False, 5 )
+        self.config_outer_layer.pack_start( gtk.Label( '' ),        True,  True,  5 )
+        self.config_outer_layer.pack_start( self.config_button_box, False, False, 5 )
+
 
         self.config_window.add( self.config_outer_layer )
+
 
         #Setting up the indicator
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
         self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         self.indicator.set_status( STATUS_ACTIVE )
 
+
+        menu_item_show      = gtk.MenuItem( 'Hide window' )
+        menu_item_exit      = gtk.MenuItem( 'Exit'        )
+        menu_item_seperator = gtk.SeparatorMenuItem()
+        menu_item_reset     = gtk.MenuItem( 'Reset'       )
+
+        menu_item_show.connect(  'activate', self.toggle_window_visibility )
+        menu_item_exit.connect(  'activate', self.exit_application         )
+        menu_item_reset.connect( 'activate', self.set_indicator_active     )
+
+
         indicator_menu = gtk.Menu()
 
-        menu_item_show = gtk.MenuItem( 'Hide window' )
-        menu_item_exit = gtk.MenuItem( 'Exit' )
-        menu_item_seperator = gtk.SeparatorMenuItem()
-        menu_item_reset = gtk.MenuItem( 'Reset' )
-        menu_item_show.connect( 'activate', self.toggle_window_visibility )
-        menu_item_exit.connect( 'activate', self.exit_application )
-        menu_item_reset.connect( 'activate', self.set_indicator_active )
-
-        indicator_menu.append( menu_item_show )
-        indicator_menu.append( menu_item_exit )
+        indicator_menu.append( menu_item_show      )
+        indicator_menu.append( menu_item_exit      )
         indicator_menu.append( menu_item_seperator )
-        indicator_menu.append( menu_item_reset )
+        indicator_menu.append( menu_item_reset     )
 
         indicator_menu.show_all()
 
+
         self.indicator.set_menu( indicator_menu )
+
 
         #Setting up the Liststore
         self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
 
         #Setting up the TreeView
         self.data_view = gtk.TreeView( self.data_store )
+        self.data_view.connect( 'row-activated', self.on_visit_page )
 
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.connect( 'toggled', self.on_cell_toggled )
 
         currency_renderer = gtk.CellRendererText()
-        price_renderer = gtk.CellRendererText()
-        title_renderer = gtk.CellRendererText()
-        min_renderer = gtk.CellRendererText()
-        avg_renderer = gtk.CellRendererText()
-        max_renderer = gtk.CellRendererText()
+        price_renderer    = gtk.CellRendererText()
+        title_renderer    = gtk.CellRendererText()
+        min_renderer      = gtk.CellRendererText()
+        avg_renderer      = gtk.CellRendererText()
+        max_renderer      = gtk.CellRendererText()
 
-        self.data_view.connect( 'row-activated', self.on_visit_page )
 
         min_renderer.set_property( 'foreground', '#27B81F' )
         avg_renderer.set_property( 'foreground', '#FCCA00' )
         max_renderer.set_property( 'foreground', '#FF3D3D' )
+
 
         self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,   active=0 ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Currency', currency_renderer, text=1 ) )
@@ -300,23 +312,26 @@ class MainWindow:
         self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5 ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 ) )
 
+
         #Fill the TreeView
         ( links, titles, currencies, not_used, prices ) = read_data_file()
 
         self.update_list_store()
 
+
         #Setting up text box for on_add_article
         self.add_text_box = gtk.Entry( 0 )
 
+
         #Setting up control buttons
-        self.add_button = gtk.Button( 'Add' )
-        self.add_button.connect( 'clicked', self.on_add_article )
-
         self.delete_button = gtk.Button( 'Delete' )
-        self.delete_button.connect( 'clicked', self.on_delete_articles )
-
         self.config_button = gtk.Button( 'Config' )
+        self.add_button = gtk.Button(    'Add'    )
+
+        self.delete_button.connect( 'clicked', self.on_delete_articles    )
         self.config_button.connect( 'clicked', self.on_show_config_window )
+        self.add_button.connect(    'clicked', self.on_add_article        )
+
 
         #Setting up the GUI boxes
         self.scroll = gtk.ScrolledWindow()
@@ -326,20 +341,23 @@ class MainWindow:
         self.outer_layer = gtk.VBox()
         self.inner_layer = gtk.HBox()
 
+
         #Setting up inner layer
         self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
         self.inner_layer.pack_start( self.config_button,         False, False, 5 )
         self.inner_layer.pack_start( self.add_button,            False, False, 5 )
         self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
 
+
         #Setting up outer layer
         self.outer_layer.pack_start( self.scroll )
         self.outer_layer.pack_start( self.inner_layer,           False, False, 5 )
 
+
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.window.connect( 'delete-event', self.toggle_window_visibility )
-        self.window.connect( 'focus-in-event', self.set_indicator_active )
+        self.window.connect( 'delete-event',   self.toggle_window_visibility )
+        self.window.connect( 'focus-in-event', self.set_indicator_active   )
 
         self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
@@ -350,15 +368,18 @@ class MainWindow:
 
         self.window_visible = True
 
+
         #Hide text box
         self.add_text_box.hide()
+
 
         #Setting up refresh thread
         self.refresh_thread = RefreshThread( self )
 
 
     def main( self ):
-        self.start_thread()        #Starting the data thread
+        #Starting the data thread
+        self.start_thread()
 
         try:
             gtk.main()
