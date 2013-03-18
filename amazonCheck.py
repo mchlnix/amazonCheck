@@ -214,58 +214,58 @@ class MainWindow:
         self.config_window.connect( 'delete-event', self.on_config_cancel )
 
 
-        self.config_outer_layer = gtk.VBox()
-        self.config_config_box  = gtk.VBox()
-        self.config_button_box  = gtk.HBox()
+        config_outer_layer = gtk.VBox()
+        config_config_box  = gtk.VBox()
+        config_button_box  = gtk.HBox()
 
 
-        self.config_checkbutton_notifications = gtk.CheckButton( label='Show notification bubbles?' )
-        self.config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
+        config_checkbutton_notifications = gtk.CheckButton( label='Show notification bubbles?' )
+        config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
 
-        self.config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
-        self.config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG    )
-
-
-        self.config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
-        self.config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
-
-        self.config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
-        self.config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
-
-        self.config_hbox_min_sleep = gtk.HBox()
-        self.config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
-        self.config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        self.config_hbox_min_sleep.pack_start( self.config_spinbutton_min_sleep,               False, False, 5 )
-
-        self.config_hbox_max_sleep = gtk.HBox()
-        self.config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
-        self.config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        self.config_hbox_max_sleep.pack_start( self.config_spinbutton_max_sleep,               False, False, 5 )
+        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
+        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG    )
 
 
-        self.config_config_box.pack_start( self.config_hbox_min_sleep,                         False, False, 5 )
-        self.config_config_box.pack_start( self.config_hbox_max_sleep,                         False, False, 5 )
-        self.config_config_box.pack_start( self.config_checkbutton_notifications,              False, False, 5 )
-        self.config_config_box.pack_start( self.config_checkbutton_delete_dialog,              False, False, 5 )
+        config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+        config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+
+        config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
+        config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
+
+        config_hbox_min_sleep = gtk.HBox()
+        config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
+        config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        config_hbox_min_sleep.pack_start( config_spinbutton_min_sleep,                    False, False, 5 )
+
+        config_hbox_max_sleep = gtk.HBox()
+        config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
+        config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        config_hbox_max_sleep.pack_start( config_spinbutton_max_sleep,                    False, False, 5 )
 
 
-        self.config_button_cancel = gtk.Button( 'Cancel'     )
-        self.config_button_ok     = gtk.Button( '    OK    ' )
-
-        self.config_button_cancel.connect( 'clicked', self.on_config_cancel      )
-        self.config_button_ok.connect(     'clicked', self.on_config_confirm     )
-
-        self.config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
-        self.config_button_box.pack_start( self.config_button_cancel, False, False, 5 )
-        self.config_button_box.pack_start( self.config_button_ok,     False, False, 5 )
+        config_config_box.pack_start( config_hbox_min_sleep,                              False, False, 5 )
+        config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
+        config_config_box.pack_start( config_checkbutton_notifications,                   False, False, 5 )
+        config_config_box.pack_start( config_checkbutton_delete_dialog,                   False, False, 5 )
 
 
-        self.config_outer_layer.pack_start( self.config_config_box, False, False, 5 )
-        self.config_outer_layer.pack_start( gtk.Label( '' ),        True,  True,  5 )
-        self.config_outer_layer.pack_start( self.config_button_box, False, False, 5 )
+        config_button_cancel = gtk.Button( 'Cancel'     )
+        config_button_ok     = gtk.Button( '    OK    ' )
+
+        config_button_cancel.connect( 'clicked', self.on_config_cancel      )
+        config_button_ok.connect(     'clicked', self.on_config_confirm     )
+
+        config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
+        config_button_box.pack_start( config_button_cancel,      False, False, 5 )
+        config_button_box.pack_start( config_button_ok,          False, False, 5 )
 
 
-        self.config_window.add( self.config_outer_layer )
+        config_outer_layer.pack_start( config_config_box,        False, False, 5 )
+        config_outer_layer.pack_start( gtk.Label( '' ),          True,  True,  5 )
+        config_outer_layer.pack_start( config_button_box,        False, False, 5 )
+
+
+        self.config_window.add( config_outer_layer )
 
 
         #Setting up the indicator
@@ -321,11 +321,11 @@ class MainWindow:
 
 
         self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,   active=0 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', currency_renderer, text=1 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', currency_renderer, text=1   ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Price',    price_renderer,    markup=2 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5 ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3   ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4   ) )
+        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5   ) )
         self.data_view.append_column( gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 ) )
 
 
@@ -340,41 +340,41 @@ class MainWindow:
 
 
         #Setting up control buttons
-        self.delete_button               = gtk.Button( 'Delete'          )
-        self.really_delete_button        = gtk.Button( 'Really delete?'  )
-        self.not_really_delete_button    = gtk.Button( 'Changed my mind' )
-        self.config_button               = gtk.Button( 'Config'          )
-        self.add_button                  = gtk.Button(    'Add'          )
+        delete_button               = gtk.Button( 'Delete'          )
+        really_delete_button        = gtk.Button( 'Really delete?'  )
+        not_really_delete_button    = gtk.Button( 'Changed my mind' )
+        config_button               = gtk.Button( 'Config'          )
+        add_button                  = gtk.Button(    'Add'          )
 
-        self.delete_button.connect(               'clicked', self.on_delete_articles        )
-        self.really_delete_button.connect(        'clicked', self.on_really_delete_articles )
-        self.not_really_delete_button.connect(    'clicked', self.on_reset_delete_button    )
-        self.config_button.connect(               'clicked', self.on_show_config_window     )
-        self.add_button.connect(                  'clicked', self.on_add_article            )
+        delete_button.connect(               'clicked', self.on_delete_articles        )
+        really_delete_button.connect(        'clicked', self.on_really_delete_articles )
+        not_really_delete_button.connect(    'clicked', self.on_reset_delete_button    )
+        config_button.connect(               'clicked', self.on_show_config_window     )
+        add_button.connect(                  'clicked', self.on_add_article            )
 
 
         #Setting up the GUI boxes
-        self.scroll = gtk.ScrolledWindow()
-        self.scroll.set_size_request( 640, 480 )
-        self.scroll.add( self.data_view )
+        scroll = gtk.ScrolledWindow()
+        scroll.set_size_request( 640, 480 )
+        scroll.add( self.data_view )
 
-        self.outer_layer = gtk.VBox()
-        self.inner_layer = gtk.HBox()
+        outer_layer = gtk.VBox()
+        inner_layer = gtk.HBox()
 
 
         #Setting up inner layer
-        self.inner_layer.pack_start( gtk.Label( '' ),                  False, False, 2 )
-        self.inner_layer.pack_start( self.delete_button,               False, False, 5 )
-        self.inner_layer.pack_start( self.really_delete_button,        False, False, 5 )
-        self.inner_layer.pack_start( self.not_really_delete_button,    False, False, 5 )
-        self.inner_layer.pack_start( self.config_button,               False, False, 5 )
-        self.inner_layer.pack_start( self.add_button,                  False, False, 5 )
-        self.inner_layer.pack_start( self.add_text_box,                True,  True,  5 )
+        inner_layer.pack_start( gtk.Label( '' ),             False, False, 2 )
+        inner_layer.pack_start( delete_button,               False, False, 5 )
+        inner_layer.pack_start( really_delete_button,        False, False, 5 )
+        inner_layer.pack_start( not_really_delete_button,    False, False, 5 )
+        inner_layer.pack_start( config_button,               False, False, 5 )
+        inner_layer.pack_start( add_button,                  False, False, 5 )
+        inner_layer.pack_start( self.add_text_box,           True,  True,  5 )
 
 
         #Setting up outer layer
-        self.outer_layer.pack_start( self.scroll,                      True,  True,  0  )
-        self.outer_layer.pack_start( self.inner_layer,                 False, False, 10 )
+        outer_layer.pack_start( scroll,                      True,  True,  0  )
+        outer_layer.pack_start( inner_layer,                 False, False, 10 )
 
 
         #Setting up the main window
@@ -385,7 +385,7 @@ class MainWindow:
         self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
 
-        self.window.add( self.outer_layer )
+        self.window.add( outer_layer )
 
         self.window.show_all()
 
@@ -393,9 +393,9 @@ class MainWindow:
 
 
         #Hide hidden widgets
+        really_delete_button.hide()
+        not_really_delete_button.hide()
         self.add_text_box.hide()
-        self.really_delete_button.hide()
-        self.not_really_delete_button.hide()
 
 
         #Setting up refresh thread
@@ -514,9 +514,9 @@ class MainWindow:
 
     def on_delete_articles( self, widget ):
         if SHOW_DEL_DIALOG:
-            self.delete_button.hide()
-            self.really_delete_button.show()
-            self.not_really_delete_button.show()
+            self.window.get_children()[0].get_children()[-1].get_children()[1].hide() # delete_button
+            self.window.get_children()[0].get_children()[-1].get_children()[2].show() # really_delete_button
+            self.window.get_children()[0].get_children()[-1].get_children()[3].show() # not_really_delete_button
         else:
             self.on_really_delete_articles()
 
@@ -562,9 +562,9 @@ class MainWindow:
 
 
     def on_reset_delete_button( self, widget=None ):
-        self.really_delete_button.hide()
-        self.not_really_delete_button.hide()
-        self.delete_button.show()
+        self.window.get_children()[0].get_children()[-1].get_children()[1].show() # delete_button
+        self.window.get_children()[0].get_children()[-1].get_children()[2].hide() # really_delete_button
+        self.window.get_children()[0].get_children()[-1].get_children()[3].hide() # not_really_delete_button
 
 
     def on_show_config_window( self, widget ):
