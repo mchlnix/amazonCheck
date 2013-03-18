@@ -48,7 +48,7 @@ CONFIG_VARS = 5
 SERVICE_NAME = 'org.amazonCheck.alive'
 
 
-DBusGMainLoop( set_as_default=True )
+DBusGMainLoop( set_as_default = True )
 
 
 for service_name in SessionBus().list_names():
@@ -76,7 +76,7 @@ class MyDBUSService( dbusServiceObject ):
 
     @dbusServiceMethod( SERVICE_NAME )
     def toggle_window( self ):
-        self.wind_obj.toggle_window_visibility( )
+        self.wind_obj.toggle_window_visibility()
 
 
 class RefreshThread( Thread ):
@@ -228,6 +228,39 @@ class MainWindow:
         #Setting up the dbus service
         self.dbus_service = MyDBUSService( self )
 
+        #Setting up config window
+        self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        self.config_window.connect( 'delete-event', self.hide_config_window )
+
+        self.config_vbox = gtk.VBox( spacing=5 )
+        self.config_hbox = gtk.HBox()
+
+        self.config_hbox.pack_start( gtk.Label( 'Show notification bubbles: ' ), False, False, 5 )
+        self.config_hbox.pack_start( gtk.CheckButton(), False, False, 5 )
+        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+
+        self.config_hbox = gtk.HBox()
+
+        self.config_hbox.pack_start( gtk.Label( 'Confirm deleting articles: ' ), False, False, 5 )
+        self.config_hbox.pack_start( gtk.CheckButton(), False, False, 5 )
+        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+
+        self.config_vbox.pack_start( gtk.Label( '' ) )
+
+        self.config_hbox = gtk.HBox( spacing=5 )
+
+        self.config_button_ok = gtk.Button( 'OK' )
+        self.config_button_cancel = gtk.Button( 'Cancel' )
+
+        self.config_hbox.pack_start( self.config_button_cancel, False, False, 5 )
+        self.config_hbox.pack_start( self.config_button_ok, False, False, 5 )
+
+        self.config_vbox.pack_start( self.config_hbox, False, False, 5 )
+
+        self.config_window.add( self.config_vbox )
+
+        self.config_window.hide()
+
         #Setting up the indicator
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
         self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
@@ -297,6 +330,9 @@ class MainWindow:
         self.delete_button = gtk.Button( 'Delete' )
         self.delete_button.connect( 'clicked', self.delete_selection )
 
+        self.config_button = gtk.Button( 'Config' )
+        self.config_button.connect( 'clicked', self.show_config_window )
+
         #Setting up the GUI boxes
         self.scroll = gtk.ScrolledWindow()
         self.scroll.set_size_request( 640, 480 )
@@ -307,6 +343,7 @@ class MainWindow:
 
         #Setting up inner layer
         self.inner_layer.pack_start( self.delete_button,         False, False, 5 )
+        self.inner_layer.pack_start( self.config_button,         False, False, 5 )
         self.inner_layer.pack_start( self.add_button,            False, False, 5 )
         self.inner_layer.pack_start( self.add_text_box,          True,  True,  5 )
 
@@ -333,6 +370,16 @@ class MainWindow:
 
         #Setting up refresh thread
         self.refresh_thread = RefreshThread( self )
+
+
+    def show_config_window( self, widget ):
+        self.config_window.show_all()
+
+
+    def hide_config_window( self, widget, event ):
+        self.config_window.hide()
+
+        return True
 
 
     def set_indicator_active( self, widget, direction=None ):
