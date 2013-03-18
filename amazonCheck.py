@@ -134,7 +134,7 @@ class RefreshThread( Thread ):
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
-                    if UPDATES_ONLY:
+                    if SHOW_NOTIFICATIONS:
                         if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
                             title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
@@ -212,7 +212,7 @@ class MainWindow:
 
         #Setting up config window
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.config_window.connect( 'delete-event', self.on_hide_config_window )
+        self.config_window.connect( 'delete-event', self.on_config_cancel )
 
 
         self.config_outer_layer = gtk.VBox()
@@ -229,14 +229,11 @@ class MainWindow:
         self.config_config_box.pack_start( self.config_checkbutton_notifications, False, False, 5 )
         self.config_config_box.pack_start( self.config_checkbutton_delete_dialog, False, False, 5 )
 
-        self.config_config_box.pack_start( gtk.Label( '' ) )
-        self.config_config_box.pack_start( gtk.Label( '' ) )
-
 
         self.config_button_cancel = gtk.Button( 'Cancel'     )
         self.config_button_ok     = gtk.Button( '    OK    ' )
 
-        self.config_button_cancel.connect( 'clicked', self.on_hide_config_window )
+        self.config_button_cancel.connect( 'clicked', self.on_config_cancel )
         self.config_button_ok.connect(     'clicked', self.on_config_confirm     )
 
         self.config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
@@ -397,20 +394,6 @@ class MainWindow:
         gtk.main_quit()
 
 
-    def on_config_confirm( self, widget ):
-        self.config_window.hide()
-
-
-    def on_show_config_window( self, widget ):
-        self.config_window.show_all()
-
-
-    def on_hide_config_window( self, widget, event=None ):
-        self.config_window.hide()
-
-        return True
-
-
     def on_add_article( self, widget ):
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
 
@@ -457,9 +440,28 @@ class MainWindow:
         self.data_store[path][0] = not self.data_store[path][0]
 
 
+    def on_config_confirm( self, widget ):
+        global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG
+
+        checkboxes = self.config_window.get_children()[0].get_children()[0].get_children()
+
+        SHOW_NOTIFICATIONS = checkboxes[0].get_active()
+        SHOW_DEL_DIALOG    = checkboxes[1].get_active()
+
+        write_config_file( [ SHOW_NOTIFICATIONS, UPDATES_ONLY, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+
+        self.config_window.hide()
+
+
+    def on_config_cancel( self, widget, event=None ):
+
+        self.config_window.hide()
+
+        return True
+
+
     def on_delete_articles( self, widget ):
         delete_queue = []
-
         tree_length = len( self.data_store )
 
         for index in range( 0, tree_length ):
@@ -493,6 +495,10 @@ class MainWindow:
 
         self.refresh_thread.join()
         self.start_thread()
+
+
+    def on_show_config_window( self, widget ):
+        self.config_window.show_all()
 
 
     def on_visit_page( self, widget, path, column ):
