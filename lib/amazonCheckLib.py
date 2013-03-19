@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python2.7 -u
 # -*- coding: utf-8 -*-
 
 from amazonCheckTrans import strings as s
