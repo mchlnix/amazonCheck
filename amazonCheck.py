@@ -457,8 +457,7 @@ class MainWindow:
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
-            data_file.write( dumps( [ url, s[ 'err-gener' ], currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
-            write_log_file( 'Title could not get written: ' + title )
+            data_file.write( dumps( [ url, title.decode( 'ascii', 'ignore' ), currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
         data_file.close()
 
@@ -792,8 +791,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
         try:
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
-            data_file.write( dumps( [ links[ index] , s[ 'err-gener' ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
-            print( titles[ index ] )
+            data_file.write( dumps( [ links[ index] , titles[ index ].decode( 'ascii', 'ignore' ) , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
 
