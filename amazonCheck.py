@@ -161,6 +161,7 @@ class RefreshThread( Thread ):
                     print_notification( title, body, '' )
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
+                    self.wind_obj.price_dict[ info[0] ].append( [ info[2], int( round( time() ) ) ] )
 
             #Saving data to file
 
@@ -209,6 +210,12 @@ class RefreshThread( Thread ):
 
 class MainWindow:
     def __init__( self ):
+        #Setting up the data holding dictionary
+        self.link_dict = {}
+        self.currency_dict = {}
+        self.price_dict = {}
+        self.picture_dict = {}
+
         #Setting up the dbus service
         self.dbus_service = DBusService( self )
 
@@ -333,7 +340,13 @@ class MainWindow:
 
 
         #Fill the TreeView
-        ( links, titles, currencies, not_used, prices ) = read_data_file()
+        ( links, titles, currencies, pictures, prices ) = read_data_file()
+
+        for index in range( 0, len( links ) ):
+            self.link_dict[ titles[index] ] = links[ index ]
+            self.currency_dict[ titles[index] ] = currencies[ index ]
+            self.picture_dict[ titles[index] ] = pictures[ index ]
+            self.price_dict[ titles[index] ] = prices[ index ]
 
         self.update_list_store()
 
@@ -615,19 +628,19 @@ class MainWindow:
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
         for index in range( 0, len( titles ) ):
-            price = prices[ index ][-1][0]
+            price = self.price_dict[ titles[ index ] ][-1][0]
 
             if len( prices[ index ] ) == 1:
-                avgs = prices[ index ][0][0]
-                mins = prices[ index ][0][0]
-                maxs = prices[ index ][0][0]
+                avgs = self.price_dict[ titles[ index ] ][0][0]
+                mins = self.price_dict[ titles[ index ] ][0][0]
+                maxs = self.price_dict[ titles[ index ] ][0][0]
                 #progs = prices
             else:
-                avgs = get_avg_price( prices[ index ] )
+                avgs = get_avg_price( self.price_dict[ titles[ index ] ] )
                 if avgs == -1: avgs = s[ 'N/A' ]
-                mins = get_min_price( prices[ index ] )
+                mins = get_min_price( self.price_dict[ titles[ index ] ] )
                 if mins == -1: mins = s[ 'N/A' ]
-                maxs = get_max_price( prices[ index ] )
+                maxs = get_max_price( self.price_dict[ titles[ index ] ] )
                 if maxs == -1: maxs = s[ 'N/A' ]
                 #progs.append( get_prognosis( prices[ index ] ) )
 
@@ -659,10 +672,14 @@ class MainWindow:
                 price = '%.2f' % price
 
             try:
-                self.data_store[ index ][2] = color + str( price ) + '</span>'
-                self.data_store[ index ][3] = mins
-                self.data_store[ index ][4] = avgs
-                self.data_store[ index ][5] = maxs
+                for store_index in range( 0, len( titles ) ):
+                    if self.data_store[ store_index ][6] == titles[ index ]:
+                        self.data_store[ store_index ][2] = color + str( price ) + '</span>'
+                        self.data_store[ store_index ][3] = mins
+                        self.data_store[ store_index ][4] = avgs
+                        self.data_store[ store_index ][5] = maxs
+                        break
+
             except IndexError:
                 self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
