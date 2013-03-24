@@ -512,7 +512,6 @@ class MainWindow:
         index = 0
 
         while 1:
-            print index
             if self.data_store[ index ][6] == title:
                 self.data_store[ index ][0] = not self.data_store[ index ][0]
                 return
@@ -595,6 +594,11 @@ class MainWindow:
                 remove( IMAGE_PATH + pictures[ index ] )
             except OSError:
                 write_log_file( 'Picture file was already deleted', True )
+
+            del self.link_dict[ titles[ index ] ]
+            del self.currency_dict[ titles[ index ] ]
+            del self.picture_dict[ titles[ index ] ]
+            del self.price_dict[ titles[ index ] ]
 
             links.pop( index )
             titles.pop( index )
