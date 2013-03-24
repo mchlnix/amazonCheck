@@ -539,7 +539,7 @@ class MainWindow:
 
 
     def on_config_confirm( self, widget ):
-        global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG
+        global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, MIN_SLEEP_TIME, MAX_SLEEP_TIME
 
         checkboxes = self.config_window.get_children()[0].get_children()[0].get_children()
         min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
@@ -656,6 +656,7 @@ class MainWindow:
             self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
         else:
             self.window.set_visible( True )
+            self.update_list_store()
             self.indicator.set_status( STATUS_ACTIVE )
             self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
 
