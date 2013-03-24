@@ -309,9 +309,16 @@ class MainWindow:
 
         #Setting up the Liststore
         self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
+        self.sortable = gtk.TreeModelSort( self.data_store )
+
+        self.sortable.set_sort_func( 2, my_sort_function, 2 )
+        self.sortable.set_sort_func( 3, my_sort_function, 3 )
+        self.sortable.set_sort_func( 4, my_sort_function, 4 )
+        self.sortable.set_sort_func( 5, my_sort_function, 5 )
 
         #Setting up the TreeView
-        self.data_view = gtk.TreeView( self.data_store )
+        self.data_view = gtk.TreeView( self.sortable )
+        self.data_view.set_headers_clickable( True )
         self.data_view.connect( 'row-activated', self.on_visit_page )
 
         toggle_renderer = gtk.CellRendererToggle()
@@ -329,14 +336,29 @@ class MainWindow:
         avg_renderer.set_property( 'foreground', '#FCCA00' )
         max_renderer.set_property( 'foreground', '#FF3D3D' )
 
+        toggle_column   = gtk.TreeViewColumn( '',         toggle_renderer,   active=0 )
+        currency_column = gtk.TreeViewColumn( 'Currency', currency_renderer, text=1   )
+        price_column    = gtk.TreeViewColumn( 'Price',    price_renderer,    markup=2 )
+        minimum_column  = gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3   )
+        average_column  = gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4   )
+        maximum_column  = gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5   )
+        title_column    = gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 )
 
-        self.data_view.append_column( gtk.TreeViewColumn( '',         toggle_renderer,   active=0 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Currency', currency_renderer, text=1   ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Price',    price_renderer,    markup=2 ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3   ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4   ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5   ) )
-        self.data_view.append_column( gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 ) )
+        toggle_column.set_sort_column_id(   0 )
+        currency_column.set_sort_column_id( 1 )
+        price_column.set_sort_column_id(    2 )
+        minimum_column.set_sort_column_id(  3 )
+        average_column.set_sort_column_id(  4 )
+        maximum_column.set_sort_column_id(  5 )
+        title_column.set_sort_column_id(    6 )
+
+        self.data_view.append_column( toggle_column   )
+        self.data_view.append_column( currency_column )
+        self.data_view.append_column( price_column    )
+        self.data_view.append_column( minimum_column  )
+        self.data_view.append_column( average_column  )
+        self.data_view.append_column( maximum_column  )
+        self.data_view.append_column( title_column    )
 
 
         #Fill the TreeView
@@ -684,6 +706,27 @@ class MainWindow:
                 self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
         write_log_file( 'Gui updated', True )
+
+
+
+def my_sort_function( treemodel, iter1, iter2, index ):
+    try:
+        float1 = treemodel[iter1][index]
+        float2 = treemodel[iter2][index]
+
+        float1 = float( float1[ float1.find( '>' ) + 1 : float1.find( '<', 1 ) ] )
+        float2 = float( float2[ float2.find( '>' ) + 1 : float2.find( '<', 1 ) ] )
+
+        if float1 > float2:
+            return -1
+        elif float1 < float2:
+            return 1
+        else:
+            return 0
+
+    except ValueError:
+        return 0
+
 
 
 def read_config_file():
