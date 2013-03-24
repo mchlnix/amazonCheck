@@ -489,6 +489,11 @@ class MainWindow:
 
         self.refresh_thread.join()
 
+        self.link_dict[ title ] = url
+        self.price_dict[ title ] = [ [ price, int( round( time() ) ) ] ]
+        self.currency_dict[ title ] = currency
+        self.picture_dict[ title ] = pic_name
+
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
