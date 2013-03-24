@@ -336,13 +336,13 @@ class MainWindow:
         avg_renderer.set_property( 'foreground', '#FCCA00' )
         max_renderer.set_property( 'foreground', '#FF3D3D' )
 
-        toggle_column   = gtk.TreeViewColumn( '',         toggle_renderer,   active=0 )
-        currency_column = gtk.TreeViewColumn( 'Currency', currency_renderer, text=1   )
-        price_column    = gtk.TreeViewColumn( 'Price',    price_renderer,    markup=2 )
-        minimum_column  = gtk.TreeViewColumn( 'Minimum',  min_renderer,      text=3   )
-        average_column  = gtk.TreeViewColumn( 'Average',  avg_renderer,      text=4   )
-        maximum_column  = gtk.TreeViewColumn( 'Maximum',  max_renderer,      text=5   )
-        title_column    = gtk.TreeViewColumn( 'Title',    title_renderer,    markup=6 )
+        toggle_column   = gtk.TreeViewColumn( '',      toggle_renderer,   active=0 )
+        currency_column = gtk.TreeViewColumn( 'CY',    currency_renderer, text=1   )
+        price_column    = gtk.TreeViewColumn( 'Price', price_renderer,    markup=2 )
+        minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
+        average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
+        maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
+        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    markup=6 )
 
         toggle_column.set_sort_column_id(   0 )
         currency_column.set_sort_column_id( 1 )
@@ -418,7 +418,7 @@ class MainWindow:
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.connect( 'delete-event',   self.toggle_window_visibility )
-        self.window.connect( 'focus-in-event', self.set_indicator_active   )
+        self.window.connect( 'focus-in-event', self.set_indicator_active     )
 
         self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
