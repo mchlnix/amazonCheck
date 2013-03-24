@@ -502,7 +502,16 @@ class MainWindow:
 
 
     def on_cell_toggled( self, widget, path ):
-        self.data_store[path][0] = not self.data_store[path][0]
+        title = self.sortable[path][6]
+
+        index = 0
+
+        while 1:
+            print index
+            if self.data_store[ index ][6] == title:
+                self.data_store[ index ][0] = not self.data_store[ index ][0]
+                return
+            index += 1
 
 
     def on_changed_max_sleep( self, widget ):
