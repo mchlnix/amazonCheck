@@ -192,6 +192,8 @@ def get_info_for( url ):
     else:
         picture = ''
 
+    if price == 'N/A':
+        return ( title, currency, price, picture )
 
     return ( title, currency, price + shipping, picture )
 
@@ -233,7 +235,7 @@ def send_notification( title, body, picture ):
             title = title.replace( color, '' )
             body = body.replace( color, '' )
 
-        Notification ( title, format_title( body ), abspath( picture ) ).show()
+        Notification ( title, body, abspath( picture ) ).show()
     else:
         return false
 

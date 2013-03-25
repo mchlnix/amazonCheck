@@ -150,18 +150,17 @@ class RefreshThread( Thread ):
                     elif info[2] > prices[ index ][-1][0]:
                         title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
 
-                    body = str( info[0] )
+                    body = str( info[0] ).decode( 'ascii', 'ignore' )
+
+                    print body
 
                     if SHOW_NOTIFICATIONS:
-                        try:
-                            notify( title, body, IMAGE_PATH + pictures[ index ] )
-                        except:
-                            write_log_file( 'Notification bubble failed', True )
+                        notify( title, body, IMAGE_PATH + pictures[ index ] )
 
                     print_notification( title, body, '' )
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
                     prices[ index ].append( [ info[2], int( round( time() ) ) ] )
-                    self.wind_obj.price_dict[ info[0] ].append( [ info[2], int( round( time() ) ) ] )
+                    self.wind_obj.price_dict[ info[0].decode( 'ascii', 'ignore' ) ].append( [ info[2], int( round( time() ) ) ] )
 
             #Saving data to file
 
