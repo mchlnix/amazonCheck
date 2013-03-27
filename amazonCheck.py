@@ -263,7 +263,7 @@ class MainWindow:
         config_hbox_delete_dialog.pack_start( config_checkbutton_delete_dialog,           False, False, 5 )
 
         config_hbox_alt_row_color = gtk.HBox()
-        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),  False, False, 5 )
+        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),       False, False, 5 )
         config_hbox_alt_row_color.pack_start( gtk.Label( '' ),                            True,  True,  5 )
         config_hbox_alt_row_color.pack_start( config_checkbutton_alt_row_color,           False, False, 5 )
 
@@ -272,7 +272,7 @@ class MainWindow:
         config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
         config_config_box.pack_start( config_hbox_notifications,                          False, False, 5 )
         config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
-        config_config_box.pack_start( config_hbox_alt_row_color,                         False, False, 5 )
+        config_config_box.pack_start( config_hbox_alt_row_color,                          False, False, 5 )
 
 
         config_button_cancel = gtk.Button( 'Cancel'     )
@@ -396,11 +396,11 @@ class MainWindow:
 
 
         #Setting up control buttons
-        delete_button               = gtk.Button( 'Delete'          )
-        really_delete_button        = gtk.Button( 'Really delete?'  )
-        not_really_delete_button    = gtk.Button( 'Changed my mind' )
-        config_button               = gtk.Button( 'Config'          )
-        add_button                  = gtk.Button(    'Add'          )
+        delete_button               = gtk.Button( 'Delete'             )
+        really_delete_button        = gtk.Button( 'Really delete?'     )
+        not_really_delete_button    = gtk.Button( 'I changed my mind.' )
+        config_button               = gtk.Button( 'Config'             )
+        add_button                  = gtk.Button( 'Add'                )
 
         delete_button.connect(               'clicked', self.on_delete_articles        )
         really_delete_button.connect(        'clicked', self.on_really_delete_articles )
@@ -425,11 +425,16 @@ class MainWindow:
         inner_layer.pack_start( not_really_delete_button,    False, False, 5 )
         inner_layer.pack_start( config_button,               False, False, 5 )
         inner_layer.pack_start( add_button,                  False, False, 5 )
-        inner_layer.pack_start( self.add_text_box,           True,  True,  5 )
+        inner_layer.pack_start( self.add_text_box,           True,  True,  10 )
 
 
         #Setting up outer layer
-        outer_layer.pack_start( scroll,                      True,  True,  0  )
+        scroll_hbox = gtk.HBox()
+        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5 )
+        scroll_hbox.pack_start( scroll,                      True,  True,  0 )
+        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5 )
+
+        outer_layer.pack_start( scroll_hbox,                 True,  True,  0  )
         outer_layer.pack_start( inner_layer,                 False, False, 10 )
 
 
