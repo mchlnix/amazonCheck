@@ -38,9 +38,9 @@ ICON_FILE = expanduser( '~/.amazonCheck/aC.png' )
 IMAGE_WRITE_MODE = 'w'
 IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
 
-SHOW_NOTIFICATIONS = False
+SHOW_NOTIFICATIONS = True
 SHOW_DEL_DIALOG = True
-VERBOSE = True
+ALTERNATING_ROW_COLOR = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
@@ -96,7 +96,7 @@ class RefreshThread( Thread ):
 
 
     def run( self ):
-        global SLEEP_TIME, VERBOSE, SHOW_NOTIFICATIONS
+        global SLEEP_TIME, ALTERNATING_ROW_COLOR, SHOW_NOTIFICATIONS
 
         write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started', True )
 
@@ -226,11 +226,13 @@ class MainWindow:
         config_button_box  = gtk.HBox()
 
 
-        config_checkbutton_notifications = gtk.CheckButton( label='Show notification bubbles?' )
-        config_checkbutton_delete_dialog = gtk.CheckButton( label='Confirm deleting articles?' )
+        config_checkbutton_notifications = gtk.CheckButton()
+        config_checkbutton_delete_dialog = gtk.CheckButton()
+        config_checkbutton_alt_row_color = gtk.CheckButton()
 
-        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS )
-        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG    )
+        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS    )
+        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
+        config_checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
 
 
         config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
@@ -238,6 +240,7 @@ class MainWindow:
 
         config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
         config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
+
 
         config_hbox_min_sleep = gtk.HBox()
         config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
@@ -249,11 +252,27 @@ class MainWindow:
         config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
         config_hbox_max_sleep.pack_start( config_spinbutton_max_sleep,                    False, False, 5 )
 
+        config_hbox_notifications = gtk.HBox()
+        config_hbox_notifications.pack_start( gtk.Label( 'Show notification bubbles?' ),  False, False, 5 )
+        config_hbox_notifications.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_notifications.pack_start( config_checkbutton_notifications,           False, False, 5 )
+
+        config_hbox_delete_dialog = gtk.HBox()
+        config_hbox_delete_dialog.pack_start( gtk.Label( 'Confirm deleting articles?' ),  False, False, 5 )
+        config_hbox_delete_dialog.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_delete_dialog.pack_start( config_checkbutton_delete_dialog,           False, False, 5 )
+
+        config_hbox_alt_row_color = gtk.HBox()
+        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),  False, False, 5 )
+        config_hbox_alt_row_color.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_alt_row_color.pack_start( config_checkbutton_alt_row_color,           False, False, 5 )
+
 
         config_config_box.pack_start( config_hbox_min_sleep,                              False, False, 5 )
         config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
-        config_config_box.pack_start( config_checkbutton_notifications,                   False, False, 5 )
-        config_config_box.pack_start( config_checkbutton_delete_dialog,                   False, False, 5 )
+        config_config_box.pack_start( config_hbox_notifications,                          False, False, 5 )
+        config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
+        config_config_box.pack_start( config_hbox_alt_row_color,                         False, False, 5 )
 
 
         config_button_cancel = gtk.Button( 'Cancel'     )
@@ -313,10 +332,12 @@ class MainWindow:
         self.sortable.set_sort_func( 4, my_sort_function, 4 )
         self.sortable.set_sort_func( 5, my_sort_function, 5 )
 
+
         #Setting up the TreeView
         self.data_view = gtk.TreeView( self.sortable )
         self.data_view.set_headers_clickable( True )
         self.data_view.connect( 'row-activated', self.on_visit_page )
+        self.data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
         toggle_renderer = gtk.CellRendererToggle()
         toggle_renderer.connect( 'toggled', self.on_cell_toggled )
@@ -542,12 +563,15 @@ class MainWindow:
         min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
         max_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[1].get_children()[2]
 
-        SHOW_NOTIFICATIONS = checkboxes[2].get_active()
-        SHOW_DEL_DIALOG    = checkboxes[3].get_active()
-        MIN_SLEEP_TIME     = min_spin_button.get_value_as_int()
-        MAX_SLEEP_TIME     = max_spin_button.get_value_as_int()
+        SHOW_NOTIFICATIONS       = checkboxes[2].get_children()[2].get_active()
+        SHOW_DEL_DIALOG          = checkboxes[3].get_children()[2].get_active()
+        ALTERNATING_ROW_COLOR    = checkboxes[4].get_children()[2].get_active()
+        MIN_SLEEP_TIME           = min_spin_button.get_value_as_int()
+        MAX_SLEEP_TIME           = max_spin_button.get_value_as_int()
 
-        write_config_file( [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+        self.data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
+
+        write_config_file( [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
 
         self.config_window.hide()
 
@@ -555,6 +579,18 @@ class MainWindow:
     def on_config_cancel( self, widget, event=None ):
 
         self.config_window.hide()
+
+        checkboxes = self.config_window.get_children()[0].get_children()[0].get_children()
+        min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
+        max_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[1].get_children()[2]
+
+        checkboxes[2].get_children()[2].set_active( SHOW_NOTIFICATIONS    )
+        checkboxes[3].get_children()[2].set_active( SHOW_DEL_DIALOG       )
+        checkboxes[4].get_children()[2].set_active( ALTERNATING_ROW_COLOR )
+
+        min_spin_button.set_value( MIN_SLEEP_TIME )
+        max_spin_button.set_value( MAX_SLEEP_TIME )
+
 
         return True
 
@@ -755,20 +791,20 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         config_file = open( CONFIG_FILE, 'r' )
     except IOError:
         write_log_file( s[ 'cnf-no-pm' ], True )
         write_log_file( s[ 'us-def-op' ], True )
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     try:
         options = loads( config_file.read() )
     except ValueError:
         reset_config_file()
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
@@ -778,14 +814,14 @@ def read_config_file():
 
         reset_config_file()
 
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
     else:
         return options
 
 
 
 def reset_config_file():
-    options = [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+    options = [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
     write_config_file( options )
 
@@ -879,7 +915,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
 
 
 def write_log_file( string, output=True ):
-    if VERBOSE and output:
+    if output:
         print( get_time() + ' ' + string + '\n' ),
 
     try:
@@ -900,7 +936,7 @@ if __name__ == '__main__':
     write_log_file( s[ 'dashes' ] )
     write_log_file( s[ 'str-prgm' ] )
 
-    [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, VERBOSE, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+    [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
     write_log_file( s[ 'str-mn-lp' ] )
 
