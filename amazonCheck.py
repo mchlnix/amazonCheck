@@ -152,8 +152,6 @@ class RefreshThread( Thread ):
 
                     body = str( info[0] ).decode( 'ascii', 'ignore' )
 
-                    print body
-
                     if SHOW_NOTIFICATIONS:
                         notify( title, body, IMAGE_PATH + pictures[ index ] )
 
