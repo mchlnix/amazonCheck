@@ -8,6 +8,7 @@ echo $basedir
 echo Creating necessary directories and files in the home directory
 mkdir -p ~/.amazonCheck
 mkdir -p ~/.amazonCheck/pics
+cp -v $basedir/icons/empty_image.png ~/.amazonCheck/pics/
 touch ~/.amazonCheck/aC.log
 touch ~/.amazonCheck/aC.data
 touch ~/.amazonCheck/aC.config

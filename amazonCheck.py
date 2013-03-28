@@ -421,8 +421,7 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_pixel_size( 20 )
-        self.image_preview.set_from_file( '' )
+        self.image_preview.set_from_file( IMAGE_PATH + 'empty_image.png' )
 
 
         #Setting up inner layer
@@ -672,7 +671,9 @@ class MainWindow:
 
     def on_row_selected( self, treeview ):
         pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
-        scaled_buf = pixbuf.scale_simple( 50, 50, gtk.gdk.INTERP_BILINEAR )
+
+        scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+
         self.image_preview.set_from_pixbuf( scaled_buf )
 
 
