@@ -336,7 +336,8 @@ class MainWindow:
         #Setting up the TreeView
         self.data_view = gtk.TreeView( self.sortable )
         self.data_view.set_headers_clickable( True )
-        self.data_view.connect( 'row-activated', self.on_visit_page )
+        self.data_view.connect( 'row-activated',  self.on_visit_page   )
+        self.data_view.connect( 'cursor-changed', self.on_row_selected )
         self.data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
         toggle_renderer = gtk.CellRendererToggle()
@@ -418,6 +419,12 @@ class MainWindow:
         inner_layer = gtk.HBox()
 
 
+        #Setting up the imagebox
+        self.image_preview = gtk.Image()
+        self.image_preview.set_pixel_size( 20 )
+        self.image_preview.set_from_file( '' )
+
+
         #Setting up inner layer
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2 )
         inner_layer.pack_start( delete_button,               False, False, 5 )
@@ -425,7 +432,9 @@ class MainWindow:
         inner_layer.pack_start( not_really_delete_button,    False, False, 5 )
         inner_layer.pack_start( config_button,               False, False, 5 )
         inner_layer.pack_start( add_button,                  False, False, 5 )
-        inner_layer.pack_start( self.add_text_box,           True,  True,  10 )
+        inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0 )
+        inner_layer.pack_start( self.add_text_box,           True,  True,  5 )
+        inner_layer.pack_start( self.image_preview,          False, False, 10)
 
 
         #Setting up outer layer
@@ -485,6 +494,7 @@ class MainWindow:
 
     def on_add_article( self, widget ):
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
+        self.window.get_child().get_children()[1].get_children()[6].set_visible( not self.window.get_child().get_children()[1].get_children()[6].get_visible() )
 
         if self.add_text_box.get_visible():
             return
@@ -660,6 +670,12 @@ class MainWindow:
         self.window.get_children()[0].get_children()[-1].get_children()[3].hide() # not_really_delete_button
 
 
+    def on_row_selected( self, treeview ):
+        pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
+        scaled_buf = pixbuf.scale_simple( 50, 50, gtk.gdk.INTERP_BILINEAR )
+        self.image_preview.set_from_pixbuf( scaled_buf )
+
+
     def on_show_config_window( self, widget ):
         self.config_window.show_all()
 
@@ -668,9 +684,7 @@ class MainWindow:
         if column.get_title() == '':
             return
 
-        ( links, titles, currencies, pictures, prices ) = read_data_file()
-
-        open_in_browser( links[ path[0] ] )
+        open_in_browser( self.link_dict[ self.data_view.get_model()[ path ][-1] ] )
 
 
     def set_indicator_active( self, widget, direction=None ):
