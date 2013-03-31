@@ -399,15 +399,11 @@ class MainWindow:
 
 
         #Setting up control buttons
-        delete_button               = gtk.Button( 'Delete'             )
-        really_delete_button        = gtk.Button( 'Really delete?'     )
-        not_really_delete_button    = gtk.Button( 'I changed my mind.' )
-        config_button               = gtk.Button( 'Config'             )
-        add_button                  = gtk.Button( 'Add'                )
+        delete_button               = gtk.Button( '-'             )
+        config_button               = gtk.Button( 'c'             )
+        add_button                  = gtk.Button( '+'             )
 
         delete_button.connect(               'clicked', self.on_delete_articles        )
-        really_delete_button.connect(        'clicked', self.on_really_delete_articles )
-        not_really_delete_button.connect(    'clicked', self.on_reset_delete_button    )
         config_button.connect(               'clicked', self.on_show_config_window     )
         add_button.connect(                  'clicked', self.on_add_article            )
 
@@ -423,17 +419,19 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_from_file( IMAGE_PATH + 'empty_image.png' )
+        self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
 
 
         #Setting up inner layer
 
+        button_box = gtk.VBox()
+
+        button_box.pack_start( add_button,                  False, False, 5  )
+        button_box.pack_start( delete_button,               False, False, 5  )
+        button_box.pack_start( config_button,               False, False, 5  )
+
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
-        inner_layer.pack_start( delete_button,               False, False, 5  )
-        inner_layer.pack_start( really_delete_button,        False, False, 5  )
-        inner_layer.pack_start( not_really_delete_button,    False, False, 5  )
-        inner_layer.pack_start( config_button,               False, False, 5  )
-        inner_layer.pack_start( add_button,                  False, False, 5  )
+        inner_layer.pack_start( button_box,                  False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
         inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
         inner_layer.pack_start( self.image_preview,          False, False, 10 )
@@ -465,8 +463,6 @@ class MainWindow:
 
 
         #Hide hidden widgets
-        really_delete_button.hide()
-        not_really_delete_button.hide()
         self.add_text_box.hide()
 
 
@@ -496,7 +492,7 @@ class MainWindow:
 
     def on_add_article( self, widget ):
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
-        self.window.get_child().get_children()[1].get_children()[6].set_visible( not self.window.get_child().get_children()[1].get_children()[6].get_visible() )
+        self.window.get_child().get_children()[1].get_children()[2].set_visible( not self.window.get_child().get_children()[1].get_children()[2].get_visible() )
 
         if self.add_text_box.get_visible():
             return
@@ -613,12 +609,8 @@ class MainWindow:
 
 
     def on_delete_articles( self, widget ):
-        if SHOW_DEL_DIALOG:
-            self.window.get_children()[0].get_children()[-1].get_children()[1].hide() # delete_button
-            self.window.get_children()[0].get_children()[-1].get_children()[2].show() # really_delete_button
-            self.window.get_children()[0].get_children()[-1].get_children()[3].show() # not_really_delete_button
-        else:
-            self.on_really_delete_articles()
+
+        self.on_really_delete_articles()
 
 
     def on_really_delete_articles( self, widget=None ):
