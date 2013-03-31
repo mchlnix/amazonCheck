@@ -136,6 +136,7 @@ def get_max_price( price_list ):
 
 
 def get_info_for( url ):
+
     try:
         temp_file = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
     except IOError:

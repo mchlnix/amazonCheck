@@ -138,6 +138,8 @@ class RefreshThread( Thread ):
                 if info[2] == prices[ index ][-1][0]:
                     pass
                 else:
+                    open( IMAGE_PATH + self.wind_obj.picture_dict[ titles[ index ] ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
+
                     if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
@@ -425,22 +427,23 @@ class MainWindow:
 
 
         #Setting up inner layer
-        inner_layer.pack_start( gtk.Label( '' ),             False, False, 2 )
-        inner_layer.pack_start( delete_button,               False, False, 5 )
-        inner_layer.pack_start( really_delete_button,        False, False, 5 )
-        inner_layer.pack_start( not_really_delete_button,    False, False, 5 )
-        inner_layer.pack_start( config_button,               False, False, 5 )
-        inner_layer.pack_start( add_button,                  False, False, 5 )
-        inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0 )
-        inner_layer.pack_start( self.add_text_box,           True,  True,  5 )
-        inner_layer.pack_start( self.image_preview,          False, False, 10)
+
+        inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
+        inner_layer.pack_start( delete_button,               False, False, 5  )
+        inner_layer.pack_start( really_delete_button,        False, False, 5  )
+        inner_layer.pack_start( not_really_delete_button,    False, False, 5  )
+        inner_layer.pack_start( config_button,               False, False, 5  )
+        inner_layer.pack_start( add_button,                  False, False, 5  )
+        inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
+        inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
+        inner_layer.pack_start( self.image_preview,          False, False, 10 )
 
 
         #Setting up outer layer
         scroll_hbox = gtk.HBox()
-        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5 )
-        scroll_hbox.pack_start( scroll,                      True,  True,  0 )
-        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5 )
+        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
+        scroll_hbox.pack_start( scroll,                      True,  True,  0  )
+        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
 
         outer_layer.pack_start( scroll_hbox,                 True,  True,  0  )
         outer_layer.pack_start( inner_layer,                 False, False, 10 )
@@ -670,11 +673,15 @@ class MainWindow:
 
 
     def on_row_selected( self, treeview ):
-        pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
+        try:
+            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
 
-        scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+            scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
 
-        self.image_preview.set_from_pixbuf( scaled_buf )
+            self.image_preview.set_from_pixbuf( scaled_buf )
+
+        except IndexError:
+            pass
 
 
     def on_show_config_window( self, widget ):
