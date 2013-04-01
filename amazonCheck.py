@@ -440,9 +440,11 @@ class MainWindow:
         title_link = gtk.Label()
         title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
 
+        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
         info_box.pack_start( title_link      ,                                False, False, 5  )
         info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
         info_box.pack_start( gtk.Label( 'By Me' ),                   False, False, 5  )
+        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
 
         self.preview_box.pack_start( info_box,               False, False, 5  )
         self.preview_box.pack_start( self.image_preview,     False, False, 10 )
@@ -699,9 +701,9 @@ class MainWindow:
             else:
                 currency = ''
 
-            self.preview_box.get_children()[0].get_children()[0].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
-            self.preview_box.get_children()[0].get_children()[1].set_markup( 'Current price: ' + '<u>' + price + ' ' + currency + '</u>')
-            self.preview_box.get_children()[0].get_children()[2].set_markup( 'What do I put here?')
+            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
+            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + ' ' + currency + '</u>')
+            self.preview_box.get_children()[0].get_children()[3].set_markup( 'What do I put here?')
 
 
 
