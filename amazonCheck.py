@@ -701,9 +701,36 @@ class MainWindow:
             else:
                 currency = ''
 
+            last_3_prices = '    '
+
+            limit = min( len( self.price_dict[ title ] ), 3 )
+
+            for i in range( 0, limit ):
+                avgs = get_avg_price( self.price_dict[ title ] )
+
+                temp_price = self.price_dict[ title ][-limit + i][0]
+
+                if temp_price == 'N/A':
+                    last_3_prices += '<span color="#FF3D3D">' + 'N/A' + '</span>'
+                else:
+                    if temp_price > avgs:
+                        color = '<span foreground="#FF3D3D">'
+
+                    elif temp_price < avgs:
+                        color = '<span foreground="#27B81F">'
+
+                    elif temp_price == avgs:
+                        color = '<span foreground="#FCCA00">'
+
+                    last_3_prices += color + '%.2f</span>' % temp_price
+
+                if not i == min( len( self.price_dict[ title ] ), 3 ) - 1:
+                    last_3_prices += ' > '
+
+
             self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
             self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
-            self.preview_box.get_children()[0].get_children()[3].set_markup( 'What do I put here?')
+            self.preview_box.get_children()[0].get_children()[3].set_markup( last_3_prices )
 
 
 
