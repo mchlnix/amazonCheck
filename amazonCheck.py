@@ -692,8 +692,8 @@ class MainWindow:
             self.image_preview.set_from_pixbuf( scaled_buf )
 
 
-            if len( title ) > 50:
-                disp_title = title[0:46] + '...'
+            if len( title ) > 55:
+                disp_title = title[0:51] + '...'
             else:
                 disp_title = title
 
