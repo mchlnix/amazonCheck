@@ -682,6 +682,7 @@ class MainWindow:
         try:
             title = self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1]
             price = self.price_dict[ title ][-1][0]
+            avgs = get_avg_price( self.price_dict[ title ] )
             currency = self.currency_dict[ title ]
 
             pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
@@ -696,8 +697,17 @@ class MainWindow:
             else:
                 disp_title = title
 
+            if price > avgs:
+                color = '<span foreground="#FF3D3D">'
+
+            elif price < avgs:
+                color = '<span foreground="#27B81F">'
+
+            elif price == avgs:
+                color = '<span foreground="#FCCA00">'
+
             if price != 'N/A':
-                price = '%.2f' % price
+                price = color + '%.2f</span>' % price
             else:
                 currency = ''
 
@@ -706,8 +716,6 @@ class MainWindow:
             limit = min( len( self.price_dict[ title ] ), 3 )
 
             for i in range( 0, limit ):
-                avgs = get_avg_price( self.price_dict[ title ] )
-
                 temp_price = self.price_dict[ title ][-limit + i][0]
 
                 if temp_price == 'N/A':
