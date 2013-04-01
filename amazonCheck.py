@@ -702,7 +702,7 @@ class MainWindow:
                 currency = ''
 
             self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
-            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + ' ' + currency + '</u>')
+            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
             self.preview_box.get_children()[0].get_children()[3].set_markup( 'What do I put here?')
 
 
