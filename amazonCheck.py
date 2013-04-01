@@ -426,15 +426,27 @@ class MainWindow:
 
         button_box = gtk.VBox()
 
-        button_box.pack_start( add_button,                  False, False, 5  )
-        button_box.pack_start( delete_button,               False, False, 5  )
-        button_box.pack_start( config_button,               False, False, 5  )
+        button_box.pack_start( add_button,                   False, False, 5  )
+        button_box.pack_start( delete_button,                False, False, 5  )
+        button_box.pack_start( config_button,                False, False, 5  )
 
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
         inner_layer.pack_start( button_box,                  False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
         inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
-        inner_layer.pack_start( self.image_preview,          False, False, 10 )
+
+        self.preview_box = gtk.HBox()
+        info_box = gtk.VBox()
+        title_link = gtk.Label()
+        title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
+
+        info_box.pack_start( title_link      ,                                False, False, 5  )
+        info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
+        info_box.pack_start( gtk.Label( 'By Me' ),                   False, False, 5  )
+
+        self.preview_box.pack_start( info_box,               False, False, 5  )
+        self.preview_box.pack_start( self.image_preview,     False, False, 10 )
+        inner_layer.pack_start( self.preview_box,            False, False, 5 )
 
 
         #Setting up outer layer
@@ -666,11 +678,32 @@ class MainWindow:
 
     def on_row_selected( self, treeview ):
         try:
-            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
+            title = self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1]
+            price = self.price_dict[ title ][-1][0]
+            currency = self.currency_dict[ title ]
+
+            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
 
             scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
 
             self.image_preview.set_from_pixbuf( scaled_buf )
+
+
+            if len( title ) > 50:
+                disp_title = title[0:46] + '...'
+            else:
+                disp_title = title
+
+            if price != 'N/A':
+                price = '%.2f' % price
+            else:
+                currency = ''
+
+            self.preview_box.get_children()[0].get_children()[0].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
+            self.preview_box.get_children()[0].get_children()[1].set_markup( 'Current price: ' + '<u>' + price + ' ' + currency + '</u>')
+            self.preview_box.get_children()[0].get_children()[2].set_markup( 'What do I put here?')
+
+
 
         except IndexError:
             pass
