@@ -121,7 +121,11 @@ class RefreshThread( Thread ):
 
             for index in range( 0, len( links ) ):
                 if self.stop_flag:
+                    write_log_file( s[ 'svng-data' ], True )
+                    write_data_file( links, titles, currencies, pictures, prices )
+
                     write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ), True )
+
                     return
 
                 info = get_info_for( links[ index ] )
