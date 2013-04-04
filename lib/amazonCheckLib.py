@@ -150,7 +150,7 @@ def get_info_for( url ):
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
 
     #Shortening it
-    for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ' ]:
+    for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ', 'Buying Choices: ' ]:
         title = title.replace( string, '' )
 
     #Formating it as best as possible
@@ -179,6 +179,8 @@ def get_info_for( url ):
 
 
     #Formating price and currency
+    print shipping
+
     ( price, currency ) = format_price( price )
     ( shipping, unused ) = format_price( shipping )
 
@@ -195,8 +197,10 @@ def get_info_for( url ):
 
     if price == 'N/A':
         return ( title, currency, price, picture )
-
-    return ( title, currency, price + shipping, picture )
+    try:
+        return ( title, currency, price + shipping, picture )
+    except:
+         print title, currency, price , shipping, picture
 
 
 

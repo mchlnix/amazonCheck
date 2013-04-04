@@ -526,6 +526,10 @@ class MainWindow:
             write_log_file( 'ValueError happened', True )
             return False
 
+        if title in self.price_dict:
+            write_log_file( 'Article already in the database', True )
+            return False
+
         self.refresh_thread.stop()
 
         pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
@@ -637,7 +641,6 @@ class MainWindow:
                 delete_queue.append( index )
 
         if len( delete_queue ) == 0:
-            self.on_reset_delete_button()
             return False
 
         self.refresh_thread.stop()
@@ -668,8 +671,6 @@ class MainWindow:
 
         self.refresh_thread.join()
         self.start_thread()
-
-        self.on_reset_delete_button()
 
 
     def on_reset_delete_button( self, widget=None ):
