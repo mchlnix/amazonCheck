@@ -403,15 +403,11 @@ class MainWindow:
 
 
         #Setting up control buttons
-        delete_button               = gtk.Button( 'Delete'             )
-        really_delete_button        = gtk.Button( 'Really delete?'     )
-        not_really_delete_button    = gtk.Button( 'I changed my mind.' )
-        config_button               = gtk.Button( 'Config'             )
-        add_button                  = gtk.Button( 'Add'                )
+        delete_button               = gtk.Button( '-'             )
+        config_button               = gtk.Button( 'c'             )
+        add_button                  = gtk.Button( '+'             )
 
         delete_button.connect(               'clicked', self.on_delete_articles        )
-        really_delete_button.connect(        'clicked', self.on_really_delete_articles )
-        not_really_delete_button.connect(    'clicked', self.on_reset_delete_button    )
         config_button.connect(               'clicked', self.on_show_config_window     )
         add_button.connect(                  'clicked', self.on_add_article            )
 
@@ -427,20 +423,36 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_from_file( IMAGE_PATH + 'empty_image.png' )
+        self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
 
 
         #Setting up inner layer
 
+        button_box = gtk.VBox()
+
+        button_box.pack_start( add_button,                   False, False, 5  )
+        button_box.pack_start( delete_button,                False, False, 5  )
+        button_box.pack_start( config_button,                False, False, 5  )
+
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
-        inner_layer.pack_start( delete_button,               False, False, 5  )
-        inner_layer.pack_start( really_delete_button,        False, False, 5  )
-        inner_layer.pack_start( not_really_delete_button,    False, False, 5  )
-        inner_layer.pack_start( config_button,               False, False, 5  )
-        inner_layer.pack_start( add_button,                  False, False, 5  )
+        inner_layer.pack_start( button_box,                  False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
         inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
-        inner_layer.pack_start( self.image_preview,          False, False, 10 )
+
+        self.preview_box = gtk.HBox()
+        info_box = gtk.VBox()
+        title_link = gtk.Label()
+        title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
+
+        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
+        info_box.pack_start( title_link      ,                                False, False, 5  )
+        info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
+        info_box.pack_start( gtk.Label( 'By Me' ),                   False, False, 5  )
+        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
+
+        self.preview_box.pack_start( info_box,               False, False, 5  )
+        self.preview_box.pack_start( self.image_preview,     False, False, 10 )
+        inner_layer.pack_start( self.preview_box,            False, False, 5 )
 
 
         #Setting up outer layer
@@ -469,8 +481,6 @@ class MainWindow:
 
 
         #Hide hidden widgets
-        really_delete_button.hide()
-        not_really_delete_button.hide()
         self.add_text_box.hide()
 
 
@@ -500,7 +510,7 @@ class MainWindow:
 
     def on_add_article( self, widget ):
         self.add_text_box.set_visible( not self.add_text_box.get_visible() )
-        self.window.get_child().get_children()[1].get_children()[6].set_visible( not self.window.get_child().get_children()[1].get_children()[6].get_visible() )
+        self.window.get_child().get_children()[1].get_children()[2].set_visible( not self.window.get_child().get_children()[1].get_children()[2].get_visible() )
 
         if self.add_text_box.get_visible():
             return
@@ -518,6 +528,10 @@ class MainWindow:
             return False
         elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
             write_log_file( 'ValueError happened', True )
+            return False
+
+        if title in self.price_dict:
+            write_log_file( 'Article already in the database', True )
             return False
 
         self.refresh_thread.stop()
@@ -617,12 +631,8 @@ class MainWindow:
 
 
     def on_delete_articles( self, widget ):
-        if SHOW_DEL_DIALOG:
-            self.window.get_children()[0].get_children()[-1].get_children()[1].hide() # delete_button
-            self.window.get_children()[0].get_children()[-1].get_children()[2].show() # really_delete_button
-            self.window.get_children()[0].get_children()[-1].get_children()[3].show() # not_really_delete_button
-        else:
-            self.on_really_delete_articles()
+
+        self.on_really_delete_articles()
 
 
     def on_really_delete_articles( self, widget=None ):
@@ -635,7 +645,6 @@ class MainWindow:
                 delete_queue.append( index )
 
         if len( delete_queue ) == 0:
-            self.on_reset_delete_button()
             return False
 
         self.refresh_thread.stop()
@@ -667,8 +676,6 @@ class MainWindow:
         self.refresh_thread.join()
         self.start_thread()
 
-        self.on_reset_delete_button()
-
 
     def on_reset_delete_button( self, widget=None ):
         self.window.get_children()[0].get_children()[-1].get_children()[1].show() # delete_button
@@ -678,7 +685,12 @@ class MainWindow:
 
     def on_row_selected( self, treeview ):
         try:
-            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
+            title = self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1]
+            price = self.price_dict[ title ][-1][0]
+            avgs = get_avg_price( self.price_dict[ title ] )
+            currency = self.currency_dict[ title ]
+
+            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
 
             if pixbuf.get_width() < pixbuf.get_height():
                 scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
@@ -686,6 +698,57 @@ class MainWindow:
                 scaled_buf = pixbuf.scale_simple( dest_width=100, dest_height=int( pixbuf.get_height() * 100 / pixbuf.get_width()), interp_type=gtk.gdk.INTERP_BILINEAR )
 
             self.image_preview.set_from_pixbuf( scaled_buf )
+
+
+            if len( title ) > 55:
+                disp_title = title[0:51] + '...'
+            else:
+                disp_title = title
+
+            if price > avgs:
+                color = '<span foreground="#FF3D3D">'
+
+            elif price < avgs:
+                color = '<span foreground="#27B81F">'
+
+            elif price == avgs:
+                color = '<span foreground="#FCCA00">'
+
+            if price != 'N/A':
+                price = color + '%.2f</span>' % price
+            else:
+                currency = ''
+
+            last_3_prices = '    '
+
+            limit = min( len( self.price_dict[ title ] ), 3 )
+
+            for i in range( 0, limit ):
+                temp_price = self.price_dict[ title ][-limit + i][0]
+
+                if temp_price == 'N/A':
+                    last_3_prices += '<span color="#FF3D3D">' + 'N/A' + '</span>'
+                else:
+                    if temp_price > avgs:
+                        color = '<span foreground="#FF3D3D">'
+
+                    elif temp_price < avgs:
+                        color = '<span foreground="#27B81F">'
+
+                    elif temp_price == avgs:
+                        color = '<span foreground="#FCCA00">'
+
+                    last_3_prices += color + '%.2f</span>' % temp_price
+
+                if not i == min( len( self.price_dict[ title ] ), 3 ) - 1:
+                    last_3_prices += ' > '
+
+
+            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
+            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
+            self.preview_box.get_children()[0].get_children()[3].set_markup( last_3_prices )
+
+
 
         except IndexError:
             pass
