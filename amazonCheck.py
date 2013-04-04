@@ -680,7 +680,10 @@ class MainWindow:
         try:
             pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] ] )
 
-            scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+            if pixbuf.get_width() < pixbuf.get_height():
+                scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+            else:
+                scaled_buf = pixbuf.scale_simple( dest_width=100, dest_height=int( pixbuf.get_height() * 100 / pixbuf.get_width()), interp_type=gtk.gdk.INTERP_BILINEAR )
 
             self.image_preview.set_from_pixbuf( scaled_buf )
 
