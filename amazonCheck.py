@@ -138,6 +138,14 @@ class RefreshThread( Thread ):
                     write_log_file( 'ValueError happened', True )
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
+                elif info == ( -3, -3, -3, -3 ):
+                    write_log_file( 'Shipping couldn\'t be determined.', True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
+                elif info == None:
+                    write_log_file( 'Unknown Error occured.', True )
+                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
+                    continue
 
                 if info[2] == prices[ index ][-1][0]:
                     pass

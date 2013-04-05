@@ -179,10 +179,11 @@ def get_info_for( url ):
 
 
     #Formating price and currency
-    print shipping
-
     ( price, currency ) = format_price( price )
     ( shipping, unused ) = format_price( shipping )
+
+    if shipping == 'N/A':
+        return ( -3, -3, -3, -3 )
 
 
     #Finding picture
@@ -197,10 +198,8 @@ def get_info_for( url ):
 
     if price == 'N/A':
         return ( title, currency, price, picture )
-    try:
+    else:
         return ( title, currency, price + shipping, picture )
-    except:
-         print title, currency, price , shipping, picture
 
 
 
