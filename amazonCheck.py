@@ -159,10 +159,10 @@ class RefreshThread( Thread ):
                         title = s[ 'bec-unava' ] + NOCOLOR + ':'
 
                     elif info[2] < prices[ index ][-1][0]:
-                        title = s[ 'price-dwn' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                        title = s[ 'price-dwn' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % info[2] + ' )' + NOCOLOR + ':'
 
                     elif info[2] > prices[ index ][-1][0]:
-                        title = s[ 'price-up' ] + str( prices[ index ][-1][0] ) + ' > ' + str( info[2] ) + ' )' + NOCOLOR + ':'
+                        title = s[ 'price-up' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % info[2] + ' )' + NOCOLOR + ':'
 
                     body = str( info[0] ).decode( 'ascii', 'ignore' )
 
