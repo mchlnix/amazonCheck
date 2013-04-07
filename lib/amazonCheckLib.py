@@ -52,7 +52,7 @@ def format_title( string ):
     for i in range( 0, len( format_from_unicode2 ) ):
         string = string.replace( format_from_unicode2[ i ], format_to[ i ] )
 
-    return string
+    return string.decode( 'ascii', 'ignore' )
 
 
 

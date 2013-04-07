@@ -221,6 +221,23 @@ class RefreshThread( Thread ):
 
 class MainWindow:
     def __init__( self ):
+        #Setting up the toolbar
+        toolbar = gtk.Toolbar()
+        toolbar.set_orientation( gtk.ORIENTATION_VERTICAL )
+        toolbar.set_style( gtk.TOOLBAR_ICONS )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_ADD, gtk.ICON_SIZE_LARGE_TOOLBAR )
+
+        toolbar.append_item( None, 'Add', None, image, self.on_add_article )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_REMOVE, gtk.ICON_SIZE_LARGE_TOOLBAR )
+
+        toolbar.append_item( None, 'Remove', None, image, self.on_delete_articles )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_PREFERENCES, gtk.ICON_SIZE_LARGE_TOOLBAR )
+
+        toolbar.append_item( None, 'Config', None, image, self.on_show_config_window )
+
         #Setting up the data holding dictionary
         self.link_dict = {}
         self.currency_dict = {}
@@ -232,6 +249,7 @@ class MainWindow:
 
         #Setting up config window
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        self.config_window.set_position( gtk.WIN_POS_CENTER  )
         self.config_window.connect( 'delete-event', self.on_config_cancel )
 
 
@@ -410,16 +428,6 @@ class MainWindow:
         self.add_text_box = gtk.Entry( 0 )
 
 
-        #Setting up control buttons
-        delete_button               = gtk.Button( '-'             )
-        config_button               = gtk.Button( 'c'             )
-        add_button                  = gtk.Button( '+'             )
-
-        delete_button.connect(               'clicked', self.on_delete_articles        )
-        config_button.connect(               'clicked', self.on_show_config_window     )
-        add_button.connect(                  'clicked', self.on_add_article            )
-
-
         #Setting up the GUI boxes
         scroll = gtk.ScrolledWindow()
         scroll.set_size_request( 640, 480 )
@@ -435,15 +443,8 @@ class MainWindow:
 
 
         #Setting up inner layer
-
-        button_box = gtk.VBox()
-
-        button_box.pack_start( add_button,                   False, False, 5  )
-        button_box.pack_start( delete_button,                False, False, 5  )
-        button_box.pack_start( config_button,                False, False, 5  )
-
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
-        inner_layer.pack_start( button_box,                  False, False, 5  )
+        inner_layer.pack_start( toolbar,                     False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
         inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
 
@@ -455,7 +456,7 @@ class MainWindow:
         info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
         info_box.pack_start( title_link      ,                                False, False, 5  )
         info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
-        info_box.pack_start( gtk.Label( 'By Me' ),                   False, False, 5  )
+        info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5  )
         info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
 
         self.preview_box.pack_start( info_box,               False, False, 5  )
@@ -468,6 +469,7 @@ class MainWindow:
         scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
         scroll_hbox.pack_start( scroll,                      True,  True,  0  )
         scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
+
 
         outer_layer.pack_start( scroll_hbox,                 True,  True,  0  )
         outer_layer.pack_start( inner_layer,                 False, False, 10 )
@@ -533,14 +535,14 @@ class MainWindow:
 
         if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
             write_log_file( s[ 'err-con-s' ], True )
-            return False
+            return
         elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
             write_log_file( 'ValueError happened', True )
-            return False
+            return
 
         if title in self.price_dict:
             write_log_file( 'Article already in the database', True )
-            return False
+            return
 
         self.refresh_thread.stop()
 
@@ -633,7 +635,6 @@ class MainWindow:
 
         min_spin_button.set_value( MIN_SLEEP_TIME )
         max_spin_button.set_value( MAX_SLEEP_TIME )
-
 
         return True
 
@@ -871,9 +872,13 @@ def my_sort_function( treemodel, iter1, iter2, index ):
         float1 = treemodel[iter1][index]
         float2 = treemodel[iter2][index]
 
-        if float1.find( 'N/A' ) != -1:
-            return 1
-        elif float2.find( 'N/A' ) != -1:
+        try:
+            if float1.find( 'N/A' ) != -1:
+                return 1
+            elif float2.find( 'N/A' ) != -1:
+                return -1
+        except:
+            print iter1, iter2
             return -1
 
         float1 = float( float1[ float1.find( '>' ) + 1 : float1.find( '<', 1 ) ] )
