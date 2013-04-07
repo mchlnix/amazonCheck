@@ -227,16 +227,14 @@ class MainWindow:
         toolbar.set_style( gtk.TOOLBAR_ICONS )
 
         image = gtk.Image(); image.set_from_stock( gtk.STOCK_ADD, gtk.ICON_SIZE_LARGE_TOOLBAR )
-
         toolbar.append_item( None, 'Add', None, image, self.on_add_article )
 
         image = gtk.Image(); image.set_from_stock( gtk.STOCK_REMOVE, gtk.ICON_SIZE_LARGE_TOOLBAR )
-
         toolbar.append_item( None, 'Remove', None, image, self.on_delete_articles )
 
         image = gtk.Image(); image.set_from_stock( gtk.STOCK_PREFERENCES, gtk.ICON_SIZE_LARGE_TOOLBAR )
-
         toolbar.append_item( None, 'Config', None, image, self.on_show_config_window )
+
 
         #Setting up the data holding dictionary
         self.link_dict = {}
@@ -244,12 +242,15 @@ class MainWindow:
         self.price_dict = {}
         self.picture_dict = {}
 
+
         #Setting up the dbus service
         self.dbus_service = DBusService( self )
+
 
         #Setting up config window
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.config_window.set_position( gtk.WIN_POS_CENTER  )
+        self.config_window.set_resizable( False )
         self.config_window.connect( 'delete-event', self.on_config_cancel )
 
 
