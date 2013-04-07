@@ -251,6 +251,7 @@ class MainWindow:
         self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.config_window.set_position( gtk.WIN_POS_CENTER  )
         self.config_window.set_resizable( False )
+        self.config_window.set_modal(     True  )
         self.config_window.connect( 'delete-event', self.on_config_cancel )
 
         config_outer_layer = gtk.VBox()
@@ -483,6 +484,9 @@ class MainWindow:
 
         #Hide hidden widgets
         self.add_text_box.hide()
+
+        #Set self.window as parent of config window
+        self.config_window.set_transient_for( self.window )
 
 
         #Setting up refresh thread
