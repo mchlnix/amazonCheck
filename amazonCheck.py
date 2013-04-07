@@ -467,6 +467,7 @@ class MainWindow:
 
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        self.window.set_position( gtk.WIN_POS_CENTER  )
         self.window.connect( 'delete-event',   self.toggle_window_visibility )
         self.window.connect( 'focus-in-event', self.set_indicator_active     )
 
