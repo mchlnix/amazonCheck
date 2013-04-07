@@ -253,11 +253,9 @@ class MainWindow:
         self.config_window.set_resizable( False )
         self.config_window.connect( 'delete-event', self.on_config_cancel )
 
-
         config_outer_layer = gtk.VBox()
         config_config_box  = gtk.VBox()
         config_button_box  = gtk.HBox()
-
 
         config_checkbutton_notifications = gtk.CheckButton()
         config_checkbutton_delete_dialog = gtk.CheckButton()
@@ -267,13 +265,11 @@ class MainWindow:
         config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
         config_checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
 
-
         config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
         config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
 
         config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
         config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
-
 
         config_hbox_min_sleep = gtk.HBox()
         config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
@@ -307,7 +303,6 @@ class MainWindow:
         config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
         config_config_box.pack_start( config_hbox_alt_row_color,                          False, False, 5 )
 
-
         config_button_cancel = gtk.Button( 'Cancel'     )
         config_button_ok     = gtk.Button( '    OK    ' )
 
@@ -318,11 +313,9 @@ class MainWindow:
         config_button_box.pack_start( config_button_cancel,      False, False, 5 )
         config_button_box.pack_start( config_button_ok,          False, False, 5 )
 
-
         config_outer_layer.pack_start( config_config_box,        False, False, 5 )
         config_outer_layer.pack_start( gtk.Label( '' ),          True,  True,  5 )
         config_outer_layer.pack_start( config_button_box,        False, False, 5 )
-
 
         self.config_window.add( config_outer_layer )
 
@@ -331,7 +324,6 @@ class MainWindow:
         self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
         self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         self.indicator.set_status( STATUS_ACTIVE )
-
 
         menu_item_show      = gtk.MenuItem( 'Hide window' )
         menu_item_exit      = gtk.MenuItem( 'Exit'        )
@@ -342,7 +334,6 @@ class MainWindow:
         menu_item_exit.connect(  'activate', self.exit_application         )
         menu_item_reset.connect( 'activate', self.set_indicator_active     )
 
-
         indicator_menu = gtk.Menu()
 
         indicator_menu.append( menu_item_show      )
@@ -351,7 +342,6 @@ class MainWindow:
         indicator_menu.append( menu_item_reset     )
 
         indicator_menu.show_all()
-
 
         self.indicator.set_menu( indicator_menu )
 
@@ -382,7 +372,6 @@ class MainWindow:
         min_renderer      = gtk.CellRendererText()
         avg_renderer      = gtk.CellRendererText()
         max_renderer      = gtk.CellRendererText()
-
 
         min_renderer.set_property( 'foreground', '#27B81F' )
         avg_renderer.set_property( 'foreground', '#FCCA00' )
@@ -455,7 +444,7 @@ class MainWindow:
         title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
 
         info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
-        info_box.pack_start( title_link      ,                                False, False, 5  )
+        info_box.pack_start( title_link ,                                     False, False, 5  )
         info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
         info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5  )
         info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
@@ -553,10 +542,10 @@ class MainWindow:
 
         self.refresh_thread.join()
 
-        self.link_dict[ title ] = url
-        self.price_dict[ title ] = [ [ price, int( round( time() ) ) ] ]
+        self.link_dict[ title ]     = url
+        self.price_dict[ title ]    = [ [ price, int( round( time() ) ) ] ]
         self.currency_dict[ title ] = currency
-        self.picture_dict[ title ] = pic_name
+        self.picture_dict[ title ]  = pic_name
 
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
@@ -673,11 +662,11 @@ class MainWindow:
             del self.picture_dict[ titles[ index ] ]
             del self.price_dict[ titles[ index ] ]
 
-            links.pop( index )
-            titles.pop( index )
+            links.pop(      index )
+            titles.pop(     index )
             currencies.pop( index )
-            pictures.pop( index )
-            prices.pop( index )
+            pictures.pop(   index )
+            prices.pop(     index )
 
             self.data_store.remove( self.data_store.get_iter( index ) )
 
@@ -985,11 +974,11 @@ def read_data_file():
 
     #Break up into links, titles currencies, pictures and prices
 
-    links = []
-    titles = []
-    currencies =[]
-    pictures = []
-    prices = []
+    links      = []
+    titles     = []
+    currencies = []
+    pictures   = []
+    prices     = []
 
     for index in range( 0,  len( data ) ):
         try:
@@ -998,11 +987,11 @@ def read_data_file():
             continue
             #exit( 'Problem encoding the value' )                        #Translating
 
-        links.append( info[0] )
-        titles.append( info[1] )
-        currencies.append( info[2] )
-        pictures.append( info[3] )
-        prices.extend( info[ 4: ] )
+        links.append(      info[0]    )
+        titles.append(     info[1]    )
+        currencies.append( info[2]    )
+        pictures.append(   info[3]    )
+        prices.extend(     info[ 4: ] )
 
     return ( links, titles, currencies, pictures, prices )
 
