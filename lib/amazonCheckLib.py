@@ -28,6 +28,7 @@ def format_price( string ):
 
     try:
         price = float( search( '[0-9]+[.][0-9]+', string ).group() )
+        price = round( price, 2 )
     except ValueError:
         price = s[ 'N/A' ]
     except AttributeError:
