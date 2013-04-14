@@ -147,22 +147,27 @@ class RefreshThread( Thread ):
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
 
-                if info[2] == prices[ index ][-1][0]:
+                if info[2] != 'N/A':
+                    current_price = round( info[2], 2 )
+                else:
+                    current_price = info[2]
+
+                if current_price == prices[ index ][-1][0]:
                     pass
                 else:
                     open( IMAGE_PATH + self.wind_obj.picture_dict[ titles[ index ] ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
 
-                    if prices[ index ][-1][0] == s[ 'N/A' ] and not info[2] == s[ 'N/A' ]:
+                    if prices[ index ][-1][0] == s[ 'N/A' ] and not current_price == s[ 'N/A' ]:
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
-                    elif info[2] == s[ 'N/A' ]:
+                    elif current_price == s[ 'N/A' ]:
                         title = s[ 'bec-unava' ] + NOCOLOR + ':'
 
-                    elif info[2] < prices[ index ][-1][0]:
-                        title = s[ 'price-dwn' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % info[2] + ' )' + NOCOLOR + ':'
+                    elif current_price < prices[ index ][-1][0]:
+                        title = s[ 'price-dwn' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % current_price + ' )' + NOCOLOR + ':'
 
-                    elif info[2] > prices[ index ][-1][0]:
-                        title = s[ 'price-up' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % info[2] + ' )' + NOCOLOR + ':'
+                    elif current_price > prices[ index ][-1][0]:
+                        title = s[ 'price-up' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % current_price + ' )' + NOCOLOR + ':'
 
                     body = str( info[0] ).decode( 'ascii', 'ignore' )
 
@@ -171,8 +176,8 @@ class RefreshThread( Thread ):
 
                     print_notification( title, body, '' )
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
-                    prices[ index ].append( [ info[2], int( round( time() ) ) ] )
-                    self.wind_obj.price_dict[ info[0].decode( 'ascii', 'ignore' ) ].append( [ info[2], int( round( time() ) ) ] )
+                    prices[ index ].append( [ current_price, int( round( time() ) ) ] )
+                    self.wind_obj.price_dict[ info[0].decode( 'ascii', 'ignore' ) ].append( [ current_price, int( round( time() ) ) ] )
 
             #Saving data to file
 
@@ -384,7 +389,7 @@ class MainWindow:
         minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
         average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
         maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
-        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    markup=6 )
+        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6 )
 
         toggle_column.set_sort_column_id(   0 )
         currency_column.set_sort_column_id( 1 )
@@ -748,7 +753,7 @@ class MainWindow:
                     last_3_prices += ' > '
 
 
-            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title + '</a>' )
+            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title.replace( '&', '&amp;' ) + '</a>' )
             self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
             self.preview_box.get_children()[0].get_children()[3].set_markup( last_3_prices )
 
@@ -1010,6 +1015,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
         return false
 
     for index in range( 0, len( links ) ):
+
         try:
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
