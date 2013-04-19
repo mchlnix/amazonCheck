@@ -39,21 +39,7 @@ def format_price( string ):
 
 
 def format_title( string ):
-    format_from_html =    [ '&auml;', '&Auml;', '&ouml;', '&Ouml;', '&uuml;', '&Uuml;', '&szlig;', '&amp;', '&quot;', '&#39;', '\0']
-    format_from_unicode1 = [ '\xc3\xa4', '\xc3\x84', '\xc3\xb6', '\xc3\x96', '\xc3\xbc', '\xc3\x9c', '\xc3\x9f' ]
-    format_from_unicode2 = [ '\xe4', '\xc4', '\xf6', '\xd6', '\xfc', '\xdc', 'xdf' ]
-    format_to = [ 'ae', 'Ae', 'oe', 'Oe', 'ue', 'Ue', 'ss', 'ss', 'ss', '&', '\'', '\'', '' ]
-
-    for i in range( 0, len( format_from_html ) ):
-        string = string.replace( format_from_html[ i ], format_to[ i ] )
-
-    for i in range( 0, len( format_from_unicode1 ) ):
-        string = string.replace( format_from_unicode1[ i ], format_to[ i ] )
-
-    for i in range( 0, len( format_from_unicode2 ) ):
-        string = string.replace( format_from_unicode2[ i ], format_to[ i ] )
-
-    return string.decode( 'ascii', 'ignore' )
+    return unicode( string, 'iso-8859-15' )
 
 
 

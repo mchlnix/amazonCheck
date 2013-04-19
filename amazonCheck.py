@@ -169,7 +169,7 @@ class RefreshThread( Thread ):
                     elif current_price > prices[ index ][-1][0]:
                         title = s[ 'price-up' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % current_price + ' )' + NOCOLOR + ':'
 
-                    body = str( info[0] ).decode( 'ascii', 'ignore' )
+                    body = str( info[0] )
 
                     if SHOW_NOTIFICATIONS:
                         notify( title, body, IMAGE_PATH + pictures[ index ] )
@@ -177,7 +177,7 @@ class RefreshThread( Thread ):
                     print_notification( title, body, '' )
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
                     prices[ index ].append( [ current_price, int( round( time() ) ) ] )
-                    self.wind_obj.price_dict[ info[0].decode( 'ascii', 'ignore' ) ].append( [ current_price, int( round( time() ) ) ] )
+                    self.wind_obj.price_dict[ info[0] ].append( [ current_price, int( round( time() ) ) ] )
 
             #Saving data to file
 
@@ -560,6 +560,7 @@ class MainWindow:
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
+            print 'UnicodeError'
             data_file.write( dumps( [ url, title.decode( 'ascii', 'ignore' ), currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
         data_file.close()
@@ -694,7 +695,7 @@ class MainWindow:
 
     def on_row_selected( self, treeview ):
         try:
-            title = self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1]
+            title = unicode( self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] )
             price = self.price_dict[ title ][-1][0]
             avgs = get_avg_price( self.price_dict[ title ] )
             currency = self.currency_dict[ title ]
@@ -963,10 +964,8 @@ def write_config_file( options ):
 
 def read_data_file():
     if not exists( DATA_FILE ):
-        write_log_file( s[ 'dat-fl-ms' ], True )
-        write_log_file( s[ 'prgm-hltd' ], True )
-        write_log_file( '---------------------------------------' )
-        exit( s[ 'dat-fl-ms' ] )
+        data_file = open( DATA_FILE, 'w' )
+        data_file.close()
 
     write_log_file( s[ 'dat-fl-rd' ] )
 
