@@ -527,6 +527,10 @@ class MainWindow:
 
         url = shorten_amazon_link( self.add_text_box.get_text() )
 
+        if url.find( 'amazon.co.jp' ) != -1:
+            write_log_file( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
+            return
+
         self.add_text_box.set_text( '' )
 
         data_file = open( DATA_FILE, 'a' )
