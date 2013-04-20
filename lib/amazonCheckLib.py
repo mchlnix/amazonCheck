@@ -38,11 +38,6 @@ def format_price( string ):
 
 
 
-def format_title( string ):
-    return unicode( string, 'iso-8859-15' )
-
-
-
 def get_min_price( price_list ):
     min_price = 99999999999999
     changed = False
@@ -132,6 +127,10 @@ def get_info_for( url ):
     except ValueError:
         return ( -2, -2, -2, -2 )
 
+    temp_index = temp_file.find( '<meta http-equiv="content-type"' ) + 31
+    temp_index = temp_file.find( 'charset=', temp_index ) + 8
+
+    encoding = temp_file[ temp_index : temp_file.find( '"', temp_index ) ]
 
     #Finding the title
     title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
@@ -141,7 +140,7 @@ def get_info_for( url ):
         title = title.replace( string, '' )
 
     #Formating it as best as possible
-    title = format_title( title )
+    title = unicode( title, encoding )
 
 
     #Finding the price

@@ -560,7 +560,6 @@ class MainWindow:
         try:
             data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
         except UnicodeDecodeError:
-            print 'UnicodeError'
             data_file.write( dumps( [ url, title.decode( 'ascii', 'ignore' ), currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
 
         data_file.close()
