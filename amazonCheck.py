@@ -882,7 +882,6 @@ def my_sort_function( treemodel, iter1, iter2, index ):
             elif float2.find( 'N/A' ) != -1:
                 return -1
         except:
-            print iter1, iter2
             return -1
 
         float1 = float( float1[ float1.find( '>' ) + 1 : float1.find( '<', 1 ) ] )
