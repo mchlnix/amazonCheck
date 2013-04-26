@@ -178,6 +178,7 @@ class RefreshThread( Thread ):
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
                     prices[ index ].append( [ current_price, int( round( time() ) ) ] )
                     self.wind_obj.price_dict[ info[0] ].append( [ current_price, int( round( time() ) ) ] )
+                    gobject.idle_add( self.wind_obj.update_list_store )
 
             #Saving data to file
 
@@ -207,8 +208,6 @@ class RefreshThread( Thread ):
             #Sleeping for agreed amount
 
             write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ], True )
-
-            gobject.idle_add( self.wind_obj.update_list_store )
 
             if self.stop_flag:
                 write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping', True )
