@@ -648,6 +648,7 @@ class MainWindow:
 
 
     def on_really_delete_articles( self, widget=None ):
+
         delete_queue = []
         tree_length = len( self.data_store )
 
@@ -658,6 +659,31 @@ class MainWindow:
 
         if len( delete_queue ) == 0:
             return False
+
+        if SHOW_DEL_DIALOG:
+            dialog = gtk.Dialog( "", None, gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, ( gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT ) )
+
+            dialog_hbox = gtk.HBox()
+            dialog_hbox.show()
+
+            if len( delete_queue ) == 1:
+                dialog_label = gtk.Label( 'Really delete the selected article?' )
+            else:
+                dialog_label = gtk.Label( 'Really delete the selected articles?' )
+
+            dialog_label.show()
+
+            dialog_hbox.pack_start( dialog_label, True, True, 10 )
+            dialog.vbox.pack_start( dialog_hbox,  True, True, 10 )
+
+            response = dialog.run()
+            dialog.destroy()
+
+            print response
+
+            if response != -3:
+                return False
+
 
         self.refresh_thread.stop()
 
@@ -1021,6 +1047,7 @@ def write_data_file( links, titles, currencies, pictures, prices ):
         try:
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
+            print 'Ahhhhhh'
             data_file.write( dumps( [ links[ index] , titles[ index ].decode( 'ascii', 'ignore' ) , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
