@@ -155,7 +155,7 @@ class RefreshThread( Thread ):
                 if current_price == prices[ index ][-1][0]:
                     pass
                 else:
-                    open( IMAGE_PATH + self.wind_obj.picture_dict[ titles[ index ] ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
+                    open( IMAGE_PATH + self.wind_obj.picture_dict[ unicode( titles[ index ] ) ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
 
                     if prices[ index ][-1][0] == s[ 'N/A' ] and not current_price == s[ 'N/A' ]:
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
@@ -411,10 +411,12 @@ class MainWindow:
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
         for index in range( 0, len( links ) ):
-            self.link_dict[ titles[index] ] = links[ index ]
-            self.currency_dict[ titles[index] ] = currencies[ index ]
-            self.picture_dict[ titles[index] ] = pictures[ index ]
-            self.price_dict[ titles[index] ] = prices[ index ]
+            uni_title = unicode( titles[ index ] )
+
+            self.link_dict[     uni_title ] = links[      index ]
+            self.currency_dict[ uni_title ] = currencies[ index ]
+            self.picture_dict[  uni_title ] = pictures[   index ]
+            self.price_dict[    uni_title ] = prices[     index ]
 
         self.update_list_store()
 
@@ -548,6 +550,8 @@ class MainWindow:
             return
 
         self.refresh_thread.stop()
+
+        title = unicode( title )
 
         pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
 
@@ -684,6 +688,7 @@ class MainWindow:
 
 
         self.refresh_thread.stop()
+        self.refresh_thread.join()
 
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
@@ -696,10 +701,18 @@ class MainWindow:
             except OSError:
                 write_log_file( 'Picture file was already deleted', True )
 
-            del self.link_dict[ uni_title ]
-            del self.currency_dict[ uni_title ]
-            del self.picture_dict[ uni_title ]
-            del self.price_dict[ uni_title ]
+            try:
+                del self.link_dict[ uni_title ]
+                del self.currency_dict[ uni_title ]
+                del self.picture_dict[ uni_title ]
+                del self.price_dict[ uni_title ]
+            except KeyError:
+                for key in self.link_dict.keys():
+                    print key
+                pass
+
+            print index, titles[ index ]
+
 
             links.pop(      index )
             titles.pop(     index )
@@ -711,7 +724,13 @@ class MainWindow:
 
         write_data_file( links, titles, currencies, pictures, prices )
 
-        self.refresh_thread.join()
+        self.data_view.set_cursor( 0 )
+        if len( self.data_view ) == 0:
+            self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
+            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
+            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Check up on your favorite stuff!' )
+            self.preview_box.get_children()[0].get_children()[3].set_markup( 'By Me' )
+
         self.start_thread()
 
 
@@ -800,7 +819,7 @@ class MainWindow:
         if column.get_title() == '':
             return
 
-        open_in_browser( self.link_dict[ self.data_view.get_model()[ path ][-1] ] )
+        open_in_browser( self.link_dict[ unicode( self.data_view.get_model()[ path ][-1] ) ] )
 
 
     def set_indicator_active( self, widget, direction=None ):
