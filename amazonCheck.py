@@ -665,15 +665,17 @@ class MainWindow:
 
         for index in delete_queue:
 
+            uni_title = unicode( titles[ index ] )
+
             try:
                 remove( IMAGE_PATH + pictures[ index ] )
             except OSError:
                 write_log_file( 'Picture file was already deleted', True )
 
-            del self.link_dict[ titles[ index ] ]
-            del self.currency_dict[ titles[ index ] ]
-            del self.picture_dict[ titles[ index ] ]
-            del self.price_dict[ titles[ index ] ]
+            del self.link_dict[ uni_title ]
+            del self.currency_dict[ uni_title ]
+            del self.picture_dict[ uni_title ]
+            del self.price_dict[ uni_title ]
 
             links.pop(      index )
             titles.pop(     index )
