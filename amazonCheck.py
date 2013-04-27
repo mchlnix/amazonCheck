@@ -557,6 +557,8 @@ class MainWindow:
 
         open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
 
+        price = round( price, 2 )
+
         self.refresh_thread.join()
 
         self.link_dict[ title ]     = url
@@ -707,11 +709,9 @@ class MainWindow:
                 del self.picture_dict[ uni_title ]
                 del self.price_dict[ uni_title ]
             except KeyError:
+                write_log_file( 'KeyError happened' )
                 for key in self.link_dict.keys():
                     print key
-                pass
-
-            print index, titles[ index ]
 
 
             links.pop(      index )
