@@ -679,8 +679,6 @@ class MainWindow:
             response = dialog.run()
             dialog.destroy()
 
-            print response
-
             if response != -3:
                 return False
 
@@ -1047,7 +1045,6 @@ def write_data_file( links, titles, currencies, pictures, prices ):
         try:
             data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
         except:
-            print 'Ahhhhhh'
             data_file.write( dumps( [ links[ index] , titles[ index ].decode( 'ascii', 'ignore' ) , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
 
     data_file.close()
