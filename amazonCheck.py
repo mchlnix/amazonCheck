@@ -700,20 +700,21 @@ class MainWindow:
             uni_title = unicode( titles[ index ] )
 
             try:
-                remove( IMAGE_PATH + pictures[ index ] )
-            except OSError:
-                write_log_file( 'Picture file was already deleted' )
 
-            try:
-                del self.link_dict[ uni_title ]
+                del self.link_dict[     uni_title ]
                 del self.currency_dict[ uni_title ]
-                del self.picture_dict[ uni_title ]
-                del self.price_dict[ uni_title ]
+                del self.picture_dict[  uni_title ]
+                del self.price_dict[    uni_title ]
+
             except KeyError:
                 write_log_file( 'KeyError happened' )
                 for key in self.link_dict.keys():
                     print( key )
 
+            try:
+                remove( IMAGE_PATH + pictures[ index ] )
+            except OSError:
+                write_log_file( 'Picture file was already deleted' )
 
             links.pop(      index )
             titles.pop(     index )
