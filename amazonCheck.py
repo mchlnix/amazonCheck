@@ -98,7 +98,7 @@ class RefreshThread( Thread ):
     def run( self ):
         global SLEEP_TIME, ALTERNATING_ROW_COLOR, SHOW_NOTIFICATIONS
 
-        write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started', True )
+        write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started' )
 
         runs = 0
 
@@ -113,18 +113,18 @@ class RefreshThread( Thread ):
 
             runs = runs + 1
 
-            write_log_file( 'Thread ' + str( active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':', True )
+            write_log_file( 'Thread ' + str( active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':' )
 
             #Updates the information
 
-            write_log_file( s[ 'getng-dat' ], True )
+            write_log_file( s[ 'getng-dat' ] )
 
             for index in range( 0, len( links ) ):
                 if self.stop_flag:
-                    write_log_file( s[ 'svng-data' ], True )
+                    write_log_file( s[ 'svng-data' ] )
                     write_data_file( links, titles, currencies, pictures, prices )
 
-                    write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ), True )
+                    write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ) )
 
                     return
 
@@ -182,7 +182,7 @@ class RefreshThread( Thread ):
 
             #Saving data to file
 
-            write_log_file( s[ 'svng-data' ], True )
+            write_log_file( s[ 'svng-data' ] )
 
             write_data_file( links, titles, currencies, pictures, prices )
 
@@ -194,7 +194,7 @@ class RefreshThread( Thread ):
 
             diff_time = round( end_time - start_time, 2 )
 
-            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ], True )
+            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ] )
 
             #Calculating sleeptime
 
@@ -207,17 +207,17 @@ class RefreshThread( Thread ):
 
             #Sleeping for agreed amount
 
-            write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ], True )
+            write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ] )
 
             if self.stop_flag:
-                write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping', True )
+                write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
             for i in range( 0, 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping', True )
+                    write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
                     return
 
         write_log_file( 'Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
@@ -702,7 +702,7 @@ class MainWindow:
             try:
                 remove( IMAGE_PATH + pictures[ index ] )
             except OSError:
-                write_log_file( 'Picture file was already deleted', True )
+                write_log_file( 'Picture file was already deleted' )
 
             try:
                 del self.link_dict[ uni_title ]
@@ -712,7 +712,7 @@ class MainWindow:
             except KeyError:
                 write_log_file( 'KeyError happened' )
                 for key in self.link_dict.keys():
-                    print key
+                    print( key )
 
 
             links.pop(      index )
@@ -853,7 +853,7 @@ class MainWindow:
 
 
     def update_list_store( self ):
-        write_log_file( 'Gui is updating', True )
+        write_log_file( 'Gui is updating' )
 
         ( links, titles, currencies, pictures, prices ) = read_data_file()
 
@@ -913,7 +913,7 @@ class MainWindow:
             except IndexError:
                 self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
 
-        write_log_file( 'Gui updated', True )
+        write_log_file( 'Gui updated' )
 
 
 
@@ -969,7 +969,7 @@ def read_config_file():
 
     if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
 
-        write_log_file( s[ 'err-rd-cf' ] )
+        write_log_file( s[ 'err-rd-cf' ], True )
 
         reset_config_file()
 
@@ -1021,7 +1021,7 @@ def read_data_file():
         data_file = open( DATA_FILE, 'r' )
     except IOError:
         write_log_file( s[ 'dat-no-pm' ], True )
-        exit( s[ 'dat-no-pm' ] )
+        exit()
 
     data = data_file.readlines()
 
