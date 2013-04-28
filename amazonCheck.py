@@ -557,7 +557,8 @@ class MainWindow:
 
         open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
 
-        price = round( price, 2 )
+        if price != 'N/A':
+            price = round( price, 2 )
 
         self.refresh_thread.join()
 
@@ -725,7 +726,8 @@ class MainWindow:
         write_data_file( links, titles, currencies, pictures, prices )
 
         self.data_view.set_cursor( 0 )
-        if len( self.data_view ) == 0:
+
+        if len( self.data_store ) == 0:
             self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
             self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
             self.preview_box.get_children()[0].get_children()[2].set_markup( 'Check up on your favorite stuff!' )
