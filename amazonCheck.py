@@ -762,7 +762,11 @@ class MainWindow:
             avgs = get_avg_price( self.price_dict[ title ] )
             currency = self.currency_dict[ title ]
 
-            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
+            try:
+                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
+            except:
+                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + 'no-pic.png' )
+
 
             if pixbuf.get_width() < pixbuf.get_height():
                 scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
