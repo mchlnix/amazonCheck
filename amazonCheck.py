@@ -330,21 +330,24 @@ class MainWindow:
         self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         self.indicator.set_status( STATUS_ACTIVE )
 
-        menu_item_show      = gtk.MenuItem( 'Hide window' )
-        menu_item_exit      = gtk.MenuItem( 'Exit'        )
-        menu_item_seperator = gtk.SeparatorMenuItem()
-        menu_item_reset     = gtk.MenuItem( 'Reset'       )
+        menu_item_show          = gtk.MenuItem( 'Hide window' )
+        menu_item_add_from_clip = gtk.MenuItem( 'Add from clipboard' )
+        menu_item_exit          = gtk.MenuItem( 'Exit'        )
+        menu_item_seperator     = gtk.SeparatorMenuItem()
+        menu_item_reset         = gtk.MenuItem( 'Reset'       )
 
-        menu_item_show.connect(  'activate', self.toggle_window_visibility )
-        menu_item_exit.connect(  'activate', self.exit_application         )
-        menu_item_reset.connect( 'activate', self.set_indicator_active     )
+        menu_item_show.connect(          'activate', self.toggle_window_visibility )
+        menu_item_add_from_clip.connect( 'activate', self.on_add_article           )
+        menu_item_exit.connect(          'activate', self.exit_application         )
+        menu_item_reset.connect(         'activate', self.set_indicator_active     )
 
         indicator_menu = gtk.Menu()
 
-        indicator_menu.append( menu_item_show      )
-        indicator_menu.append( menu_item_exit      )
-        indicator_menu.append( menu_item_seperator )
-        indicator_menu.append( menu_item_reset     )
+        indicator_menu.append( menu_item_show          )
+        indicator_menu.append( menu_item_add_from_clip )
+        indicator_menu.append( menu_item_exit          )
+        indicator_menu.append( menu_item_seperator     )
+        indicator_menu.append( menu_item_reset         )
 
         indicator_menu.show_all()
 
@@ -520,13 +523,22 @@ class MainWindow:
 
 
     def on_add_article( self, widget ):
-        self.add_text_box.set_visible( not self.add_text_box.get_visible() )
-        self.window.get_child().get_children()[1].get_children()[2].set_visible( not self.window.get_child().get_children()[1].get_children()[2].get_visible() )
+        if type( widget ) == gtk.Button:
+            self.add_text_box.set_visible( not self.add_text_box.get_visible() )
+            self.window.get_child().get_children()[1].get_children()[2].set_visible( not self.window.get_child().get_children()[1].get_children()[2].get_visible() )
 
-        if self.add_text_box.get_visible():
-            return
+            if self.add_text_box.get_visible():
+                return
 
-        url = shorten_amazon_link( self.add_text_box.get_text() )
+            url = shorten_amazon_link( self.add_text_box.get_text() )
+
+        else:
+            url = gtk.Clipboard().wait_for_text()
+            if url == None:
+                write_log_file( "Couldn't find any data", True )
+                return
+            else:
+                url = shorten_amazon_link( url )
 
         if url.find( 'amazon.co.jp' ) != -1:
             write_log_file( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
