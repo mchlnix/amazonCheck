@@ -144,13 +144,17 @@ def get_info_for( url ):
 
 
     #Finding the price
-    price_pos = temp_file.find( '<span class="price">' ) + 20
-
-    if  price_pos != -1 + 20:
-        price = temp_file[ price_pos : temp_file.find( '</span>', price_pos ) ]
-
+    if temp_file.find( '<tbody class="result">') == -1:
+        price = s[ 'N/A']
+        price_pos = 0
     else:
-        price = s[ 'N/A' ]
+        price_pos = temp_file.find( '<span class="price">' ) + 20
+
+        if  price_pos != -1 + 20:
+            price = temp_file[ price_pos : temp_file.find( '</span>', price_pos ) ]
+
+        else:
+            price = s[ 'N/A' ]
 
 
     #Finding shipping
