@@ -312,8 +312,8 @@ class MainWindow:
         config_button_cancel = gtk.Button( 'Cancel'     )
         config_button_ok     = gtk.Button( '    OK    ' )
 
-        config_button_cancel.connect( 'clicked', self.on_config_cancel      )
-        config_button_ok.connect(     'clicked', self.on_config_confirm     )
+        config_button_cancel.connect( 'clicked', self.on_config_cancel  )
+        config_button_ok.connect(     'clicked', self.on_config_confirm )
 
         config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
         config_button_box.pack_start( config_button_cancel,      False, False, 5 )
