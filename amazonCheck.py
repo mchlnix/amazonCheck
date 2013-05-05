@@ -346,9 +346,9 @@ class MainWindow:
 
         indicator_menu.append( menu_item_show          )
         indicator_menu.append( menu_item_add_from_clip )
-        indicator_menu.append( menu_item_exit          )
         indicator_menu.append( menu_item_seperator     )
         indicator_menu.append( menu_item_reset         )
+        indicator_menu.append( menu_item_exit          )
 
         indicator_menu.show_all()
 
