@@ -25,6 +25,7 @@ from urllib import urlopen
 from time import ctime, time, sleep
 from json import dumps, loads
 from dbus import SessionBus
+from glib import GError
 from sys import argv, exit
 from re import search
 from os import name, remove
@@ -764,7 +765,8 @@ class MainWindow:
 
             try:
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
-            except:
+            except GError:
+                write_log_file( 'Selected article doesn\'t have an image associated with it.', True )
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + 'no-pic.png' )
 
 
