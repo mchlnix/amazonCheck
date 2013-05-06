@@ -227,18 +227,7 @@ class RefreshThread( Thread ):
 class MainWindow:
     def __init__( self ):
         #Setting up the toolbar
-        toolbar = gtk.Toolbar()
-        toolbar.set_orientation( gtk.ORIENTATION_VERTICAL )
-        toolbar.set_style( gtk.TOOLBAR_ICONS )
-
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_ADD, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Add', None, image, self.on_add_article )
-
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_REMOVE, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Remove', None, image, self.on_delete_articles )
-
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_PREFERENCES, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Config', None, image, self.on_show_config_window )
+        self.toolbar = setup_toolbar()
 
 
         #Setting up the data holding dictionary
@@ -251,165 +240,26 @@ class MainWindow:
         #Setting up the dbus service
         self.dbus_service = DBusService( self )
 
+        
+        #Setting up the config window
+        self.config_window = setup_config_window()
 
-        #Setting up config window
-        self.config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        self.config_window.set_position( gtk.WIN_POS_CENTER  )
-        self.config_window.set_resizable( False )
-        self.config_window.set_modal(     True  )
-        self.config_window.connect( 'delete-event', self.on_config_cancel )
-
-        config_outer_layer = gtk.VBox()
-        config_config_box  = gtk.VBox()
-        config_button_box  = gtk.HBox()
-
-        config_checkbutton_notifications = gtk.CheckButton()
-        config_checkbutton_delete_dialog = gtk.CheckButton()
-        config_checkbutton_alt_row_color = gtk.CheckButton()
-
-        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS    )
-        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
-        config_checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
-
-        config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
-        config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
-
-        config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
-        config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
-
-        config_hbox_min_sleep = gtk.HBox()
-        config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
-        config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        config_hbox_min_sleep.pack_start( config_spinbutton_min_sleep,                    False, False, 5 )
-
-        config_hbox_max_sleep = gtk.HBox()
-        config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
-        config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        config_hbox_max_sleep.pack_start( config_spinbutton_max_sleep,                    False, False, 5 )
-
-        config_hbox_notifications = gtk.HBox()
-        config_hbox_notifications.pack_start( gtk.Label( 'Show notification bubbles?' ),  False, False, 5 )
-        config_hbox_notifications.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_notifications.pack_start( config_checkbutton_notifications,           False, False, 5 )
-
-        config_hbox_delete_dialog = gtk.HBox()
-        config_hbox_delete_dialog.pack_start( gtk.Label( 'Confirm deleting articles?' ),  False, False, 5 )
-        config_hbox_delete_dialog.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_delete_dialog.pack_start( config_checkbutton_delete_dialog,           False, False, 5 )
-
-        config_hbox_alt_row_color = gtk.HBox()
-        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),       False, False, 5 )
-        config_hbox_alt_row_color.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_alt_row_color.pack_start( config_checkbutton_alt_row_color,           False, False, 5 )
-
-
-        config_config_box.pack_start( config_hbox_min_sleep,                              False, False, 5 )
-        config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
-        config_config_box.pack_start( config_hbox_notifications,                          False, False, 5 )
-        config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
-        config_config_box.pack_start( config_hbox_alt_row_color,                          False, False, 5 )
-
-        config_button_cancel = gtk.Button( 'Cancel'     )
-        config_button_ok     = gtk.Button( '    OK    ' )
-
-        config_button_cancel.connect( 'clicked', self.on_config_cancel      )
-        config_button_ok.connect(     'clicked', self.on_config_confirm     )
-
-        config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
-        config_button_box.pack_start( config_button_cancel,      False, False, 5 )
-        config_button_box.pack_start( config_button_ok,          False, False, 5 )
-
-        config_outer_layer.pack_start( config_config_box,        False, False, 5 )
-        config_outer_layer.pack_start( gtk.Label( '' ),          True,  True,  5 )
-        config_outer_layer.pack_start( config_button_box,        False, False, 5 )
-
-        self.config_window.add( config_outer_layer )
-
-
+        
         #Setting up the indicator
-        self.indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
-        self.indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
-        self.indicator.set_status( STATUS_ACTIVE )
-
-        menu_item_show          = gtk.MenuItem( 'Hide window' )
-        menu_item_add_from_clip = gtk.MenuItem( 'Add from clipboard' )
-        menu_item_exit          = gtk.MenuItem( 'Exit'        )
-        menu_item_seperator     = gtk.SeparatorMenuItem()
-        menu_item_reset         = gtk.MenuItem( 'Reset'       )
-
-        menu_item_show.connect(          'activate', self.toggle_window_visibility )
-        menu_item_add_from_clip.connect( 'activate', self.on_add_article           )
-        menu_item_exit.connect(          'activate', self.exit_application         )
-        menu_item_reset.connect(         'activate', self.set_indicator_active     )
-
-        indicator_menu = gtk.Menu()
-
-        indicator_menu.append( menu_item_show          )
-        indicator_menu.append( menu_item_add_from_clip )
-        indicator_menu.append( menu_item_exit          )
-        indicator_menu.append( menu_item_seperator     )
-        indicator_menu.append( menu_item_reset         )
-
-        indicator_menu.show_all()
-
-        self.indicator.set_menu( indicator_menu )
+        self.indicator = self.setup_indicator()
 
 
         #Setting up the Liststore
         self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
         self.sortable = gtk.TreeModelSort( self.data_store )
 
-        self.sortable.set_sort_func( 2, my_sort_function, 2 )
-        self.sortable.set_sort_func( 3, my_sort_function, 3 )
-        self.sortable.set_sort_func( 4, my_sort_function, 4 )
-        self.sortable.set_sort_func( 5, my_sort_function, 5 )
 
+        #Setting the costum sort function on columns 2 - 5
+        for i in [ 2, 3, 4, 5 ]:
+            self.sortable.set_sort_func( i, my_sort_function, i )
 
         #Setting up the TreeView
-        self.data_view = gtk.TreeView( self.sortable )
-        self.data_view.set_headers_clickable( True )
-        self.data_view.connect( 'row-activated',  self.on_visit_page   )
-        self.data_view.connect( 'cursor-changed', self.on_row_selected )
-        self.data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
-
-        toggle_renderer = gtk.CellRendererToggle()
-        toggle_renderer.connect( 'toggled', self.on_cell_toggled )
-
-        currency_renderer = gtk.CellRendererText()
-        price_renderer    = gtk.CellRendererText()
-        title_renderer    = gtk.CellRendererText()
-        min_renderer      = gtk.CellRendererText()
-        avg_renderer      = gtk.CellRendererText()
-        max_renderer      = gtk.CellRendererText()
-
-        min_renderer.set_property( 'foreground', '#27B81F' )
-        avg_renderer.set_property( 'foreground', '#FCCA00' )
-        max_renderer.set_property( 'foreground', '#FF3D3D' )
-
-        toggle_column   = gtk.TreeViewColumn( '',      toggle_renderer,   active=0 )
-        currency_column = gtk.TreeViewColumn( 'CY',    currency_renderer, text=1   )
-        price_column    = gtk.TreeViewColumn( 'Price', price_renderer,    markup=2 )
-        minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
-        average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
-        maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
-        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6 )
-
-        toggle_column.set_sort_column_id(   0 )
-        currency_column.set_sort_column_id( 1 )
-        price_column.set_sort_column_id(    2 )
-        minimum_column.set_sort_column_id(  3 )
-        average_column.set_sort_column_id(  4 )
-        maximum_column.set_sort_column_id(  5 )
-        title_column.set_sort_column_id(    6 )
-
-        self.data_view.append_column( toggle_column   )
-        self.data_view.append_column( currency_column )
-        self.data_view.append_column( price_column    )
-        self.data_view.append_column( minimum_column  )
-        self.data_view.append_column( average_column  )
-        self.data_view.append_column( maximum_column  )
-        self.data_view.append_column( title_column    )
-
+        self.dataview = setup_treeview()
 
         #Fill the TreeView
         ( links, titles, currencies, pictures, prices ) = read_data_file()
@@ -445,7 +295,7 @@ class MainWindow:
 
         #Setting up inner layer
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
-        inner_layer.pack_start( toolbar,                     False, False, 5  )
+        inner_layer.pack_start( self.toolbar,                False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
         inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
 
@@ -501,7 +351,7 @@ class MainWindow:
 
         #Setting up refresh thread
         self.refresh_thread = RefreshThread( self )
-
+        
 
     def main( self ):
         #Starting the data thread
@@ -851,6 +701,178 @@ class MainWindow:
     def set_indicator_attention( self ):
         self.indicator.get_menu().get_children()[3].set_sensitive( True )
         self.indicator.set_status( STATUS_ATTENTION )
+        
+    
+    def setup_indicator( self ):
+        indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
+        indicator.set_status( STATUS_ACTIVE )
+
+        menu_item_show          = gtk.MenuItem( 'Hide window' )
+        menu_item_add_from_clip = gtk.MenuItem( 'Add from clipboard' )
+        menu_item_exit          = gtk.MenuItem( 'Exit'        )
+        menu_item_seperator     = gtk.SeparatorMenuItem()
+        menu_item_reset         = gtk.MenuItem( 'Reset'       )
+
+        menu_item_show.connect(          'activate', self.toggle_window_visibility )
+        menu_item_add_from_clip.connect( 'activate', self.on_add_article           )
+        menu_item_exit.connect(          'activate', self.exit_application         )
+        menu_item_reset.connect(         'activate', self.set_indicator_active     )
+
+        indicator_menu = gtk.Menu()
+
+        indicator_menu.append( menu_item_show          )
+        indicator_menu.append( menu_item_add_from_clip )
+        indicator_menu.append( menu_item_exit          )
+        indicator_menu.append( menu_item_seperator     )
+        indicator_menu.append( menu_item_reset         )
+
+        indicator_menu.show_all()
+
+        indicator.set_menu( indicator_menu )
+        
+        return indicator
+        
+        
+    def setup_toolbar( self ):
+        #Setting up the toolbar
+        toolbar = gtk.Toolbar()
+        toolbar.set_orientation( gtk.ORIENTATION_VERTICAL )
+        toolbar.set_style( gtk.TOOLBAR_ICONS )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_ADD, gtk.ICON_SIZE_LARGE_TOOLBAR )
+        toolbar.append_item( None, 'Add', None, image, self.on_add_article )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_REMOVE, gtk.ICON_SIZE_LARGE_TOOLBAR )
+        toolbar.append_item( None, 'Remove', None, image, self.on_delete_articles )
+
+        image = gtk.Image(); image.set_from_stock( gtk.STOCK_PREFERENCES, gtk.ICON_SIZE_LARGE_TOOLBAR )
+        toolbar.append_item( None, 'Config', None, image, self.on_show_config_window )
+        
+        return toolbar
+
+
+    def setup_config_window( self ):
+        config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        config_window.set_position( gtk.WIN_POS_CENTER  )
+        config_window.set_resizable( False )
+        config_window.set_modal(     True  )
+        config_window.connect( 'delete-event', self.on_config_cancel )
+
+        config_outer_layer = gtk.VBox()
+        config_config_box  = gtk.VBox()
+        config_button_box  = gtk.HBox()
+
+        config_checkbutton_notifications = gtk.CheckButton()
+        config_checkbutton_delete_dialog = gtk.CheckButton()
+        config_checkbutton_alt_row_color = gtk.CheckButton()
+
+        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS    )
+        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
+        config_checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
+
+        config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+        config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+
+        config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
+        config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
+
+        config_hbox_min_sleep = gtk.HBox()
+        config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
+        config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        config_hbox_min_sleep.pack_start( config_spinbutton_min_sleep,                    False, False, 5 )
+
+        config_hbox_max_sleep = gtk.HBox()
+        config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
+        config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        config_hbox_max_sleep.pack_start( config_spinbutton_max_sleep,                    False, False, 5 )
+
+        config_hbox_notifications = gtk.HBox()
+        config_hbox_notifications.pack_start( gtk.Label( 'Show notification bubbles?' ),  False, False, 5 )
+        config_hbox_notifications.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_notifications.pack_start( config_checkbutton_notifications,           False, False, 5 )
+
+        config_hbox_delete_dialog = gtk.HBox()
+        config_hbox_delete_dialog.pack_start( gtk.Label( 'Confirm deleting articles?' ),  False, False, 5 )
+        config_hbox_delete_dialog.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_delete_dialog.pack_start( config_checkbutton_delete_dialog,           False, False, 5 )
+
+        config_hbox_alt_row_color = gtk.HBox()
+        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),       False, False, 5 )
+        config_hbox_alt_row_color.pack_start( gtk.Label( '' ),                            True,  True,  5 )
+        config_hbox_alt_row_color.pack_start( config_checkbutton_alt_row_color,           False, False, 5 )
+
+        config_config_box.pack_start( config_hbox_min_sleep,                              False, False, 5 )
+        config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
+        config_config_box.pack_start( config_hbox_notifications,                          False, False, 5 )
+        config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
+        config_config_box.pack_start( config_hbox_alt_row_color,                          False, False, 5 )
+
+        config_button_cancel = gtk.Button( 'Cancel'     )
+        config_button_ok     = gtk.Button( '    OK    ' )
+
+        config_button_cancel.connect( 'clicked', self.on_config_cancel      )
+        config_button_ok.connect(     'clicked', self.on_config_confirm     )
+
+        config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
+        config_button_box.pack_start( config_button_cancel,      False, False, 5 )
+        config_button_box.pack_start( config_button_ok,          False, False, 5 )
+
+        config_outer_layer.pack_start( config_config_box,        False, False, 5 )
+        config_outer_layer.pack_start( gtk.Label( '' ),          True,  True,  5 )
+        config_outer_layer.pack_start( config_button_box,        False, False, 5 )
+
+        config_window.add( config_outer_layer )
+        
+        return config_window
+    
+    
+    def setup_treeview( self ):
+        data_view = gtk.TreeView( self.sortable )
+        data_view.set_headers_clickable( True )
+        data_view.connect( 'row-activated',  self.on_visit_page   )
+        data_view.connect( 'cursor-changed', self.on_row_selected )
+        data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
+
+        toggle_renderer = gtk.CellRendererToggle()
+        toggle_renderer.connect( 'toggled', self.on_cell_toggled )
+
+        currency_renderer = gtk.CellRendererText()
+        price_renderer    = gtk.CellRendererText()
+        title_renderer    = gtk.CellRendererText()
+        min_renderer      = gtk.CellRendererText()
+        avg_renderer      = gtk.CellRendererText()
+        max_renderer      = gtk.CellRendererText()
+
+        min_renderer.set_property( 'foreground', '#27B81F' )
+        avg_renderer.set_property( 'foreground', '#FCCA00' )
+        max_renderer.set_property( 'foreground', '#FF3D3D' )
+
+        toggle_column   = gtk.TreeViewColumn( '',      toggle_renderer,   active=0 )
+        currency_column = gtk.TreeViewColumn( 'CY',    currency_renderer, text=1   )
+        price_column    = gtk.TreeViewColumn( 'Price', price_renderer,    markup=2 )
+        minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
+        average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
+        maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
+        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6 )
+
+        toggle_column.set_sort_column_id(   0 )
+        currency_column.set_sort_column_id( 1 )
+        price_column.set_sort_column_id(    2 )
+        minimum_column.set_sort_column_id(  3 )
+        average_column.set_sort_column_id(  4 )
+        maximum_column.set_sort_column_id(  5 )
+        title_column.set_sort_column_id(    6 )
+
+        data_view.append_column( toggle_column   )
+        data_view.append_column( currency_column )
+        data_view.append_column( price_column    )
+        data_view.append_column( minimum_column  )
+        data_view.append_column( average_column  )
+        data_view.append_column( maximum_column  )
+        data_view.append_column( title_column    )
+        
+        return data_view
 
 
     def start_thread( self ):
@@ -883,7 +905,6 @@ class MainWindow:
                 avgs = self.price_dict[ titles[ index ] ][0][0]
                 mins = self.price_dict[ titles[ index ] ][0][0]
                 maxs = self.price_dict[ titles[ index ] ][0][0]
-                #progs = prices
             else:
                 avgs = get_avg_price( self.price_dict[ titles[ index ] ] )
                 if avgs == -1: avgs = s[ 'N/A' ]
@@ -891,7 +912,6 @@ class MainWindow:
                 if mins == -1: mins = s[ 'N/A' ]
                 maxs = get_max_price( self.price_dict[ titles[ index ] ] )
                 if maxs == -1: maxs = s[ 'N/A' ]
-                #progs.append( get_prognosis( prices[ index ] ) )
 
             if maxs == mins:
                 color = '<span>'
@@ -1119,14 +1139,4 @@ if __name__ == '__main__':
 
     mywindow = MainWindow()
     mywindow.main()
-
-#except KeyboardInterrupt:
-    #write_log_file( s[ 'pg-hlt-us' ], True )
-    #write_log_file( s[ 'exit-norm' ], True )
-    #write_log_file( s[ 'dashes' ] )
-    #exit(0)
-#except:
-    #write_log_file( 'Something went wrong' )
-    #write_log_file( 'Exited abnormally' )
-    #exit(1)
 
