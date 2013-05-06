@@ -108,19 +108,19 @@ class RefreshThread( Thread ):
             ( links, titles, currencies, pictures, prices ) = read_data_file()
 
             start_time = time()
+            
+            no_of_articles = len( links )
 
-            if len( links ) == 0:
+            if no_of_articles == 0:
                 write_log_file( s[ 'dat-empty' ], True )
 
             runs = runs + 1
-
-            write_log_file( 'Thread ' + str( active_count() - 1 ) + ': ' + s[ 'strtg-run' ] + str( runs ) + ':' )
 
             #Updates the information
 
             write_log_file( s[ 'getng-dat' ] )
 
-            for index in range( 0, len( links ) ):
+            for index in range( 0, no_of_articles ):
                 if self.stop_flag:
                     write_log_file( s[ 'svng-data' ] )
                     write_data_file( links, titles, currencies, pictures, prices )
@@ -147,38 +147,47 @@ class RefreshThread( Thread ):
                     write_log_file( 'Unknown Error occured.', True )
                     write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
                     continue
-
-                if info[2] != 'N/A':
-                    current_price = round( info[2], 2 )
-                else:
-                    current_price = info[2]
-
-                if current_price == prices[ index ][-1][0]:
+                    
+                    
+                article_name, not_used, new_price, not_used = info
+                
+                timestamp = int( round( time() ) )
+                
+                try:
+                    new_price = round( new_price, 2 )
+                except TypeError:
                     pass
-                else:
+                    
+                
+
+                if new_price != old_price:
                     open( IMAGE_PATH + self.wind_obj.picture_dict[ unicode( titles[ index ] ) ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
 
-                    if prices[ index ][-1][0] == s[ 'N/A' ] and not current_price == s[ 'N/A' ]:
+                    if old_price == s[ 'N/A' ] and not new_price == s[ 'N/A' ]: #Überdenken
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
-                    elif current_price == s[ 'N/A' ]:
+                    elif new_price == s[ 'N/A' ]:
                         title = s[ 'bec-unava' ] + NOCOLOR + ':'
 
-                    elif current_price < prices[ index ][-1][0]:
-                        title = s[ 'price-dwn' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % current_price + ' )' + NOCOLOR + ':'
+                    elif new_price < old_price:
+                        title = s[ 'price-dwn' ] + '%.2f' % old_price + ' > ' + '%.2f' % new_price + ' )' + NOCOLOR + ':'
 
-                    elif current_price > prices[ index ][-1][0]:
-                        title = s[ 'price-up' ] + '%.2f' % prices[ index ][-1][0] + ' > ' + '%.2f' % current_price + ' )' + NOCOLOR + ':'
+                    elif new_price > old_price:
+                        title = s[ 'price-up' ] + '%.2f' % old_price + ' > ' + '%.2f' % new_price + ' )' + NOCOLOR + ':'
 
-                    body = str( info[0] )
+                    body = article_name
 
                     if SHOW_NOTIFICATIONS:
                         notify( title, body, IMAGE_PATH + pictures[ index ] )
 
                     print_notification( title, body, '' )
+                    
                     gobject.idle_add( self.wind_obj.set_indicator_attention )
-                    prices[ index ].append( [ current_price, int( round( time() ) ) ] )
-                    self.wind_obj.price_dict[ info[0] ].append( [ current_price, int( round( time() ) ) ] )
+                    
+                    prices[ index ].append( [ new_price, timestamp ] )
+                    
+                    self.wind_obj.price_dict[ article_name ].append( [ new_price, timestamp ] )
+                    
                     gobject.idle_add( self.wind_obj.update_list_store )
 
             #Saving data to file
