@@ -153,7 +153,7 @@ class RefreshThread( Thread ):
 
                 timestamp = int( round( time() ) )
 
-                old_price = self.wind_obj.price_dict[ article_name ][-1][0]
+                old_price = self.wind_obj.price_dict[ unicode( titles[ index ] ) ][-1][0]
 
                 try:
                     new_price = round( new_price, 2 )
@@ -186,7 +186,7 @@ class RefreshThread( Thread ):
 
                     prices[ index ].append( [ new_price, timestamp ] )
 
-                    self.wind_obj.price_dict[ article_name ].append( [ new_price, timestamp ] )
+                    self.wind_obj.price_dict[ unicode( titles[ index ] ) ].append( [ new_price, timestamp ] )
 
                     gobject.idle_add( self.wind_obj.update_list_store )
 
