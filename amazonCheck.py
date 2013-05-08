@@ -253,6 +253,7 @@ class MainWindow:
         #Setting up the config window
         self.config_window = self.setup_config_window()
 
+
         #Setting up the indicator
         self.indicator = self.setup_indicator()
 
@@ -266,8 +267,10 @@ class MainWindow:
         for i in [ 2, 3, 4, 5 ]:
             self.sortable.set_sort_func( i, my_sort_function, i )
 
+
         #Setting up the TreeView
         self.data_view = self.setup_treeview()
+
 
         #Fill the TreeView
         ( links, titles, currencies, pictures, prices ) = read_data_file()
@@ -383,21 +386,25 @@ class MainWindow:
 
     def on_add_article( self, widget ):
         if type( widget ) == gtk.Button:
-            self.add_text_box.set_visible( not self.add_text_box.get_visible() )
-            self.window.get_child().get_children()[1].get_children()[2].set_visible( not self.window.get_child().get_children()[1].get_children()[2].get_visible() )
+            textbox = self.add_text_box
+            #pos_label = self.window.get_child().get_children()[1].get_children()[2]
+            pos_label = textbox.get_parent().get_children()[2]
 
-            if self.add_text_box.get_visible():
+            textbox.set_visible( not textbox.get_visible() )
+            pos_label.set_visible( not pos_label.get_visible() )
+
+            if textbox.get_visible():
                 return
 
-            url = shorten_amazon_link( self.add_text_box.get_text() )
+            url = shorten_amazon_link( textbox.get_text() )
 
-        else:
+        elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
-            if url == None:
-                write_log_file( "Couldn't find any data", True )
-                return
-            else:
+            if url:
                 url = shorten_amazon_link( url )
+            else:
+                write_log_file( "Couldn't add article: Clipboard was empty.", True )
+
 
         if url.find( 'amazon.co.jp' ) != -1:
             write_log_file( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
@@ -862,7 +869,7 @@ class MainWindow:
         minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
         average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
         maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
-        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6 )
+        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6   )
 
         toggle_column.set_sort_column_id(   0 )
         currency_column.set_sort_column_id( 1 )
