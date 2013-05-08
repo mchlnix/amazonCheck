@@ -119,13 +119,7 @@ def get_max_price( price_list ):
 
 def get_info_for( url ):
 
-    try:
-        temp_file = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
-    except IOError:
-        return ( -1, -1, -1, -1 )
-
-    except ValueError:
-        return ( -2, -2, -2, -2 )
+    temp_file = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
 
     temp_index = temp_file.find( '<meta http-equiv="content-type"' ) + 31
     temp_index = temp_file.find( 'charset=', temp_index ) + 8
@@ -189,7 +183,7 @@ def get_info_for( url ):
     if price == 'N/A':
         return ( title, currency, price, picture )
     else:
-        return ( title, currency, price + shipping, picture )
+        return ( title, currency, round( price + shipping, 2 ), picture )
 
 
 

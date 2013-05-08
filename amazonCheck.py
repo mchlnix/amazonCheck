@@ -20,6 +20,7 @@ from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, STATUS_ATTENT
 from dbus.service import Object as dbusServiceObject, BusName, method as dbusServiceMethod
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
+from itertools import izip
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -85,10 +86,62 @@ class DBusService( dbusServiceObject ):
         self.wind_obj.toggle_window_visibility()
 
 
+class Article():
+    def __init__( self,
+                  url,
+                  name = 'No Name Found',
+                  price_data = [],
+                  currency = '',
+                  pic_url = '',
+                  pic_name = '',
+                  ):
+        self.url = url
+        self.name = name
+        self.price_data = price_data
+        self.currency = currency
+        self.pic_url = pic_url
+        self.pic_name = pic_name
+
+        self.bad_conn = False
+
+    def update( self ):
+        try:
+            self.name, self.currency, price, self.pic_url = get_info_for( self.url )
+            self.price_data.append( [ price, int( time() ) ] )
+            self.pic_name = search( '\/[A-Z0-9]{10}\/', self.url ).group()[1: -1] + '.jpg'
+        except IOError:
+            self.bad_conn = True
+        except ValueError:
+            self.bad_url = True
+
+    def __getattr__( self, name ):
+        if name=='bad_conn':
+            if self.bad_conn:
+                self.bad_conn = False
+                return True
+
+            return False
+
+        if name=='bad_url':
+            if self.bad_url:
+                self.bad_url = False
+                return True
+
+            return False
+
+        if name=='price':
+            return self.price_data[-1][0]
+
+
+
 class RefreshThread( Thread ):
-    def __init__( self, wind_obj ):
+    def __init__( self, articles, upd_list_store, set_ind, upd_art ):
         self.stop_flag = False
-        self.wind_obj = wind_obj
+        self.articles = articles
+        self.callbacks = ( upd_list_store,
+                           set_ind,
+                           upd_art
+                           )
         Thread.__init__( self )
 
 
@@ -104,12 +157,9 @@ class RefreshThread( Thread ):
         runs = 0
 
         while not self.stop_flag:
-            #Reading data
-            ( links, titles, currencies, pictures, prices ) = read_data_file()
-
             start_time = time()
 
-            no_of_articles = len( links )
+            no_of_articles = len( self.articles )
 
             if no_of_articles == 0:
                 write_log_file( s[ 'dat-empty' ], True )
@@ -120,48 +170,25 @@ class RefreshThread( Thread ):
 
             write_log_file( s[ 'getng-dat' ] )
 
-            for index in range( 0, no_of_articles ):
+            for art in self.articles.values():
                 if self.stop_flag:
                     write_log_file( s[ 'svng-data' ] )
-                    write_data_file( links, titles, currencies, pictures, prices )
+                    write_data_file( self.articles )
 
                     write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ) )
 
                     return
 
-                info = get_info_for( links[ index ] )
+                old_price = art.price_data[-1][0]
 
-                if info == ( -1, -1, -1, -1 ):
-                    write_log_file( s[ 'err-con-s' ], True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
-                elif info == ( -2, -2, -2, -2 ):
-                    write_log_file( 'ValueError happened', True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
-                elif info == ( -3, -3, -3, -3 ):
-                    write_log_file( 'Shipping couldn\'t be determined.', True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
-                elif info == None:
-                    write_log_file( 'Unknown Error occured.', True )
-                    write_log_file( s[ 'artcl-skp' ] + str( links[ index ] ), True )
-                    continue
+                art.update()
 
+                new_price = art.price_data[-1][0]
 
-                article_name, not_used, new_price, not_used = info
-
-                timestamp = int( round( time() ) )
-
-                old_price = self.wind_obj.price_dict[ unicode( titles[ index ] ) ][-1][0]
-
-                try:
-                    new_price = round( new_price, 2 )
-                except TypeError:
-                    pass
+                print old_price, new_price, old_price == new_price
 
                 if new_price != old_price:
-                    open( IMAGE_PATH + self.wind_obj.picture_dict[ unicode( titles[ index ] ) ], IMAGE_WRITE_MODE ).write( urlopen( info[3] ).read() )
+                    open( IMAGE_PATH + art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( art.pic_url ).read() )
 
                     if old_price == s[ 'N/A' ]: #Überdenken
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
@@ -175,26 +202,22 @@ class RefreshThread( Thread ):
                     elif new_price > old_price:
                         title = s[ 'price-up' ] + '%.2f' % old_price + ' > ' + '%.2f' % new_price + ' )' + NOCOLOR + ':'
 
-                    body = article_name
+                    body = art.name
 
                     if SHOW_NOTIFICATIONS:
-                        notify( title, body, IMAGE_PATH + pictures[ index ] )
+                        notify( title, body, IMAGE_PATH + art.pic_name )
 
                     print_notification( title, body, '' )
 
-                    gobject.idle_add( self.wind_obj.set_indicator_attention )
+                    gobject.idle_add( self.callbacks[1] )
 
-                    prices[ index ].append( [ new_price, timestamp ] )
-
-                    self.wind_obj.price_dict[ unicode( titles[ index ] ) ].append( [ new_price, timestamp ] )
-
-                    gobject.idle_add( self.wind_obj.update_list_store )
+                    gobject.idle_add( self.callbacks[0] )
 
             #Saving data to file
 
             write_log_file( s[ 'svng-data' ] )
 
-            write_data_file( links, titles, currencies, pictures, prices )
+            write_data_file( self.articles )
 
             #End time
 
@@ -223,7 +246,7 @@ class RefreshThread( Thread ):
                 write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
-            for i in range( 0, 10 * SLEEP_TIME ):
+            for i in range( 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
@@ -240,10 +263,7 @@ class MainWindow:
 
 
         #Setting up the data holding dictionary
-        self.link_dict = {}
-        self.currency_dict = {}
-        self.price_dict = {}
-        self.picture_dict = {}
+        self.articles = {}
 
 
         #Setting up the dbus service
@@ -273,21 +293,16 @@ class MainWindow:
 
 
         #Fill the TreeView
-        ( links, titles, currencies, pictures, prices ) = read_data_file()
+        articles = read_data_file()
 
-        for index in range( 0, len( links ) ):
-            uni_title = unicode( titles[ index ] )
-
-            self.link_dict[     uni_title ] = links[      index ]
-            self.currency_dict[ uni_title ] = currencies[ index ]
-            self.picture_dict[  uni_title ] = pictures[   index ]
-            self.price_dict[    uni_title ] = prices[     index ]
+        for article in articles:
+            self.articles[ article.url ] = article
 
         self.update_list_store()
 
 
         #Setting up text box for on_add_article
-        self.add_text_box = gtk.Entry( 0 )
+        self.add_textbox = gtk.Entry( 0 )
 
 
         #Setting up the GUI boxes
@@ -308,7 +323,7 @@ class MainWindow:
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
         inner_layer.pack_start( self.toolbar,                False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
-        inner_layer.pack_start( self.add_text_box,           True,  True,  5  )
+        inner_layer.pack_start( self.add_textbox,           True,  True,  5  )
 
         self.preview_box = gtk.HBox()
         info_box = gtk.VBox()
@@ -354,14 +369,18 @@ class MainWindow:
 
 
         #Hide hidden widgets
-        self.add_text_box.hide()
+        self.add_textbox.hide()
 
         #Set self.window as parent of config window
         self.config_window.set_transient_for( self.window )
 
 
         #Setting up refresh thread
-        self.refresh_thread = RefreshThread( self )
+        self.refresh_thread = RefreshThread( self.articles,
+                                             self.update_list_store,
+                                             self.set_indicator_attention,
+                                             '',
+                                             )
 
 
     def main( self ):
@@ -384,10 +403,18 @@ class MainWindow:
         gtk.main_quit()
 
 
+    def find_article( self, name ):
+        for url,art in self.articles.items():
+            if art.name == name:
+                return art
+
+        else:
+            return False
+
+
     def on_add_article( self, widget ):
         if type( widget ) == gtk.Button:
-            textbox = self.add_text_box
-            #pos_label = self.window.get_child().get_children()[1].get_children()[2]
+            textbox = self.add_textbox
             pos_label = textbox.get_parent().get_children()[2]
 
             textbox.set_visible( not textbox.get_visible() )
@@ -397,6 +424,7 @@ class MainWindow:
                 return
 
             url = shorten_amazon_link( textbox.get_text() )
+            textbox.set_text( '' )
 
         elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
@@ -405,52 +433,41 @@ class MainWindow:
             else:
                 write_log_file( "Couldn't add article: Clipboard was empty.", True )
 
+        if url in self.articles:
+            write_log_file( 'Article already in the database', True )
+            return
 
         if url.find( 'amazon.co.jp' ) != -1:
             write_log_file( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
             return
 
-        self.add_text_box.set_text( '' )
+        new_art = Article( url )
 
-        data_file = open( DATA_FILE, 'a' )
+        new_art.update()
 
-        ( title, currency, price, pic_url ) = get_info_for( url )
-
-        if ( title, currency, price, pic_url ) == ( -1, -1, -1, -1 ):
+        if new_art.bad_conn:
             write_log_file( s[ 'err-con-s' ], True )
             return
-        elif ( title, currency, price, pic_url ) == ( -2, -2, -2, -2 ):
-            write_log_file( 'ValueError happened', True )
-            return
-
-        if title in self.price_dict:
-            write_log_file( 'Article already in the database', True )
+        elif new_art.bad_url:
+            write_log_file( 'Couldn\'t parse the url.', True )
             return
 
         self.refresh_thread.stop()
 
-        title = unicode( title )
-
-        pic_name = search( '\/[A-Z0-9]{10}\/', url ).group()[1: -1] + '.jpg'
-
-        open( IMAGE_PATH + pic_name, IMAGE_WRITE_MODE ).write( urlopen( pic_url ).read() )
-
-        if price != 'N/A':
-            price = round( price, 2 )
+        open( IMAGE_PATH + new_art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( new_art.pic_url ).read() )
 
         self.refresh_thread.join()
 
-        self.link_dict[ title ]     = url
-        self.price_dict[ title ]    = [ [ price, int( round( time() ) ) ] ]
-        self.currency_dict[ title ] = currency
-        self.picture_dict[ title ]  = pic_name
+        self.articles[ new_art.url ] = new_art
 
-        try:
-            data_file.write( dumps( [ url, title, currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] ) + '\n' )
-        except UnicodeDecodeError:
-            data_file.write( dumps( [ url, title.decode( 'ascii', 'ignore' ), currency, pic_name, [ [ price, int( round( time() ) ) ] ] ] )  + '\n' )
-
-        data_file.close()
+        with open( DATA_FILE, 'a' ) as data_file:
+            data_file.write( dumps( [ new_art.url,
+                                      new_art.name,
+                                      new_art.currency,
+                                      new_art.pic_name,
+                                      new_art.price_data,
+                                      ] ) )
+            data_file.write( '\n' )
 
         self.update_list_store()
 
@@ -460,13 +477,9 @@ class MainWindow:
     def on_cell_toggled( self, widget, path ):
         title = self.sortable[path][6]
 
-        index = 0
-
-        while 1:
-            if self.data_store[ index ][6] == title:
-                self.data_store[ index ][0] = not self.data_store[ index ][0]
-                return
-            index += 1
+        for row in self.data_store:
+            if row[6] == title:
+                row[0] = not row[0]
 
 
     def on_changed_max_sleep( self, widget ):
@@ -527,38 +540,41 @@ class MainWindow:
         return True
 
 
-    def on_delete_articles( self, widget ):
-
-        self.on_really_delete_articles()
-
-
-    def on_really_delete_articles( self, widget=None ):
+    def on_delete_articles( self, widget=None ):
 
         delete_queue = []
         tree_length = len( self.data_store )
 
-        for index in range( 0, tree_length ):
-            index = tree_length - 1 - index
-            if self.data_store[ index ][0] == True:
-                delete_queue.append( index )
+        for index, row in enumerate( reversed( self.data_store ) ):
+            if row[0] == True:
+                delete_queue.append( ( index, row[6] ) )
 
         if len( delete_queue ) == 0:
             return False
 
         if SHOW_DEL_DIALOG:
-            dialog = gtk.Dialog( "", None, gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, ( gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT ) )
+            dialog = gtk.Dialog( "",
+                                 None,
+                                 gtk.DIALOG_MODAL
+                               | gtk.DIALOG_DESTROY_WITH_PARENT,
+                                 ( gtk.STOCK_CANCEL,
+                                   gtk.RESPONSE_REJECT,
+                                   gtk.STOCK_OK,
+                                   gtk.RESPONSE_ACCEPT,
+                                   ),
+                                 )
 
             dialog_hbox = gtk.HBox()
             dialog_hbox.show()
 
             if len( delete_queue ) == 1:
-                dialog_label = gtk.Label( 'Really delete the selected article?' )
+                dialog_l = gtk.Label( 'Really delete the selected article?' )
             else:
-                dialog_label = gtk.Label( 'Really delete the selected articles?' )
+                dialog_l = gtk.Label( 'Really delete the selected articles?' )
 
-            dialog_label.show()
+            dialog_l.show()
 
-            dialog_hbox.pack_start( dialog_label, True, True, 10 )
+            dialog_hbox.pack_start( dialog_l,     True, True, 10 )
             dialog.vbox.pack_start( dialog_hbox,  True, True, 10 )
 
             response = dialog.run()
@@ -571,65 +587,55 @@ class MainWindow:
         self.refresh_thread.stop()
         self.refresh_thread.join()
 
-        ( links, titles, currencies, pictures, prices ) = read_data_file()
-
-        for index in delete_queue:
-
-            uni_title = unicode( titles[ index ] )
+        for index, name in delete_queue:
 
             try:
-
-                del self.link_dict[     uni_title ]
-                del self.currency_dict[ uni_title ]
-                del self.picture_dict[  uni_title ]
-                del self.price_dict[    uni_title ]
+                art = find_article( name )
+                pic_name = art.pic_name
+                del self.articles[ art.url ]
 
             except KeyError:
                 write_log_file( 'KeyError happened' )
-                for key in self.link_dict.keys():
-                    print( key )
+                print name
 
             try:
-                remove( IMAGE_PATH + pictures[ index ] )
+                remove( IMAGE_PATH + pic_name )
             except OSError:
                 write_log_file( 'Picture file was already deleted' )
 
-            links.pop(      index )
-            titles.pop(     index )
-            currencies.pop( index )
-            pictures.pop(   index )
-            prices.pop(     index )
-
             self.data_store.remove( self.data_store.get_iter( index ) )
 
-        write_data_file( links, titles, currencies, pictures, prices )
-
-        self.data_view.set_cursor( 0 )
+        write_data_file( self.articles )
 
         if len( self.data_store ) == 0:
             self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
-            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
-            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Check up on your favorite stuff!' )
-            self.preview_box.get_children()[0].get_children()[3].set_markup( 'By Me' )
+
+            fields = self.preview_box.get_children()[0].get_children()
+
+            fields[1].set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
+            fields[2].set_markup( 'Check up on your favorite stuff!' )
+            fields[3].set_markup( 'By Me' )
+        else:
+            self.data_view.set_cursor( 0 )
 
         self.start_thread()
 
 
-    def on_reset_delete_button( self, widget=None ):
-        self.window.get_children()[0].get_children()[-1].get_children()[1].show() # delete_button
-        self.window.get_children()[0].get_children()[-1].get_children()[2].hide() # really_delete_button
-        self.window.get_children()[0].get_children()[-1].get_children()[3].hide() # not_really_delete_button
-
-
     def on_row_selected( self, treeview ):
         try:
-            title = unicode( self.data_view.get_model()[ treeview.get_selection().get_selected_rows()[1][0][0] ][-1] )
-            price = self.price_dict[ title ][-1][0]
-            avgs = get_avg_price( self.price_dict[ title ] )
-            currency = self.currency_dict[ title ]
+            index = treeview.get_selection().get_selected_rows()[1][0][0]
+            art_name = unicode( self.data_view.get_model()[ index ][-1] )
+
+            art = self.find_article( name=art_name )
+
+
+            avgs = get_avg_price( art.price_data )
+            price = art.price_data[-1][0]
+            currency = art.currency
 
             try:
-                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + self.picture_dict[ title ] )
+                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name
+                                                       )
             except GError:
                 write_log_file( 'Selected article doesn\'t have an image associated with it.', True )
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + 'no-pic.png' )
@@ -643,10 +649,10 @@ class MainWindow:
             self.image_preview.set_from_pixbuf( scaled_buf )
 
 
-            if len( title ) > 55:
-                disp_title = title[0:51] + '...'
+            if len( art.name ) > 55:
+                disp_title = art.name[0:51] + '...'
             else:
-                disp_title = title
+                disp_title = art.name
 
             if price > avgs:
                 color = '<span foreground="#FF3D3D">'
@@ -664,34 +670,33 @@ class MainWindow:
 
             last_3_prices = '    '
 
-            limit = min( len( self.price_dict[ title ] ), 3 )
+            limit = min( len( art.price_data ), 3 )
 
-            for i in range( 0, limit ):
-                temp_price = self.price_dict[ title ][-limit + i][0]
+            for i in xrange( limit ):
+                tmp_price = art.price_data[i - limit][0]
 
-                if temp_price == 'N/A':
+                if tmp_price == 'N/A':
                     last_3_prices += '<span color="#FF3D3D">' + 'N/A' + '</span>'
                 else:
-                    if temp_price > avgs:
+                    if tmp_price > avgs:
                         color = '<span foreground="#FF3D3D">'
 
-                    elif temp_price < avgs:
+                    elif tmp_price < avgs:
                         color = '<span foreground="#27B81F">'
 
-                    elif temp_price == avgs:
+                    elif tmp_price == avgs:
                         color = '<span foreground="#FCCA00">'
 
-                    last_3_prices += color + '%.2f</span>' % temp_price
+                    last_3_prices += color + '%.2f</span>' % tmp_price
 
-                if not i == min( len( self.price_dict[ title ] ), 3 ) - 1:
+                if i < limit - 1:
                     last_3_prices += ' > '
 
+            fields = self.preview_box.get_children()[0].get_children()
 
-            self.preview_box.get_children()[0].get_children()[1].set_markup( '<a href="' + self.link_dict[ title ] + '">' + disp_title.replace( '&', '&amp;' ) + '</a>' )
-            self.preview_box.get_children()[0].get_children()[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
-            self.preview_box.get_children()[0].get_children()[3].set_markup( last_3_prices )
-
-
+            fields[1].set_markup( '<a href="' + art.url + '">' + disp_title.replace( '&', '&amp;' ) + '</a>' )
+            fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
+            fields[3].set_markup( last_3_prices )
 
         except IndexError:
             pass
@@ -705,64 +710,80 @@ class MainWindow:
         if column.get_title() == '':
             return
 
-        open_in_browser( self.link_dict[ unicode( self.data_view.get_model()[ path ][-1] ) ] )
+        art_name = unicode( self.data_view.get_model()[ path ][-1] )
+
+        article = self.find_article( name=art_name )
+
+        open_in_browser( article.url )
 
 
     def set_indicator_active( self, widget, direction=None ):
-        self.indicator.get_menu().get_children()[3].set_sensitive( False )
+        reset_label = self.indicator.get_menu().get_children()[3]
+        reset_label.set_sensitive( False )
+
         self.indicator.set_status( STATUS_ACTIVE )
 
 
     def set_indicator_attention( self ):
-        self.indicator.get_menu().get_children()[3].set_sensitive( True )
+        reset_label = self.indicator.get_menu().get_children()[3]
+        reset_label.set_sensitive( True )
+
         self.indicator.set_status( STATUS_ATTENTION )
 
 
     def setup_indicator( self ):
-        indicator = Indicator( 'amazonCheck-indicator', 'amazonCheck_indicator', CATEGORY_APPLICATION_STATUS, '/usr/share/pixmaps/' )
+        indicator = Indicator( 'amazonCheck-indicator',
+                               'amazonCheck_indicator',
+                               CATEGORY_APPLICATION_STATUS,
+                               '/usr/share/pixmaps/',
+                               )
+
         indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         indicator.set_status( STATUS_ACTIVE )
 
-        menu_item_show          = gtk.MenuItem( 'Hide window' )
-        menu_item_add_from_clip = gtk.MenuItem( 'Add from clipboard' )
-        menu_item_exit          = gtk.MenuItem( 'Exit'        )
-        menu_item_seperator     = gtk.SeparatorMenuItem()
-        menu_item_reset         = gtk.MenuItem( 'Reset'       )
+        item_show      = gtk.MenuItem( 'Hide window' )
+        item_add_clip  = gtk.MenuItem( 'Add from clipboard' )
+        item_exit      = gtk.MenuItem( 'Exit'        )
+        item_seperator = gtk.SeparatorMenuItem()
+        item_reset     = gtk.MenuItem( 'Reset'       )
 
-        menu_item_show.connect(          'activate', self.toggle_window_visibility )
-        menu_item_add_from_clip.connect( 'activate', self.on_add_article           )
-        menu_item_exit.connect(          'activate', self.exit_application         )
-        menu_item_reset.connect(         'activate', self.set_indicator_active     )
+        item_show.connect(     'activate', self.toggle_window_visibility )
+        item_add_clip.connect( 'activate', self.on_add_article           )
+        item_exit.connect(     'activate', self.exit_application         )
+        item_reset.connect(    'activate', self.set_indicator_active     )
 
-        indicator_menu = gtk.Menu()
+        menu = gtk.Menu()
 
-        indicator_menu.append( menu_item_show          )
-        indicator_menu.append( menu_item_add_from_clip )
-        indicator_menu.append( menu_item_exit          )
-        indicator_menu.append( menu_item_seperator     )
-        indicator_menu.append( menu_item_reset         )
+        menu.append( item_show          )
+        menu.append( item_add_clip      )
+        menu.append( item_exit          )
+        menu.append( item_seperator     )
+        menu.append( item_reset         )
 
-        indicator_menu.show_all()
+        menu.show_all()
 
-        indicator.set_menu( indicator_menu )
+        indicator.set_menu( menu )
 
         return indicator
 
 
     def setup_toolbar( self ):
-        #Setting up the toolbar
         toolbar = gtk.Toolbar()
         toolbar.set_orientation( gtk.ORIENTATION_VERTICAL )
         toolbar.set_style( gtk.TOOLBAR_ICONS )
 
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_ADD, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Add', None, image, self.on_add_article )
+        i = [ gtk.STOCK_ADD, gtk.STOCK_REMOVE, gtk.STOCK_PREFERENCES ]
+        l = [ 'Add', 'Remove', 'Config' ]
+        c = [ self.on_add_article,
+              self.on_delete_articles,
+              self.on_show_config_window,
+              ]
 
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_REMOVE, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Remove', None, image, self.on_delete_articles )
+        for icon, label, callback in izip( i, l, c ):
+            image = gtk.Image();
+            image.set_from_stock( icon, gtk.ICON_SIZE_LARGE_TOOLBAR )
 
-        image = gtk.Image(); image.set_from_stock( gtk.STOCK_PREFERENCES, gtk.ICON_SIZE_LARGE_TOOLBAR )
-        toolbar.append_item( None, 'Config', None, image, self.on_show_config_window )
+            toolbar.append_item( None, label, None, image, callback )
 
         return toolbar
 
@@ -891,19 +912,25 @@ class MainWindow:
 
 
     def start_thread( self ):
-        self.refresh_thread = RefreshThread( self )
+        self.refresh_thread = RefreshThread( self.articles,
+                                             self.update_list_store,
+                                             self.set_indicator_attention,
+                                             '',
+                                             )
         self.refresh_thread.start()
 
 
     def toggle_window_visibility( self, widget=None, event=None ):
+        menu_entry = self.indicator.get_menu().get_children()[0]
+
         if self.window.get_visible():
             self.window.set_visible( False )
-            self.indicator.get_menu().get_children()[0].set_label( 'Show Window' )
+            menu_entry.set_label( 'Show Window' )
         else:
-            self.window.set_visible( True )
+            self.window.set_visible( True  )
             self.update_list_store()
             self.indicator.set_status( STATUS_ACTIVE )
-            self.indicator.get_menu().get_children()[0].set_label( 'Hide Window' )
+            menu_entry.set_label( 'Hide Window' )
 
         return True
 
@@ -911,21 +938,19 @@ class MainWindow:
     def update_list_store( self ):
         write_log_file( 'Gui is updating' )
 
-        ( links, titles, currencies, pictures, prices ) = read_data_file()
+        for art in self.articles.values():
+            price = art.price_data[-1][0]
 
-        for index in range( 0, len( titles ) ):
-            price = self.price_dict[ titles[ index ] ][-1][0]
-
-            if len( prices[ index ] ) == 1:
-                avgs = self.price_dict[ titles[ index ] ][0][0]
-                mins = self.price_dict[ titles[ index ] ][0][0]
-                maxs = self.price_dict[ titles[ index ] ][0][0]
+            if not len( art.price_data ) > 1:
+                avgs = mins = maxs = art.price_data[0][0]
             else:
-                avgs = get_avg_price( self.price_dict[ titles[ index ] ] )
+                avgs = get_avg_price( art.price_data )
                 if avgs == -1: avgs = s[ 'N/A' ]
-                mins = get_min_price( self.price_dict[ titles[ index ] ] )
+
+                mins = get_min_price( art.price_data )
                 if mins == -1: mins = s[ 'N/A' ]
-                maxs = get_max_price( self.price_dict[ titles[ index ] ] )
+
+                maxs = get_max_price( art.price_data )
                 if maxs == -1: maxs = s[ 'N/A' ]
 
             if maxs == mins:
@@ -940,32 +965,35 @@ class MainWindow:
             elif price < avgs:
                 color = '<span foreground="#27B81F">'
 
-            elif price == avgs:
+            else: #price == avgs
                 color = '<span foreground="#FCCA00">'
 
-            if mins != s[ 'N/A' ]:
-                mins = '%.2f' % mins
+            if mins != s[ 'N/A' ]:  mins = '%.2f' % mins #1.00 not 1.0
 
-            if maxs != s[ 'N/A' ]:
-                maxs = '%.2f' % maxs
+            if maxs != s[ 'N/A' ]:  maxs = '%.2f' % maxs
 
-            if avgs != s[ 'N/A' ]:
-                avgs = '%.2f' % avgs
+            if avgs != s[ 'N/A' ]:  avgs = '%.2f' % avgs
 
-            if price != s[ 'N/A' ]:
-                price = '%.2f' % price
+            if price != s[ 'N/A' ]: price = '%.2f' % price
 
             try:
-                for store_index in range( 0, len( titles ) ):
-                    if self.data_store[ store_index ][6] == titles[ index ]:
-                        self.data_store[ store_index ][2] = color + str( price ) + '</span>'
-                        self.data_store[ store_index ][3] = mins
-                        self.data_store[ store_index ][4] = avgs
-                        self.data_store[ store_index ][5] = maxs
+                for index in xrange( len( self.articles ) ):
+                    if self.data_store[ index ][6] == art.name:
+                        self.data_store[ index ][2] = color + str( price ) + '</span>'
+                        self.data_store[ index ][3] = mins
+                        self.data_store[ index ][4] = avgs
+                        self.data_store[ index ][5] = maxs
                         break
 
             except IndexError:
-                self.data_store.append( [ False, currencies[ index ], color + str( price ) + '</span>', mins, avgs, maxs, titles[ index ] ] )
+                self.data_store.append( [ False,
+                                          art.currency,
+                                          color + str( price )+ '</span>',
+                                          mins,
+                                          avgs,
+                                          maxs,
+                                          art.name,
+                                        ] )
 
         write_log_file( 'Gui updated' )
 
@@ -1065,62 +1093,54 @@ def write_config_file( options ):
 
 
 def read_data_file():
-    if not exists( DATA_FILE ):
-        data_file = open( DATA_FILE, 'w' )
-        data_file.close()
-
     write_log_file( s[ 'dat-fl-rd' ] )
 
     try:
         data_file = open( DATA_FILE, 'r' )
     except IOError:
-        write_log_file( s[ 'dat-no-pm' ], True )
-        exit()
+        write_log_file( 'Couldn\'t read datafile.', True )
+        return []
 
-    data = data_file.readlines()
+    lines = data_file.readlines()
 
     data_file.close()
 
     write_log_file( s[ 'data-prcs' ] )
 
-    #Break up into links, titles currencies, pictures and prices
+    return_list = []
 
-    links      = []
-    titles     = []
-    currencies = []
-    pictures   = []
-    prices     = []
-
-    for index in range( 0,  len( data ) ):
+    for line in lines:
         try:
-            info = loads( data[ index ] )
+            info = loads( line )
+            return_list.append( Article( url=info[0],
+                                         name=info[1],
+                                         currency=info[2],
+                                         pic_name=info[3],
+                                         price_data=info[4],
+                                     ) )
         except ValueError:
+            write_log_file( 'Problem reading data entry.', True )
             continue
-            #exit( 'Problem encoding the value' )                        #Translating
 
-        links.append(      info[0]    )
-        titles.append(     info[1]    )
-        currencies.append( info[2]    )
-        pictures.append(   info[3]    )
-        prices.extend(     info[ 4: ] )
-
-    return ( links, titles, currencies, pictures, prices )
+    return return_list
 
 
 
-def write_data_file( links, titles, currencies, pictures, prices ):
+def write_data_file( articles ):
     try:
         data_file = open( DATA_FILE, 'w' )
     except IOError:
         write_log_file( s[ 'dat-no-pm' ], True )
-        return false
+        return False
 
-    for index in range( 0, len( links ) ):
-
-        try:
-            data_file.write( dumps( [ links[ index] , titles[ index ] , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
-        except:
-            data_file.write( dumps( [ links[ index] , titles[ index ].decode( 'ascii', 'ignore' ) , currencies[ index ] , pictures[ index ], prices[ index ] ] ) + '\n' )
+    for article in articles.values():
+        data_file.write( dumps( [ article.url,
+                                  article.name,
+                                  article.currency,
+                                  article.pic_name,
+                                  article.price_data,
+                                  ] ) )
+        data_file.write( '\n' )
 
     data_file.close()
 
@@ -1135,7 +1155,7 @@ def write_log_file( string, output=True ):
 
     except IOError:
         print( s[ 'log-no-pm' ] )
-        return false
+        return False
 
     logfile.write( get_time() + ' ' + string + '\n' )
     logfile.close()
