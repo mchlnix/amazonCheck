@@ -185,8 +185,6 @@ class RefreshThread( Thread ):
 
                 new_price = art.price_data[-1][0]
 
-                print old_price, new_price, old_price == new_price
-
                 if new_price != old_price:
                     open( IMAGE_PATH + art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( art.pic_url ).read() )
 
