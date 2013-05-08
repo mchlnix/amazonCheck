@@ -179,11 +179,11 @@ class RefreshThread( Thread ):
 
                     return
 
-                old_price = art.price_data[-1][0]
+                old_price = art.price
 
                 art.update()
 
-                new_price = art.price_data[-1][0]
+                new_price = art.price
 
                 if new_price != old_price:
                     open( IMAGE_PATH + art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( art.pic_url ).read() )
@@ -628,7 +628,7 @@ class MainWindow:
 
 
             avgs = get_avg_price( art.price_data )
-            price = art.price_data[-1][0]
+            price = art.price
             currency = art.currency
 
             try:
@@ -937,7 +937,7 @@ class MainWindow:
         write_log_file( 'Gui is updating' )
 
         for art in self.articles.values():
-            price = art.price_data[-1][0]
+            price = art.price
 
             if not len( art.price_data ) > 1:
                 avgs = mins = maxs = art.price_data[0][0]
