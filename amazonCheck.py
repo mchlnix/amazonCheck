@@ -88,7 +88,7 @@ class DBusService( dbusServiceObject ):
 
 class Article():
     def __init__( self,
-                  url,
+                  url = '',
                   name = 'No Name Found',
                   price_data = [],
                   currency = '',
@@ -103,12 +103,17 @@ class Article():
         self.pic_name = pic_name
 
         self.bad_conn = False
+        self.bad_url = False
 
     def update( self ):
         try:
             self.name, self.currency, price, self.pic_url = get_info_for( self.url )
-            self.price_data.append( [ price, int( time() ) ] )
+
+            if price != self.price:
+                self.price_data.append( [ price, int( time() ) ] )
+
             self.pic_name = search( '\/[A-Z0-9]{10}\/', self.url ).group()[1: -1] + '.jpg'
+
         except IOError:
             self.bad_conn = True
         except ValueError:
@@ -130,7 +135,10 @@ class Article():
             return False
 
         if name=='price':
-            return self.price_data[-1][0]
+            try:
+                return self.price_data[-1][0]
+            except IndexError:
+                return 0
 
 
 
@@ -223,18 +231,13 @@ class RefreshThread( Thread ):
 
             #Calculating the length of operating
 
-            diff_time = round( end_time - start_time, 2 )
+            diff_time = int( end_time - start_time )
 
-            write_log_file( s[ 'it-took' ] + str( int( diff_time ) ) + s[ 'seconds' ] )
+            write_log_file( s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
 
             #Calculating sleeptime
 
-            if 2 * diff_time > MAX_SLEEP_TIME:
-                SLEEP_TIME = MAX_SLEEP_TIME
-            elif 2 * diff_time < MIN_SLEEP_TIME:
-                SLEEP_TIME = MIN_SLEEP_TIME
-            else:
-                SLEEP_TIME = int( 2 * diff_time )
+            SLEEP_TIME = min( max( 2 * diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
 
             #Sleeping for agreed amount
 
@@ -244,7 +247,7 @@ class RefreshThread( Thread ):
                 write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
-            for i in range( 10 * SLEEP_TIME ):
+            for i in xrange( 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
@@ -261,7 +264,7 @@ class MainWindow:
 
 
         #Setting up the data holding dictionary
-        self.articles = {}
+        self.articles = dict()
 
 
         #Setting up the dbus service
@@ -328,15 +331,15 @@ class MainWindow:
         title_link = gtk.Label()
         title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
 
-        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
-        info_box.pack_start( title_link ,                                     False, False, 5  )
-        info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5  )
-        info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5  )
-        info_box.pack_start( gtk.Label( '' ),                                 True, True, 0 )
+        info_box.pack_start( gtk.Label( '' ),                                 True, True,   0 )
+        info_box.pack_start( title_link ,                                     False, False, 5 )
+        info_box.pack_start( gtk.Label( 'Check up on your favorite stuff!' ), False, False, 5 )
+        info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5 )
+        info_box.pack_start( gtk.Label( '' ),                                 True, True,   0 )
 
         self.preview_box.pack_start( info_box,               False, False, 5  )
         self.preview_box.pack_start( self.image_preview,     False, False, 10 )
-        inner_layer.pack_start( self.preview_box,            False, False, 5 )
+        inner_layer.pack_start( self.preview_box,            False, False, 5  )
 
 
         #Setting up outer layer
@@ -407,7 +410,7 @@ class MainWindow:
                 return art
 
         else:
-            return False
+            raise LookupError
 
 
     def on_add_article( self, widget ):
@@ -452,20 +455,18 @@ class MainWindow:
 
         self.refresh_thread.stop()
 
-        open( IMAGE_PATH + new_art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( new_art.pic_url ).read() )
+        download_image( url=new_art.pic_url, dest=IMAGE_PATH + new_art.pic_name )
 
         self.refresh_thread.join()
 
         self.articles[ new_art.url ] = new_art
 
-        with open( DATA_FILE, 'a' ) as data_file:
-            data_file.write( dumps( [ new_art.url,
-                                      new_art.name,
-                                      new_art.currency,
-                                      new_art.pic_name,
-                                      new_art.price_data,
-                                      ] ) )
-            data_file.write( '\n' )
+        try:
+            with open( DATA_FILE, 'a' ) as data_file:
+                data_file.write( dumps( new_art.__dict__ ) )
+                data_file.write( '\n' )
+        except IOError:
+            write_log_file( 'Couldn\'t write to data file.', True )
 
         self.update_list_store()
 
@@ -487,7 +488,7 @@ class MainWindow:
         if ( max_spin_button.get_value() < min_spin_button.get_value() ):
             min_spin_button.set_value( max_spin_button.get_value() )
 
-        return
+        return True
 
 
     def on_changed_min_sleep( self, widget ):
@@ -497,7 +498,7 @@ class MainWindow:
         if ( min_spin_button.get_value() > max_spin_button.get_value() ):
             max_spin_button.set_value( min_spin_button.get_value() )
 
-        return
+        return True
 
 
     def on_config_confirm( self, widget ):
@@ -543,7 +544,7 @@ class MainWindow:
         delete_queue = []
         tree_length = len( self.data_store )
 
-        for index, row in enumerate( reversed( self.data_store ) ):
+        for index, row in enumerate( reversed( list( self.data_store ) ) ):
             if row[0] == True:
                 delete_queue.append( ( index, row[6] ) )
 
@@ -562,18 +563,18 @@ class MainWindow:
                                    ),
                                  )
 
-            dialog_hbox = gtk.HBox()
-            dialog_hbox.show()
+            hbox = gtk.HBox()
+            hbox.show()
 
             if len( delete_queue ) == 1:
-                dialog_l = gtk.Label( 'Really delete the selected article?' )
+                label = gtk.Label( 'Really delete the selected article?' )
             else:
-                dialog_l = gtk.Label( 'Really delete the selected articles?' )
+                label = gtk.Label( 'Really delete the selected articles?' )
 
-            dialog_l.show()
+            label.show()
 
-            dialog_hbox.pack_start( dialog_l,     True, True, 10 )
-            dialog.vbox.pack_start( dialog_hbox,  True, True, 10 )
+            hbox.pack_start( label,       True, True, 10 )
+            dialog.vbox.pack_start( hbox, True, True, 10 )
 
             response = dialog.run()
             dialog.destroy()
@@ -588,13 +589,18 @@ class MainWindow:
         for index, name in delete_queue:
 
             try:
-                art = find_article( name )
+                art = self.find_article( name )
+
                 pic_name = art.pic_name
                 del self.articles[ art.url ]
 
             except KeyError:
                 write_log_file( 'KeyError happened' )
                 print name
+                continue
+            except LookupError:
+                write_log_file( 'Couldn\'t find article in database.', True )
+                continue
 
             try:
                 remove( IMAGE_PATH + pic_name )
@@ -616,6 +622,8 @@ class MainWindow:
         else:
             self.data_view.set_cursor( 0 )
 
+        self.update_list_store()
+
         self.start_thread()
 
 
@@ -626,17 +634,17 @@ class MainWindow:
 
             art = self.find_article( name=art_name )
 
-
             avgs = get_avg_price( art.price_data )
             price = art.price
             currency = art.currency
 
             try:
-                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name
-                                                       )
+                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
             except GError:
                 write_log_file( 'Selected article doesn\'t have an image associated with it.', True )
-                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + 'no-pic.png' )
+                write_log_file( 'Trying to fix.', True )
+                download_image( url=art.pic_url, dest=IMAGE_PATH + art.pic_name )
+                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
 
 
             if pixbuf.get_width() < pixbuf.get_height():
@@ -787,78 +795,97 @@ class MainWindow:
 
 
     def setup_config_window( self ):
-        config_window = gtk.Window( gtk.WINDOW_TOPLEVEL )
-        config_window.set_position( gtk.WIN_POS_CENTER  )
-        config_window.set_resizable( False )
-        config_window.set_modal(     True  )
-        config_window.connect( 'delete-event', self.on_config_cancel )
+        window = gtk.Window( gtk.WINDOW_TOPLEVEL )
+        window.set_position( gtk.WIN_POS_CENTER  )
+        window.set_resizable( False )
+        window.set_modal(     True  )
+        window.connect( 'delete-event', self.on_config_cancel )
 
-        config_outer_layer = gtk.VBox()
-        config_config_box  = gtk.VBox()
-        config_button_box  = gtk.HBox()
+        outer_layer = gtk.VBox()
+        config_box  = gtk.VBox()
+        button_box  = gtk.HBox()
 
-        config_checkbutton_notifications = gtk.CheckButton()
-        config_checkbutton_delete_dialog = gtk.CheckButton()
-        config_checkbutton_alt_row_color = gtk.CheckButton()
+        checkbutton_notifications = gtk.CheckButton()
+        checkbutton_delete_dialog = gtk.CheckButton()
+        checkbutton_alt_row_color = gtk.CheckButton()
 
-        config_checkbutton_notifications.set_active( SHOW_NOTIFICATIONS    )
-        config_checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
-        config_checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
+        checkbutton_notifications.set_active( SHOW_NOTIFICATIONS    )
+        checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
+        checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
 
-        config_spinbutton_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
-        config_spinbutton_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME, lower=30, upper=3600, step_incr=1, page_incr=5, page_size=0 ), climb_rate=0.0, digits=0 )
+        spin_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME,
+                                                                    lower=30,
+                                                                    upper=3600,
+                                                                    step_incr=1,
+                                                                    page_incr=5,
+                                                                    page_size=0,
+                                                                    ),
+                                         climb_rate=0.0,
+                                         digits=0,
+                                         )
 
-        config_spinbutton_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
-        config_spinbutton_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
+        spin_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME,
+                                                                    lower=30,
+                                                                    upper=3600,
+                                                                    step_incr=1,
+                                                                    page_incr=5,
+                                                                    page_size=0,
+                                                                    ),
+                                         climb_rate=0.0,
+                                         digits=0,
+                                         )
 
-        config_hbox_min_sleep = gtk.HBox()
-        config_hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
-        config_hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        config_hbox_min_sleep.pack_start( config_spinbutton_min_sleep,                    False, False, 5 )
+        spin_min_sleep.connect( 'value-changed', self.on_changed_min_sleep )
+        spin_max_sleep.connect( 'value-changed', self.on_changed_max_sleep )
 
-        config_hbox_max_sleep = gtk.HBox()
-        config_hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
-        config_hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
-        config_hbox_max_sleep.pack_start( config_spinbutton_max_sleep,                    False, False, 5 )
+        hbox_min_sleep = gtk.HBox()
+        hbox_min_sleep.pack_start( gtk.Label( 'Min. Interval between updates: ' ), False, False, 5 )
+        hbox_min_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        hbox_min_sleep.pack_start( spin_min_sleep,                                 False, False, 5 )
 
-        config_hbox_notifications = gtk.HBox()
-        config_hbox_notifications.pack_start( gtk.Label( 'Show notification bubbles?' ),  False, False, 5 )
-        config_hbox_notifications.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_notifications.pack_start( config_checkbutton_notifications,           False, False, 5 )
+        hbox_max_sleep = gtk.HBox()
+        hbox_max_sleep.pack_start( gtk.Label( 'Max. Interval between updates: ' ), False, False, 5 )
+        hbox_max_sleep.pack_start( gtk.Label( '' ),                                True,  True,  5 )
+        hbox_max_sleep.pack_start( spin_max_sleep,                                 False, False, 5 )
 
-        config_hbox_delete_dialog = gtk.HBox()
-        config_hbox_delete_dialog.pack_start( gtk.Label( 'Confirm deleting articles?' ),  False, False, 5 )
-        config_hbox_delete_dialog.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_delete_dialog.pack_start( config_checkbutton_delete_dialog,           False, False, 5 )
+        hbox_notifications = gtk.HBox()
+        hbox_notifications.pack_start( gtk.Label( 'Show notification bubbles?' ), False, False, 5 )
+        hbox_notifications.pack_start( gtk.Label( '' ),                           True,  True,  5 )
+        hbox_notifications.pack_start( checkbutton_notifications,                 False, False, 5 )
 
-        config_hbox_alt_row_color = gtk.HBox()
-        config_hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ),       False, False, 5 )
-        config_hbox_alt_row_color.pack_start( gtk.Label( '' ),                            True,  True,  5 )
-        config_hbox_alt_row_color.pack_start( config_checkbutton_alt_row_color,           False, False, 5 )
+        hbox_delete_dialog = gtk.HBox()
+        hbox_delete_dialog.pack_start( gtk.Label( 'Confirm deleting articles?' ), False, False, 5 )
+        hbox_delete_dialog.pack_start( gtk.Label( '' ),                           True,  True,  5 )
+        hbox_delete_dialog.pack_start( checkbutton_delete_dialog,                 False, False, 5 )
 
-        config_config_box.pack_start( config_hbox_min_sleep,                              False, False, 5 )
-        config_config_box.pack_start( config_hbox_max_sleep,                              False, False, 5 )
-        config_config_box.pack_start( config_hbox_notifications,                          False, False, 5 )
-        config_config_box.pack_start( config_hbox_delete_dialog,                          False, False, 5 )
-        config_config_box.pack_start( config_hbox_alt_row_color,                          False, False, 5 )
+        hbox_alt_row_color = gtk.HBox()
+        hbox_alt_row_color.pack_start( gtk.Label( 'Alternate row colors?' ), False, False, 5 )
+        hbox_alt_row_color.pack_start( gtk.Label( '' ),                      True,  True,  5 )
+        hbox_alt_row_color.pack_start( checkbutton_alt_row_color,            False, False, 5 )
 
-        config_button_cancel = gtk.Button( 'Cancel'     )
-        config_button_ok     = gtk.Button( '    OK    ' )
+        config_box.pack_start( hbox_min_sleep,                              False, False, 5 )
+        config_box.pack_start( hbox_max_sleep,                              False, False, 5 )
+        config_box.pack_start( hbox_notifications,                          False, False, 5 )
+        config_box.pack_start( hbox_delete_dialog,                          False, False, 5 )
+        config_box.pack_start( hbox_alt_row_color,                          False, False, 5 )
 
-        config_button_cancel.connect( 'clicked', self.on_config_cancel      )
-        config_button_ok.connect(     'clicked', self.on_config_confirm     )
+        button_cancel = gtk.Button( 'Cancel'     )
+        button_ok     = gtk.Button( '    OK    ' )
 
-        config_button_box.pack_start( gtk.Label( '' ),           True,  True,  5 )
-        config_button_box.pack_start( config_button_cancel,      False, False, 5 )
-        config_button_box.pack_start( config_button_ok,          False, False, 5 )
+        button_cancel.connect( 'clicked', self.on_config_cancel    )
+        button_ok.connect(     'clicked', self.on_config_confirm   )
 
-        config_outer_layer.pack_start( config_config_box,        False, False, 5 )
-        config_outer_layer.pack_start( gtk.Label( '' ),          True,  True,  5 )
-        config_outer_layer.pack_start( config_button_box,        False, False, 5 )
+        button_box.pack_start( gtk.Label( '' ), True,  True,  5 )
+        button_box.pack_start( button_cancel,   False, False, 5 )
+        button_box.pack_start( button_ok,       False, False, 5 )
 
-        config_window.add( config_outer_layer )
+        outer_layer.pack_start( config_box,      False, False, 5 )
+        outer_layer.pack_start( gtk.Label( '' ), True,  True,  5 )
+        outer_layer.pack_start( button_box,      False, False, 5 )
 
-        return config_window
+        window.add( outer_layer )
+
+        return window
 
 
     def setup_treeview( self ):
@@ -868,43 +895,41 @@ class MainWindow:
         data_view.connect( 'cursor-changed', self.on_row_selected )
         data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
-        toggle_renderer = gtk.CellRendererToggle()
-        toggle_renderer.connect( 'toggled', self.on_cell_toggled )
+        toggle_rend = gtk.CellRendererToggle()
+        toggle_rend.connect( 'toggled', self.on_cell_toggled )
 
-        currency_renderer = gtk.CellRendererText()
-        price_renderer    = gtk.CellRendererText()
-        title_renderer    = gtk.CellRendererText()
-        min_renderer      = gtk.CellRendererText()
-        avg_renderer      = gtk.CellRendererText()
-        max_renderer      = gtk.CellRendererText()
+        cur_rend   = gtk.CellRendererText()
+        price_rend = gtk.CellRendererText()
+        title_rend = gtk.CellRendererText()
+        min_rend   = gtk.CellRendererText()
+        avg_rend   = gtk.CellRendererText()
+        max_rend   = gtk.CellRendererText()
 
-        min_renderer.set_property( 'foreground', '#27B81F' )
-        avg_renderer.set_property( 'foreground', '#FCCA00' )
-        max_renderer.set_property( 'foreground', '#FF3D3D' )
+        min_rend.set_property( 'foreground', '#27B81F' )
+        avg_rend.set_property( 'foreground', '#FCCA00' )
+        max_rend.set_property( 'foreground', '#FF3D3D' )
 
-        toggle_column   = gtk.TreeViewColumn( '',      toggle_renderer,   active=0 )
-        currency_column = gtk.TreeViewColumn( 'CY',    currency_renderer, text=1   )
-        price_column    = gtk.TreeViewColumn( 'Price', price_renderer,    markup=2 )
-        minimum_column  = gtk.TreeViewColumn( 'Min',   min_renderer,      text=3   )
-        average_column  = gtk.TreeViewColumn( 'Avg',   avg_renderer,      text=4   )
-        maximum_column  = gtk.TreeViewColumn( 'Max',   max_renderer,      text=5   )
-        title_column    = gtk.TreeViewColumn( 'Title', title_renderer,    text=6   )
+        toggle_col = gtk.TreeViewColumn( '',      toggle_rend,   active=0 )
+        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rend,      text=1   )
+        price_col  = gtk.TreeViewColumn( 'Price', price_rend,    markup=2 )
+        min_col    = gtk.TreeViewColumn( 'Min',   min_rend,      text=3   )
+        avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rend,      text=4   )
+        max_col    = gtk.TreeViewColumn( 'Max',   max_rend,      text=5   )
+        title_col  = gtk.TreeViewColumn( 'Title', title_rend,    text=6   )
 
-        toggle_column.set_sort_column_id(   0 )
-        currency_column.set_sort_column_id( 1 )
-        price_column.set_sort_column_id(    2 )
-        minimum_column.set_sort_column_id(  3 )
-        average_column.set_sort_column_id(  4 )
-        maximum_column.set_sort_column_id(  5 )
-        title_column.set_sort_column_id(    6 )
+        columns = [ toggle_col,
+                    cur_col,
+                    price_col,
+                    min_col,
+                    avg_col,
+                    max_col,
+                    title_col,
+                    ]
 
-        data_view.append_column( toggle_column   )
-        data_view.append_column( currency_column )
-        data_view.append_column( price_column    )
-        data_view.append_column( minimum_column  )
-        data_view.append_column( average_column  )
-        data_view.append_column( maximum_column  )
-        data_view.append_column( title_column    )
+        for index, column in enumerate( columns ):
+            column.set_sort_column_id( index )
+
+            data_view.append_column( column )
 
         return data_view
 
@@ -935,6 +960,8 @@ class MainWindow:
 
     def update_list_store( self ):
         write_log_file( 'Gui is updating' )
+
+        self.data_store.clear()
 
         for art in self.articles.values():
             price = art.price
@@ -996,6 +1023,16 @@ class MainWindow:
         write_log_file( 'Gui updated' )
 
 
+def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
+    pic_data = urlopen( url ).read()
+
+    try:
+        with open( dest, write_mode ) as f:
+            f.write( pic_data )
+    except IOError:
+        write_log_file( 'Couldn\'t download picture.', True )
+
+
 
 def my_sort_function( treemodel, iter1, iter2, index ):
     try:
@@ -1026,36 +1063,21 @@ def my_sort_function( treemodel, iter1, iter2, index ):
 
 
 def read_config_file():
-    if not exists( CONFIG_FILE ):
-
-        reset_config_file()
-
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
-
     try:
-        config_file = open( CONFIG_FILE, 'r' )
+        with open( CONFIG_FILE, 'r' ) as config_file:
+            options = loads( config_file.read() )
+            write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
+
     except IOError:
         write_log_file( s[ 'cnf-no-pm' ], True )
         write_log_file( s[ 'us-def-op' ], True )
         return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
-
-    try:
-        options = loads( config_file.read() )
     except ValueError:
         reset_config_file()
         return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
 
-    write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
-    if type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 3 ] ) != type( 1 ):
-
-        write_log_file( s[ 'err-rd-cf' ], True )
-
-        reset_config_file()
-
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
-    else:
-        return options
+    return options
 
 
 
@@ -1068,25 +1090,15 @@ def reset_config_file():
 
 
 
-def write_config_file( options ):
-    if not ( type( options[ 0 ] ) != type( True ) or type( options[ 1 ] ) != type( True ) or type( options[ 2 ] ) != type( True ) or type( options[ 3 ] ) != type( 1 ) or type( options[ 4 ] ) != type( 1 ) ):
+def write_config_file( options ):                                       #Rewrite
+    try:
+        with open( CONFIG_FILE, 'w' ) as config_file:
+            config_file.write( dumps( options ) )
 
-        try:
-            config_file = open( CONFIG_FILE, 'w' )
-        except IOError:
-            write_log_file( s[ 'cnf-no-pm' ], True )
-            return False
-
-        config_file.write( dumps( options ) )
-
-        config_file.close()
-
-        write_log_file( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
-
-    else:
-        write_log_file( s[ 'opt-types' ], True )
-        for option in options:
-            write_log_file( str( type( option ) ) )
+            write_log_file( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
+    except IOError:
+        write_log_file( s[ 'cnf-no-pm' ], True )
+        return False
 
 
 
@@ -1094,69 +1106,46 @@ def read_data_file():
     write_log_file( s[ 'dat-fl-rd' ] )
 
     try:
-        data_file = open( DATA_FILE, 'r' )
+        with open( DATA_FILE, 'r' ) as f:
+            return_list = []
+
+            for line in f.readlines():
+                try:
+                    new_art = Article()
+                    new_art.__dict__ = loads( line )
+                    return_list.append( new_art )
+                except ValueError:
+                    write_log_file( 'Problem reading data entry.', True )
+                    continue
     except IOError:
         write_log_file( 'Couldn\'t read datafile.', True )
         return []
 
-    lines = data_file.readlines()
-
-    data_file.close()
-
-    write_log_file( s[ 'data-prcs' ] )
-
-    return_list = []
-
-    for line in lines:
-        try:
-            info = loads( line )
-            return_list.append( Article( url=info[0],
-                                         name=info[1],
-                                         currency=info[2],
-                                         pic_name=info[3],
-                                         price_data=info[4],
-                                     ) )
-        except ValueError:
-            write_log_file( 'Problem reading data entry.', True )
-            continue
-
     return return_list
-
 
 
 def write_data_file( articles ):
     try:
-        data_file = open( DATA_FILE, 'w' )
+        with open( DATA_FILE, 'w' ) as data_file:
+            for article in articles.values():
+                data_file.write( dumps( article.__dict__ ) )
+                data_file.write( '\n' )
+
     except IOError:
         write_log_file( s[ 'dat-no-pm' ], True )
         return False
-
-    for article in articles.values():
-        data_file.write( dumps( [ article.url,
-                                  article.name,
-                                  article.currency,
-                                  article.pic_name,
-                                  article.price_data,
-                                  ] ) )
-        data_file.write( '\n' )
-
-    data_file.close()
 
 
 
 def write_log_file( string, output=True ):
     if output:
         print( get_time() + ' ' + string + '\n' ),
-
     try:
-        logfile = open( LOG_FILE, 'a' )
-
+        with open( LOG_FILE, 'a' ) as logfile:
+            logfile.write( get_time() + ' ' + string + '\n' )
     except IOError:
         print( s[ 'log-no-pm' ] )
         return False
-
-    logfile.write( get_time() + ' ' + string + '\n' )
-    logfile.close()
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------

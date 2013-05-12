@@ -19,20 +19,20 @@ USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Ge
 
 def format_price( string ):
     format_from = [ '\n', '\t', '  ', ',', '+' ]
-    format_to = [ '', '', '', '.', '' ]
+    format_to   = [  '' ,  '' ,  '' , '.', ''  ]
 
-    for index in range( 0, len( format_from ) ):
-        string = string.replace( format_from[ index ], format_to[ index ] )
+    for _from, _to in zip( format_from, format_to ):
+        string = string.replace( _from, _to )
 
-    currency = search( '[^ .,0-9]*', string ).group()
+    try:
+        currency = search( '[^ .,0-9]*', string ).group()
+    except:
+        raise LookupError( 'Couldn\'t find currency' )
 
     try:
         price = float( search( '[0-9]+[.][0-9]+', string ).group() )
-        price = round( price, 2 )
-    except ValueError:
-        price = s[ 'N/A' ]
-    except AttributeError:
-        price = s[ 'N/A' ]
+    except:
+        raise LookupError( 'Couldn\'t find price' )
 
     return ( price, currency )
 
@@ -117,73 +117,90 @@ def get_max_price( price_list ):
 
 
 
+def get_encoding( web_page ):
+    tmp_index = web_page.find( 'http-equiv="content-type"' ) + 25
+    start = web_page.find( 'charset=', tmp_index ) + 8
+
+    end = web_page.find( '"', start )
+
+    encoding = web_page[ start : end ]
+
+    return encoding
+
+
+
+def get_title( web_page ):
+    encoding = get_encoding( web_page )
+
+    title = web_page[ web_page.find( '<title' ) + 7 : web_page.find( '</title>' ) ]
+
+    return unicode( title, encoding )
+
+
+
+def get_price( source ):
+    #Finding the price
+    if source.find( '<tbody class="result">') != -1:
+        price_pos = source.find( '<span class="price">' ) + 20
+
+        if  price_pos != -1 + 20:
+            price = source[ price_pos : source.find( '</span>', price_pos ) ]
+        else:
+            price = 'N/A'
+    else:
+        return s[ 'N/A' ], s[ 'N/A' ]
+
+    #Finding shipping
+    shipping_pos = source.find( '<span class="price_shipping">', price_pos ) + 29
+    end_pos = source.find( '</td>', price_pos ) + 5
+
+    if  shipping_pos != -1 + 29 and shipping_pos < end_pos:
+        shipping = source[ shipping_pos : source.find( '</span>', shipping_pos ) ]
+    else:
+        shipping = '0.00'
+
+    #Formating price and currency
+    try:
+        ( price, currency ) = format_price( price )
+    except LookupError:
+        return 'N/A', 'N/A'
+    try:
+        ( shipping, unused ) = format_price( shipping )
+    except LookupError:
+        return price, currency
+
+
+    if shipping == 'N/A':
+        print 'No shipping?'
+        shipping = 0
+
+    return round( price + shipping, 2 ), currency
+
+
+
 def get_info_for( url ):
 
-    temp_file = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
+    source = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
 
-    temp_index = temp_file.find( '<meta http-equiv="content-type"' ) + 31
-    temp_index = temp_file.find( 'charset=', temp_index ) + 8
-
-    encoding = temp_file[ temp_index : temp_file.find( '"', temp_index ) ]
-
-    #Finding the title
-    title = temp_file[ temp_file.find( '<title' ) + 7 : temp_file.find( '</title>' ) ]
+    title = get_title( source )
 
     #Shortening it
     for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ', 'Buying Choices: ' ]:
         title = title.replace( string, '' )
 
-    #Formating it as best as possible
-    title = unicode( title, encoding )
-
-
-    #Finding the price
-    if temp_file.find( '<tbody class="result">') == -1:
-        price = s[ 'N/A']
-        price_pos = 0
-    else:
-        price_pos = temp_file.find( '<span class="price">' ) + 20
-
-        if  price_pos != -1 + 20:
-            price = temp_file[ price_pos : temp_file.find( '</span>', price_pos ) ]
-
-        else:
-            price = s[ 'N/A' ]
-
-
-    #Finding shipping
-    shipping_pos = temp_file.find( '<span class="price_shipping">', price_pos ) + 29
-    end_pos = temp_file.find( '</td>', price_pos ) + 5
-
-    if  shipping_pos != -1 + 29 and shipping_pos < end_pos:
-        shipping = temp_file[ shipping_pos : temp_file.find( '</span>', shipping_pos ) ]
-
-    else:
-        shipping = '0.00'
-
-
-    #Formating price and currency
-    ( price, currency ) = format_price( price )
-    ( shipping, unused ) = format_price( shipping )
-
-    if shipping == 'N/A':
-        return ( -3, -3, -3, -3 )
-
+    price, currency = get_price( source )
 
     #Finding picture
-    pic_pos = temp_file.find( '<div id="productheader">' ) + 24
+    pic_pos = source.find( '<div id="productheader">' ) + 24
 
     if pic_pos != -1 + 24:
-        pic_pos = temp_file.find( '<img src="', pic_pos ) + 10
-        picture = temp_file[ pic_pos : temp_file.find( '"', pic_pos ) ]
+        pic_pos = source.find( '<img src="', pic_pos ) + 10
+        picture = source[ pic_pos : source.find( '"', pic_pos ) ]
 
     else:
         picture = ''
 
-    if price == 'N/A':
-        return ( title, currency, price, picture )
-    else:
-        return ( title, currency, round( price + shipping, 2 ), picture )
+    return ( title, currency, price, picture )
 
 
 
