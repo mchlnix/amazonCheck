@@ -610,6 +610,8 @@ class MainWindow:
 
         write_data_file( self.articles )
 
+        self.update_list_store()
+
         if len( self.data_store ) == 0:
             self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
 
@@ -620,8 +622,6 @@ class MainWindow:
             fields[3].set_markup( 'By Me' )
         else:
             self.data_view.set_cursor( 0 )
-
-        self.update_list_store()
 
         self.start_thread()
 
