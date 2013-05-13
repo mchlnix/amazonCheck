@@ -409,7 +409,7 @@ class MainWindow:
                 return art
 
         else:
-            raise LookupError
+            raise LookupError( 'Couldn\'t find article with name \'%s\'.' % name )
 
 
     def on_add_article( self, widget ):
