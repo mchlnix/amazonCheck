@@ -131,10 +131,29 @@ def get_encoding( web_page ):
 
 def get_title( web_page ):
     encoding = get_encoding( web_page )
+    
+    with open( '/tmp/derp.html', 'w' ) as f:
+        f.write( web_page )
+    
+    start = web_page.find( '"producttitle"' )
+    
+    start = web_page.find( '>', start ) + 1
+    
+    end = web_page.find( '<', start )
 
-    title = web_page[ web_page.find( '<title' ) + 7 : web_page.find( '</title>' ) ]
+    title = web_page[ start : end ]
+    
+    title = unicode( title, encoding )
+    
+    while title[0] == ' ' or title[0] == '\n':
+        title = title[1:]
+        
+    while title[-1] == ' ' or title[-1] == '\n':
+        title = title[0:-1]
+        
+    print title
 
-    return unicode( title, encoding )
+    return title
 
 
 
