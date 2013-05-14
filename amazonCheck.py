@@ -21,6 +21,7 @@ from dbus.service import Object as dbusServiceObject, BusName, method as dbusSer
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from itertools import izip
+from logging import  error, info, warning
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -159,7 +160,7 @@ class RefreshThread( Thread ):
     def run( self ):
         global SLEEP_TIME, ALTERNATING_ROW_COLOR, SHOW_NOTIFICATIONS
 
-        write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' started' )
+        info( 'Refresh Thread ' + str( active_count() - 1 ) + ' started' )
 
         runs = 0
 
@@ -169,20 +170,20 @@ class RefreshThread( Thread ):
             no_of_articles = len( self.articles )
 
             if no_of_articles == 0:
-                write_log_file( s[ 'dat-empty' ], True )
+                warning( s[ 'dat-empty' ] )
 
             runs = runs + 1
 
             #Updates the information
 
-            write_log_file( s[ 'getng-dat' ] )
+            info( s[ 'getng-dat' ] )
 
             for art in self.articles.values():
                 if self.stop_flag:
-                    write_log_file( s[ 'svng-data' ] )
+                    info( s[ 'svng-data' ] )
                     write_data_file( self.articles )
 
-                    write_log_file( 'Halted Refresh Thread ' + str( active_count() - 1 ) )
+                    info( 'Halted Refresh Thread ' + str( active_count() - 1 ) )
 
                     return
 
@@ -220,7 +221,7 @@ class RefreshThread( Thread ):
 
             #Saving data to file
 
-            write_log_file( s[ 'svng-data' ] )
+            info( s[ 'svng-data' ] )
 
             write_data_file( self.articles )
 
@@ -232,7 +233,7 @@ class RefreshThread( Thread ):
 
             diff_time = int( end_time - start_time )
 
-            write_log_file( s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
+            info( s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
 
             #Calculating sleeptime
 
@@ -240,20 +241,20 @@ class RefreshThread( Thread ):
 
             #Sleeping for agreed amount
 
-            write_log_file( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ] )
+            info( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ] )
 
             if self.stop_flag:
-                write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
+                info( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
             for i in xrange( 10 * SLEEP_TIME ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    write_log_file( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
+                    info( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
                     return
 
-        write_log_file( 'Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
+        info( 'Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
 
 
 class MainWindow:
@@ -391,7 +392,7 @@ class MainWindow:
             gtk.main()
 
         except KeyboardInterrupt:
-            write_log_file( 'Gui crashed', True )
+            error( 'Gui crashed', True )
             self.refresh_thread.stop()
             self.refresh_thread.join()
 
@@ -431,14 +432,14 @@ class MainWindow:
             if url:
                 url = shorten_amazon_link( url )
             else:
-                write_log_file( "Couldn't add article: Clipboard was empty.", True )
+                warning( "Couldn't add article: Clipboard was empty.", True )
 
         if url in self.articles:
-            write_log_file( 'Article already in the database', True )
+            warning( 'Article already in the database', True )
             return
 
         if url.find( 'amazon.co.jp' ) != -1:
-            write_log_file( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
+            warning( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
             return
 
         new_art = Article( url )
@@ -446,10 +447,10 @@ class MainWindow:
         new_art.update()
 
         if new_art.bad_conn:
-            write_log_file( s[ 'err-con-s' ], True )
+            error( s[ 'err-con-s' ], True )
             return
         elif new_art.bad_url:
-            write_log_file( 'Couldn\'t parse the url.', True )
+            error( 'Couldn\'t parse the url.', True )
             return
 
         self.refresh_thread.stop()
@@ -465,7 +466,7 @@ class MainWindow:
                 data_file.write( dumps( new_art.__dict__ ) )
                 data_file.write( '\n' )
         except IOError:
-            write_log_file( 'Couldn\'t write to data file.', True )
+            error( 'Couldn\'t write to data file.', True )
 
         self.update_list_store()
 
@@ -594,17 +595,16 @@ class MainWindow:
                 del self.articles[ art.url ]
 
             except KeyError:
-                write_log_file( 'KeyError happened' )
-                print name
+                error( 'Couldn\'t find article with this title in the database', name )
                 continue
             except LookupError:
-                write_log_file( 'Couldn\'t find article in database.', True )
+                error( 'Couldn\'t find article with this url in database.', art.url )
                 continue
 
             try:
                 remove( IMAGE_PATH + pic_name )
             except OSError:
-                write_log_file( 'Picture file was already deleted' )
+                error( 'Picture file was already deleted' )
 
             self.data_store.remove( self.data_store.get_iter( index ) )
 
@@ -640,8 +640,8 @@ class MainWindow:
             try:
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
             except GError:
-                write_log_file( 'Selected article doesn\'t have an image associated with it.', True )
-                write_log_file( 'Trying to fix.', True )
+                error( 'Selected article doesn\'t have an image associated with it.', art.name )
+                info( 'Trying to reload image.' )
                 download_image( url=art.pic_url, dest=IMAGE_PATH + art.pic_name )
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
 
@@ -958,7 +958,7 @@ class MainWindow:
 
 
     def update_list_store( self ):
-        write_log_file( 'Gui is updating' )
+        info( 'Updating Gui' )
 
         self.data_store.clear()
 
@@ -1019,7 +1019,7 @@ class MainWindow:
                                           art.name,
                                         ] )
 
-        write_log_file( 'Gui updated' )
+        info( 'Updated Gui.' )
 
 
 def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
@@ -1029,7 +1029,7 @@ def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
         with open( dest, write_mode ) as f:
             f.write( pic_data )
     except IOError:
-        write_log_file( 'Couldn\'t download picture.', True )
+        error( 'Couldn\'t download picture.' )
 
 
 
@@ -1065,11 +1065,11 @@ def read_config_file():
     try:
         with open( CONFIG_FILE, 'r' ) as config_file:
             options = loads( config_file.read() )
-            write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
+            info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
     except IOError:
-        write_log_file( s[ 'cnf-no-pm' ], True )
-        write_log_file( s[ 'us-def-op' ], True )
+        error( s[ 'cnf-no-pm' ] )
+        error( s[ 'us-def-op' ] )
         return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
     except ValueError:
         reset_config_file()
@@ -1085,7 +1085,7 @@ def reset_config_file():
 
     write_config_file( options )
 
-    write_log_file( s[ 'rd-cf-fil' ] + CONFIG_FILE )
+    info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
 
 
@@ -1094,15 +1094,15 @@ def write_config_file( options ):                                       #Rewrite
         with open( CONFIG_FILE, 'w' ) as config_file:
             config_file.write( dumps( options ) )
 
-            write_log_file( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
+            info( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
     except IOError:
-        write_log_file( s[ 'cnf-no-pm' ], True )
+        error( s[ 'cnf-no-pm' ], True )
         return False
 
 
 
 def read_data_file():
-    write_log_file( s[ 'dat-fl-rd' ] )
+    info( s[ 'dat-fl-rd' ] )
 
     try:
         with open( DATA_FILE, 'r' ) as f:
@@ -1114,10 +1114,10 @@ def read_data_file():
                     new_art.__dict__ = loads( line )
                     return_list.append( new_art )
                 except ValueError:
-                    write_log_file( 'Problem reading data entry.', True )
+                    error( 'Problem reading data entry.' )
                     continue
     except IOError:
-        write_log_file( 'Couldn\'t read datafile.', True )
+        error( 'Couldn\'t read datafile.' )
         return []
 
     return return_list
@@ -1131,32 +1131,22 @@ def write_data_file( articles ):
                 data_file.write( '\n' )
 
     except IOError:
-        write_log_file( s[ 'dat-no-pm' ], True )
+        error( s[ 'dat-no-pm' ] )
         return False
 
 
-
-def write_log_file( string, output=True ):
-    if output:
-        print( get_time() + ' ' + string + '\n' ),
-    try:
-        with open( LOG_FILE, 'a' ) as logfile:
-            logfile.write( get_time() + ' ' + string + '\n' )
-    except IOError:
-        print( s[ 'log-no-pm' ] )
-        return False
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 
 
 if __name__ == '__main__':
-    write_log_file( s[ 'dashes' ] )
-    write_log_file( s[ 'str-prgm' ] )
+    info( s[ 'dashes' ] )
+    info( s[ 'str-prgm' ] )
 
     [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
-    write_log_file( s[ 'str-mn-lp' ] )
+    info( s[ 'str-mn-lp' ] )
 
     mywindow = MainWindow()
     mywindow.main()
