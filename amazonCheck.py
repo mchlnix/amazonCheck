@@ -91,14 +91,13 @@ class Article():
     def __init__( self,
                   url = '',
                   name = 'No Name Found',
-                  price_data = [],
                   currency = '',
                   pic_url = '',
                   pic_name = '',
                   ):
         self.url = url
         self.name = name
-        self.price_data = price_data
+        self.price_data = []
         self.currency = currency
         self.pic_url = pic_url
         self.pic_name = pic_name
