@@ -132,10 +132,10 @@ def get_encoding( web_page ):
 def get_title( web_page ):
     encoding = get_encoding( web_page )
 
-    with open( '/tmp/derp.html', 'w' ) as f:
-        f.write( web_page )
-
     start = web_page.find( '"producttitle"' )
+
+    if start != -1:
+        raise LookupError( 'Could not find name of article' )
 
     start = web_page.find( '>', start ) + 1
 
@@ -146,6 +146,7 @@ def get_title( web_page ):
     title = unicode( title, encoding )
 
     title = title.replace( '\n', '' )
+    title = title.replace( '  ', '' )
 
     while title[0] == ' ':
         title = title[1:]
@@ -199,13 +200,17 @@ def get_price( source ):
 
 def get_info_for( url ):
 
-    source = urlopen( url=Request( url.replace( 'product', 'offer-listing' ) + '?condition=new', '', USER_AGENT ), data=None, timeout=TIMEOUT_TIME ).read()
+    source = urlopen( url=Request( url.replace( 'product',
+                                                'offer-listing',
+                                                 ) + '?condition=new',
+                                   '',
+                                   USER_AGENT
+                                   ),
+                      data=None,
+                      timeout=TIMEOUT_TIME,
+                      ).read()
 
     title = get_title( source )
-
-    #Shortening it
-    for string in [ ': Amazon', 'Amazon.com: ', 'Amazon.de: ', 'Einkaufsangebote: ', 'Buying Choices: ' ]:
-        title = title.replace( string, '' )
 
     price, currency = get_price( source )
 
@@ -225,23 +230,6 @@ def get_info_for( url ):
 
 def get_time():
     return strftime( s[ 'date-frmt' ] )
-
-
-
-def print_help_text():
-    print( '' )
-    print( s[ 'help-add' ] )
-    print( s[ 'help-del' ] )
-    print( s[ 'help-show' ] )
-    print( s[ 'help-help' ] )
-    print( '' )
-    print( s[ 'help-slnt' ] )
-    print( s[ 'help-upon' ] )
-    print( s[ 'help-verb' ] )
-    print( '' )
-    print( s[ 'help-mnsl' ] )
-    print( s[ 'help-mxsl' ] )
-    print( '' )
 
 
 
