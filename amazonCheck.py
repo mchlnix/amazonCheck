@@ -21,7 +21,7 @@ from dbus.service import Object as dbusServiceObject, BusName, method as dbusSer
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from itertools import izip
-from logging import  error, info, warning
+from logging import  basicConfig, error, info, warning, DEBUG
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -56,6 +56,9 @@ CONFIG_VARS = 5
 SERVICE_NAME = 'org.amazonCheck.alive'
 
 
+basicConfig( filename=LOG_FILE,level=DEBUG )
+
+
 DBusGMainLoop( set_as_default = True )
 
 
@@ -71,8 +74,6 @@ for service_name in SessionBus().list_names():
 gtk.gdk.threads_init()
 gobject.threads_init()
 
-
-open( LOG_FILE, 'w' ).close()
 
 
 class DBusService( dbusServiceObject ):
