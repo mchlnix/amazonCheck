@@ -746,11 +746,11 @@ class MainWindow:
         indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
         indicator.set_status( STATUS_ACTIVE )
 
-        item_show      = gtk.MenuItem( 'Hide window' )
+        item_show      = gtk.MenuItem( 'Hide window'        )
         item_add_clip  = gtk.MenuItem( 'Add from clipboard' )
-        item_exit      = gtk.MenuItem( 'Exit'        )
         item_seperator = gtk.SeparatorMenuItem()
-        item_reset     = gtk.MenuItem( 'Reset'       )
+        item_reset     = gtk.MenuItem( 'Reset'              )
+        item_exit      = gtk.MenuItem( 'Exit'               )
 
         item_show.connect(     'activate', self.toggle_window_visibility )
         item_add_clip.connect( 'activate', self.on_add_article           )
@@ -759,11 +759,11 @@ class MainWindow:
 
         menu = gtk.Menu()
 
-        menu.append( item_show          )
-        menu.append( item_add_clip      )
-        menu.append( item_exit          )
-        menu.append( item_seperator     )
-        menu.append( item_reset         )
+        menu.append( item_show      )
+        menu.append( item_add_clip  )
+        menu.append( item_seperator )
+        menu.append( item_reset     )
+        menu.append( item_exit      )
 
         menu.show_all()
 
