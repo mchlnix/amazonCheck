@@ -134,8 +134,8 @@ def get_title( web_page ):
 
     start = web_page.find( '"producttitle"' )
 
-    if start != -1:
-        raise LookupError( 'Could not find name of article' )
+    if start == -1:
+        raise LookupError( 'Could not find name of article.' )
 
     start = web_page.find( '>', start ) + 1
 
