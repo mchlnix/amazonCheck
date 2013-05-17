@@ -53,7 +53,8 @@ CONFIG_VARS = 5
 
 TV_AB_AVG = '#FF3D3D'
 TV_BE_AVG = '#27B81F'
-TV_EX_AVG = '#FCCA00'
+#TV_EX_AVG = '#FCCA00' #old color
+TV_EX_AVG = '#FFA800'
 TV_MIN    = '#0000C7'
 
 SERVICE_NAME = 'org.amazonCheck.alive'
