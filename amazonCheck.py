@@ -21,7 +21,7 @@ from dbus.service import Object as dbusServiceObject, BusName, method as dbusSer
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from itertools import izip
-from logging import  basicConfig, error, info, warning, DEBUG
+from logging import  basicConfig, error, info, warning, DEBUG, INFO
 from os.path import exists, expanduser
 from urllib import urlopen
 from time import ctime, time, sleep
@@ -49,14 +49,17 @@ MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
 TIMEOUT_TIME = 5
 
-SLEEP_TIME = 2
-
 CONFIG_VARS = 5
+
+TV_AB_AVG = '#FF3D3D'
+TV_BE_AVG = '#27B81F'
+TV_EX_AVG = '#FCCA00'
+TV_MIN    = '#0000C7'
 
 SERVICE_NAME = 'org.amazonCheck.alive'
 
 
-basicConfig( filename=LOG_FILE,level=DEBUG )
+basicConfig( filename=LOG_FILE, level=DEBUG )
 
 
 DBusGMainLoop( set_as_default = True )
@@ -325,11 +328,13 @@ class MainWindow:
         inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
         inner_layer.pack_start( self.toolbar,                False, False, 5  )
         inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
-        inner_layer.pack_start( self.add_textbox,           True,  True,  5  )
+        inner_layer.pack_start( self.add_textbox,            True,  True,  5  )
 
         self.preview_box = gtk.HBox()
         info_box = gtk.VBox()
+
         title_link = gtk.Label()
+        title_link.set_line_wrap( True )
         title_link.set_markup( '<a href="https://www.github.com/mchlnix/amazonCheck-Daemon">amazonCheck</a>' )
 
         info_box.pack_start( gtk.Label( '' ),                                 True, True,   0 )
@@ -338,7 +343,7 @@ class MainWindow:
         info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5 )
         info_box.pack_start( gtk.Label( '' ),                                 True, True,   0 )
 
-        self.preview_box.pack_start( info_box,               False, False, 5  )
+        self.preview_box.pack_start( info_box,               True, True,   5  )
         self.preview_box.pack_start( self.image_preview,     False, False, 10 )
         inner_layer.pack_start( self.preview_box,            False, False, 5  )
 
@@ -654,20 +659,14 @@ class MainWindow:
 
             self.image_preview.set_from_pixbuf( scaled_buf )
 
-
-            if len( art.name ) > 55:
-                disp_title = art.name[0:51] + '...'
-            else:
-                disp_title = art.name
-
             if price > avgs:
-                color = '<span foreground="#FF3D3D">'
+                color = '<span foreground="' + TV_AB_AVG + '">'
 
             elif price < avgs:
-                color = '<span foreground="#27B81F">'
+                color = '<span foreground="' + TV_BE_AVG + '">'
 
             elif price == avgs:
-                color = '<span foreground="#FCCA00">'
+                color = '<span foreground="' + TV_EX_AVG + '">'
 
             if price != 'N/A':
                 price = color + '%.2f</span>' % price
@@ -682,16 +681,16 @@ class MainWindow:
                 tmp_price = art.price_data[i - limit][0]
 
                 if tmp_price == 'N/A':
-                    last_3_prices += '<span color="#FF3D3D">' + 'N/A' + '</span>'
+                    last_3_prices += '<span color="' + TV_AB_AVG + '">' + 'N/A' + '</span>'
                 else:
                     if tmp_price > avgs:
-                        color = '<span foreground="#FF3D3D">'
+                        color = '<span foreground="' + TV_AB_AVG + '">'
 
                     elif tmp_price < avgs:
-                        color = '<span foreground="#27B81F">'
+                        color = '<span foreground="' + TV_BE_AVG + '">'
 
                     elif tmp_price == avgs:
-                        color = '<span foreground="#FCCA00">'
+                        color = '<span foreground="' + TV_EX_AVG + '">'
 
                     last_3_prices += color + '%.2f</span>' % tmp_price
 
@@ -700,7 +699,7 @@ class MainWindow:
 
             fields = self.preview_box.get_children()[0].get_children()
 
-            fields[1].set_markup( '<a href="' + art.url + '">' + disp_title.replace( '&', '&amp;' ) + '</a>' )
+            fields[1].set_markup( '<a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
             fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
             fields[3].set_markup( last_3_prices )
 
@@ -905,9 +904,9 @@ class MainWindow:
         avg_rend   = gtk.CellRendererText()
         max_rend   = gtk.CellRendererText()
 
-        min_rend.set_property( 'foreground', '#27B81F' )
-        avg_rend.set_property( 'foreground', '#FCCA00' )
-        max_rend.set_property( 'foreground', '#FF3D3D' )
+        min_rend.set_property( 'foreground', TV_BE_AVG )
+        avg_rend.set_property( 'foreground', TV_EX_AVG )
+        max_rend.set_property( 'foreground', TV_AB_AVG )
 
         toggle_col = gtk.TreeViewColumn( '',      toggle_rend,   active=0 )
         cur_col    = gtk.TreeViewColumn( 'CY',    cur_rend,      text=1   )
@@ -982,16 +981,16 @@ class MainWindow:
                 color = '<span>'
 
             elif price == mins:
-                color = '<span foreground="#0000C7">'
+                color = '<span foreground="' + TV_MIN + '">'
 
             elif price > avgs:
-                color = '<span foreground="#FF3D3D">'
+                color = '<span foreground="' + TV_AB_AVG + '">'
 
             elif price < avgs:
-                color = '<span foreground="#27B81F">'
+                color = '<span foreground="' + TV_BE_AVG + '">'
 
             else: #price == avgs
-                color = '<span foreground="#FCCA00">'
+                color = '<span foreground="' + TV_EX_AVG + '">'
 
             if mins != s[ 'N/A' ]:  mins = '%.2f' % mins #1.00 not 1.0
 
