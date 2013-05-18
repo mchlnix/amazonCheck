@@ -57,7 +57,7 @@ TV_MIN    = '#0000C7'
 SERVICE_NAME = 'org.amazonCheck.alive'
 
 
-basicConfig( level=0 )
+basicConfig( filename=LOG_FILE, level=0 )
 
 
 DBusGMainLoop( set_as_default = True )
@@ -1178,11 +1178,12 @@ if __name__ == '__main__':
     info( msg=s[ 'dashes' ] )
     info( msg=s[ 'str-prgm' ] )
 
-    SHOW_NOTIFICATIONS,
+    [ SHOW_NOTIFICATIONS,
     SHOW_DEL_DIALOG,
     ALTERNATING_ROW_COLOR,
     MIN_SLEEP_TIME,
-    MAX_SLEEP_TIME = read_config_file()
+    MAX_SLEEP_TIME,
+    ] = read_config_file()
 
     info( msg=s[ 'str-mn-lp' ] )
 
