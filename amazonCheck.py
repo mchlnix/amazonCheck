@@ -33,23 +33,20 @@ from re import search
 from os import name, remove
 
 
-CONFIG_FILE = expanduser( '~/.amazonCheck/aC.config' )
-DATA_FILE = expanduser( '~/.amazonCheck/aC.data' )
-LOG_FILE = expanduser( '~/.amazonCheck/aC.log' )
-ICON_FILE = expanduser( '~/.amazonCheck/aC.png' )
+CONFIG_FILE = expanduser( path='~/.amazonCheck/aC.config' )
+DATA_FILE   = expanduser( path='~/.amazonCheck/aC.data'   )
+ICON_FILE   = expanduser( path='~/.amazonCheck/aC.png'    )
+LOG_FILE    = expanduser( path='~/.amazonCheck/aC.log'    )
 
 IMAGE_WRITE_MODE = 'w'
-IMAGE_PATH = expanduser( '~/.amazonCheck/pics/' )
+IMAGE_PATH  = expanduser( path='~/.amazonCheck/pics/'     )
 
-SHOW_NOTIFICATIONS = True
-SHOW_DEL_DIALOG = True
+SHOW_NOTIFICATIONS    = True
+SHOW_DEL_DIALOG       = True
 ALTERNATING_ROW_COLOR = True
 
 MIN_SLEEP_TIME = 180
 MAX_SLEEP_TIME = 300
-TIMEOUT_TIME = 5
-
-CONFIG_VARS = 5
 
 TV_AB_AVG = '#FF3D3D'
 TV_BE_AVG = '#27B81F'
@@ -60,7 +57,7 @@ TV_MIN    = '#0000C7'
 SERVICE_NAME = 'org.amazonCheck.alive'
 
 
-basicConfig( filename=LOG_FILE, level=DEBUG )
+basicConfig( level=0 )
 
 
 DBusGMainLoop( set_as_default = True )
@@ -75,8 +72,8 @@ for service_name in SessionBus().list_names():
         exit( 'Program already running' )
 
 
-gtk.gdk.threads_init()
-gobject.threads_init()
+gtk.gdk.threads_init() #No idea if those are necessary
+gobject.threads_init() #Doesn't seem like it
 
 
 
@@ -163,9 +160,8 @@ class RefreshThread( Thread ):
 
 
     def run( self ):
-        global SLEEP_TIME, ALTERNATING_ROW_COLOR, SHOW_NOTIFICATIONS
 
-        info( 'Refresh Thread ' + str( active_count() - 1 ) + ' started' )
+        info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' started' )
 
         runs = 0
 
@@ -175,20 +171,20 @@ class RefreshThread( Thread ):
             no_of_articles = len( self.articles )
 
             if no_of_articles == 0:
-                warning( s[ 'dat-empty' ] )
+                warning( msg=s[ 'dat-empty' ] )
 
             runs = runs + 1
 
             #Updates the information
 
-            info( s[ 'getng-dat' ] )
+            info( msg=s[ 'getng-dat' ] )
 
             for art in self.articles.values():
                 if self.stop_flag:
-                    info( s[ 'svng-data' ] )
-                    write_data_file( self.articles )
+                    info( msg=s[ 'svng-data' ] )
+                    write_data_file( content=self.articles )
 
-                    info( 'Halted Refresh Thread ' + str( active_count() - 1 ) )
+                    info( msg='Halted Refresh Thread ' + str( active_count() - 1 ) )
 
                     return
 
@@ -199,7 +195,9 @@ class RefreshThread( Thread ):
                 new_price = art.price
 
                 if new_price != old_price:
-                    open( IMAGE_PATH + art.pic_name, IMAGE_WRITE_MODE ).write( urlopen( art.pic_url ).read() )
+                    open( name=IMAGE_PATH + art.pic_name,
+                          mode=IMAGE_WRITE_MODE,
+                          ).write( urlopen( url=art.pic_url ).read() )
 
                     if old_price == s[ 'N/A' ]: #Überdenken
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
@@ -226,9 +224,9 @@ class RefreshThread( Thread ):
 
             #Saving data to file
 
-            info( s[ 'svng-data' ] )
+            info( msg=s[ 'svng-data' ] )
 
-            write_data_file( self.articles )
+            write_data_file( content=self.articles )
 
             #End time
 
@@ -238,28 +236,28 @@ class RefreshThread( Thread ):
 
             diff_time = int( end_time - start_time )
 
-            info( s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
+            info( msg=s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
 
             #Calculating sleeptime
 
-            SLEEP_TIME = min( max( 2 * diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
+            sleeptime = min( max( 2 * diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
 
             #Sleeping for agreed amount
 
-            info( s[ 'sleep-for' ] + str( int( round( SLEEP_TIME ) ) ) + s[ 'seconds' ] )
+            info( msg=s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ] )
 
             if self.stop_flag:
-                info( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
+                info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
-            for i in xrange( 10 * SLEEP_TIME ):
+            for i in xrange( 10 * sleeptime ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    info( 'Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
+                    info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
                     return
 
-        info( 'Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
+        info( msg='Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
 
 
 class MainWindow:
@@ -290,8 +288,11 @@ class MainWindow:
 
 
         #Setting the costum sort function on columns 2 - 5
-        for i in [ 2, 3, 4, 5 ]:
-            self.sortable.set_sort_func( i, my_sort_function, i )
+        for sort_column_id in [ 2, 3, 4, 5 ]:
+            self.sortable.set_sort_func( sort_column_id,
+                                         my_sort_function,
+                                         sort_column_id, #user_data
+                                         )
 
 
         #Setting up the TreeView
@@ -308,12 +309,12 @@ class MainWindow:
 
 
         #Setting up text box for on_add_article
-        self.add_textbox = gtk.Entry( 0 )
+        self.add_textbox = gtk.Entry( max=0 )
 
 
         #Setting up the GUI boxes
         scroll = gtk.ScrolledWindow()
-        scroll.set_size_request( 640, 480 )
+        scroll.set_size_request( width=640, height=480 )
         scroll.add( self.data_view )
 
         outer_layer = gtk.VBox()
@@ -322,14 +323,14 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
+        self.image_preview.set_from_file( filename=IMAGE_PATH + 'no-pic.png' )
 
 
         #Setting up inner layer
-        inner_layer.pack_start( gtk.Label( '' ),             False, False, 2  )
-        inner_layer.pack_start( self.toolbar,                False, False, 5  )
-        inner_layer.pack_start( gtk.Label( '' ),             True,  True,  0  )
-        inner_layer.pack_start( self.add_textbox,            True,  True,  5  )
+        inner_layer.pack_start( gtk.Label( '' ),  False, False, 2  )
+        inner_layer.pack_start( self.toolbar,     False, False, 5  )
+        inner_layer.pack_start( gtk.Label( '' ),  True,  True,  0  )
+        inner_layer.pack_start( self.add_textbox, True,  True,  5  )
 
         self.preview_box = gtk.HBox()
         info_box = gtk.VBox()
@@ -363,8 +364,12 @@ class MainWindow:
         #Setting up the main window
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.set_position( gtk.WIN_POS_CENTER  )
-        self.window.connect( 'delete-event',   self.toggle_window_visibility )
-        self.window.connect( 'focus-in-event', self.set_indicator_active     )
+        self.window.connect( 'delete-event',
+                              self.toggle_window_visibility,
+                              )
+        self.window.connect( 'focus-in-event',
+                              self.set_indicator_active,
+                              )
 
         self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
@@ -399,7 +404,7 @@ class MainWindow:
             gtk.main()
 
         except KeyboardInterrupt:
-            error( 'Gui crashed', True )
+            error( msg='Gui crashed' )
             self.refresh_thread.stop()
             self.refresh_thread.join()
 
@@ -436,17 +441,17 @@ class MainWindow:
 
         elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
-            if url:
+            if url is not None:
                 url = shorten_amazon_link( url )
             else:
-                warning( "Couldn't add article: Clipboard was empty.", True )
+                warning( msg="Couldn't add article: Clipboard was empty." )
 
         if url in self.articles:
-            warning( 'Article already in the database', True )
+            warning( msg='Article already in the database' )
             return
 
         if url.find( 'amazon.co.jp' ) != -1:
-            warning( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.', True )
+            warning( msg='Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
             return
 
         new_art = Article( url )
@@ -454,10 +459,10 @@ class MainWindow:
         new_art.update()
 
         if new_art.bad_conn:
-            error( s[ 'err-con-s' ], True )
+            error( msg=s[ 'err-con-s' ] )
             return
         elif new_art.bad_url:
-            error( 'Couldn\'t parse the url.', True )
+            error( msg='Couldn\'t parse the url.' )
             return
 
         self.refresh_thread.stop()
@@ -473,7 +478,7 @@ class MainWindow:
                 data_file.write( dumps( new_art.__dict__ ) )
                 data_file.write( '\n' )
         except IOError:
-            error( 'Couldn\'t write to data file.', True )
+            error( msg='Couldn\'t write to data file.' )
 
         self.update_list_store()
 
@@ -602,20 +607,20 @@ class MainWindow:
                 del self.articles[ art.url ]
 
             except KeyError:
-                error( 'Couldn\'t find article with this title in the database', name )
+                error( msg='Couldn\'t find article with this title in the database: %s', args=name )
                 continue
             except LookupError:
-                error( 'Couldn\'t find article with this url in database.', art.url )
+                error( msg='Couldn\'t find article with this url in database: %s', args=art.url )
                 continue
 
             try:
                 remove( IMAGE_PATH + pic_name )
             except OSError:
-                error( 'Picture file was already deleted' )
+                error( msg='Picture file was already deleted' )
 
             self.data_store.remove( self.data_store.get_iter( index ) )
 
-        write_data_file( self.articles )
+        write_data_file( content=self.articles )
 
         self.update_list_store()
 
@@ -647,8 +652,8 @@ class MainWindow:
             try:
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
             except GError:
-                error( 'Selected article doesn\'t have an image associated with it.', art.name )
-                info( 'Trying to reload image.' )
+                error( msg='Selected article doesn\'t have an image associated with it: %s', args=art.name )
+                info( msg='Trying to reload image.' )
                 download_image( url=art.pic_url, dest=IMAGE_PATH + art.pic_name )
                 pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
 
@@ -738,10 +743,10 @@ class MainWindow:
 
 
     def setup_indicator( self ):
-        indicator = Indicator( 'amazonCheck-indicator',
-                               'amazonCheck_indicator',
-                               CATEGORY_APPLICATION_STATUS,
-                               '/usr/share/pixmaps/',
+        indicator = Indicator( id='amazonCheck-indicator',
+                               icon_name='amazonCheck_indicator',
+                               category=CATEGORY_APPLICATION_STATUS,
+                               icon_theme_path='/usr/share/pixmaps/',
                                )
 
         indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
@@ -787,7 +792,7 @@ class MainWindow:
 
         for icon, label, callback in izip( i, l, c ):
             image = gtk.Image();
-            image.set_from_stock( icon, gtk.ICON_SIZE_LARGE_TOOLBAR )
+            image.set_from_stock( stock_id=icon, size=gtk.ICON_SIZE_LARGE_TOOLBAR )
 
             toolbar.append_item( None, label, None, image, callback )
 
@@ -863,11 +868,11 @@ class MainWindow:
         hbox_alt_row_color.pack_start( gtk.Label( '' ),                      True,  True,  5 )
         hbox_alt_row_color.pack_start( checkbutton_alt_row_color,            False, False, 5 )
 
-        config_box.pack_start( hbox_min_sleep,                              False, False, 5 )
-        config_box.pack_start( hbox_max_sleep,                              False, False, 5 )
-        config_box.pack_start( hbox_notifications,                          False, False, 5 )
-        config_box.pack_start( hbox_delete_dialog,                          False, False, 5 )
-        config_box.pack_start( hbox_alt_row_color,                          False, False, 5 )
+        config_box.pack_start( hbox_min_sleep,     False, False, 5 )
+        config_box.pack_start( hbox_max_sleep,     False, False, 5 )
+        config_box.pack_start( hbox_notifications, False, False, 5 )
+        config_box.pack_start( hbox_delete_dialog, False, False, 5 )
+        config_box.pack_start( hbox_alt_row_color, False, False, 5 )
 
         button_cancel = gtk.Button( 'Cancel'     )
         button_ok     = gtk.Button( '    OK    ' )
@@ -959,7 +964,7 @@ class MainWindow:
 
 
     def update_list_store( self ):
-        info( 'Updating Gui' )
+        info( msg='Updating Gui' )
 
         self.data_store.clear()
 
@@ -1020,17 +1025,17 @@ class MainWindow:
                                           art.name,
                                         ] )
 
-        info( 'Updated Gui.' )
+        info( msg='Updated Gui' )
 
 
 def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
     pic_data = urlopen( url ).read()
 
     try:
-        with open( dest, write_mode ) as f:
+        with open( name=dest, mode=write_mode ) as f:
             f.write( pic_data )
     except IOError:
-        error( 'Couldn\'t download picture.' )
+        error( msg='Couldn\'t download picture.' )
 
 
 
@@ -1066,11 +1071,11 @@ def read_config_file():
     try:
         with open( CONFIG_FILE, 'r' ) as config_file:
             options = loads( config_file.read() )
-            info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
+            info( msg=s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
     except IOError:
-        error( s[ 'cnf-no-pm' ] )
-        error( s[ 'us-def-op' ] )
+        error( msg=s[ 'cnf-no-pm' ] )
+        error( msg=s[ 'us-def-op' ] )
         return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
     except ValueError:
         reset_config_file()
@@ -1086,27 +1091,27 @@ def reset_config_file():
 
     write_config_file( options )
 
-    info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
+    info( msg=s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
 
 
 def write_config_file( options ):                                       #Rewrite
     try:
-        with open( CONFIG_FILE, 'w' ) as config_file:
+        with open( name=CONFIG_FILE, mode='w' ) as config_file:
             config_file.write( dumps( options ) )
 
-            info( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
+            info( msg=s[ 'wrt-cf-fl' ] + CONFIG_FILE )
     except IOError:
-        error( s[ 'cnf-no-pm' ], True )
+        error( msg=s[ 'cnf-no-pm' ] )
         return False
 
 
 
 def read_data_file():
-    info( s[ 'dat-fl-rd' ] )
+    info( msg=s[ 'dat-fl-rd' ] )
 
     try:
-        with open( DATA_FILE, 'r' ) as f:
+        with open( name=DATA_FILE, mode='r' ) as f:
             return_list = []
 
             for line in f.readlines():
@@ -1115,24 +1120,24 @@ def read_data_file():
                     new_art.__dict__ = loads( line )
                     return_list.append( new_art )
                 except ValueError:
-                    error( 'Problem reading data entry.' )
+                    error( msg='Problem reading data entry.' )
                     continue
     except IOError:
-        error( 'Couldn\'t read datafile.' )
+        error( msg='Couldn\'t read datafile.' )
         return []
 
     return return_list
 
 
-def write_data_file( articles ):
+def write_data_file( content ):
     try:
-        with open( DATA_FILE, 'w' ) as data_file:
-            for article in articles.values():
+        with open( name=DATA_FILE, mode='w' ) as data_file:
+            for article in content.values():
                 data_file.write( dumps( article.__dict__ ) )
                 data_file.write( '\n' )
 
     except IOError:
-        error( s[ 'dat-no-pm' ] )
+        error( msg=s[ 'dat-no-pm' ] )
         return False
 
 
@@ -1142,13 +1147,15 @@ def write_data_file( articles ):
 
 
 if __name__ == '__main__':
-    info( s[ 'dashes' ] )
-    info( s[ 'str-prgm' ] )
+    info( msg=s[ 'dashes' ] )
+    info( msg=s[ 'str-prgm' ] )
 
     [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
 
-    info( s[ 'str-mn-lp' ] )
+    info( msg=s[ 'str-mn-lp' ] )
 
     mywindow = MainWindow()
     mywindow.main()
+
+
 
