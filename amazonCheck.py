@@ -240,7 +240,7 @@ class RefreshThread( Thread ):
 
             #Calculating sleeptime
 
-            sleeptime = min( max( 2 * diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
+            sleeptime = min( max( 2*diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
 
             #Sleeping for agreed amount
 
@@ -250,7 +250,7 @@ class RefreshThread( Thread ):
                 info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
                 return
 
-            for i in xrange( 10 * sleeptime ):
+            for i in xrange( 10*sleeptime ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
@@ -368,7 +368,7 @@ class MainWindow:
                               self.toggle_window_visibility,
                               )
         self.window.connect( 'focus-in-event',
-                              self.set_indicator_active,
+                              self.set_ind_active,
                               )
 
         self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
@@ -391,7 +391,7 @@ class MainWindow:
         #Setting up refresh thread
         self.refresh_thread = RefreshThread( self.articles,
                                              self.update_list_store,
-                                             self.set_indicator_attention,
+                                             self.set_ind_attention,
                                              '',
                                              )
 
@@ -641,76 +641,77 @@ class MainWindow:
     def on_row_selected( self, treeview ):
         try:
             index = treeview.get_selection().get_selected_rows()[1][0][0]
-            art_name = unicode( self.data_view.get_model()[ index ][-1] )
-
-            art = self.find_article( name=art_name )
-
-            avgs = get_avg_price( art.price_data )
-            price = art.price
-            currency = art.currency
-
-            try:
-                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
-            except GError:
-                error( msg='Selected article doesn\'t have an image associated with it: %s', args=art.name )
-                info( msg='Trying to reload image.' )
-                download_image( url=art.pic_url, dest=IMAGE_PATH + art.pic_name )
-                pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
-
-
-            if pixbuf.get_width() < pixbuf.get_height():
-                scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width() * 100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
-            else:
-                scaled_buf = pixbuf.scale_simple( dest_width=100, dest_height=int( pixbuf.get_height() * 100 / pixbuf.get_width()), interp_type=gtk.gdk.INTERP_BILINEAR )
-
-            self.image_preview.set_from_pixbuf( scaled_buf )
-
-            if price > avgs:
-                color = '<span foreground="' + TV_AB_AVG + '">'
-
-            elif price < avgs:
-                color = '<span foreground="' + TV_BE_AVG + '">'
-
-            elif price == avgs:
-                color = '<span foreground="' + TV_EX_AVG + '">'
-
-            if price != 'N/A':
-                price = color + '%.2f</span>' % price
-            else:
-                currency = ''
-
-            last_3_prices = '    '
-
-            limit = min( len( art.price_data ), 3 )
-
-            for i in xrange( limit ):
-                tmp_price = art.price_data[i - limit][0]
-
-                if tmp_price == 'N/A':
-                    last_3_prices += '<span color="' + TV_AB_AVG + '">' + 'N/A' + '</span>'
-                else:
-                    if tmp_price > avgs:
-                        color = '<span foreground="' + TV_AB_AVG + '">'
-
-                    elif tmp_price < avgs:
-                        color = '<span foreground="' + TV_BE_AVG + '">'
-
-                    elif tmp_price == avgs:
-                        color = '<span foreground="' + TV_EX_AVG + '">'
-
-                    last_3_prices += color + '%.2f</span>' % tmp_price
-
-                if i < limit - 1:
-                    last_3_prices += ' > '
-
-            fields = self.preview_box.get_children()[0].get_children()
-
-            fields[1].set_markup( '<a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
-            fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
-            fields[3].set_markup( last_3_prices )
-
         except IndexError:
-            pass
+            return False
+        art_name = unicode( self.data_view.get_model()[ index ][-1] )
+
+        art = self.find_article( name=art_name )
+
+        avgs = get_avg_price( art.price_data )
+        price = art.price
+        currency = art.currency
+
+        try:
+            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
+        except GError:
+            error( msg='Selected article doesn\'t have an image associated with it: %s', args=art.name )
+            info( msg='Trying to reload image.' )
+            download_image( url=art.pic_url,
+                            dest=IMAGE_PATH + art.pic_name,
+                            )
+            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
+
+
+        if pixbuf.get_width() < pixbuf.get_height():
+            scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width()*100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+        else:
+            scaled_buf = pixbuf.scale_simple( dest_width=100, dest_height=int( pixbuf.get_height()*100 / pixbuf.get_width()), interp_type=gtk.gdk.INTERP_BILINEAR )
+
+        self.image_preview.set_from_pixbuf( scaled_buf )
+
+        if price > avgs:
+            color = '<span foreground="' + TV_AB_AVG + '">'
+
+        elif price < avgs:
+            color = '<span foreground="' + TV_BE_AVG + '">'
+
+        elif price == avgs:
+            color = '<span foreground="' + TV_EX_AVG + '">'
+
+        if price != 'N/A':
+            price = color + '%.2f</span>' % price
+        else:
+            currency = ''
+
+        last_3_prices = '    '
+
+        limit = min( len( art.price_data ), 3 )
+
+        for i in xrange( limit ):
+            tmp_price = art.price_data[i - limit][0]
+
+            if tmp_price == 'N/A':
+                last_3_prices += '<span color="' + TV_AB_AVG + '">' + 'N/A' + '</span>'
+            else:
+                if tmp_price > avgs:
+                    color = '<span foreground="' + TV_AB_AVG + '">'
+
+                elif tmp_price < avgs:
+                    color = '<span foreground="' + TV_BE_AVG + '">'
+
+                elif tmp_price == avgs:
+                    color = '<span foreground="' + TV_EX_AVG + '">'
+
+                last_3_prices += color + '%.2f</span>' % tmp_price
+
+            if i < limit - 1:
+                last_3_prices += ' > '
+
+        fields = self.preview_box.get_children()[0].get_children()
+
+        fields[1].set_markup( '<a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
+        fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
+        fields[3].set_markup( last_3_prices )
 
 
     def on_show_config_window( self, widget ):
@@ -728,14 +729,14 @@ class MainWindow:
         open_in_browser( article.url )
 
 
-    def set_indicator_active( self, widget, direction=None ):
+    def set_ind_active( self, widget, direction=None ):
         reset_label = self.indicator.get_menu().get_children()[3]
         reset_label.set_sensitive( False )
 
         self.indicator.set_status( STATUS_ACTIVE )
 
 
-    def set_indicator_attention( self ):
+    def set_ind_attention( self ):
         reset_label = self.indicator.get_menu().get_children()[3]
         reset_label.set_sensitive( True )
 
@@ -761,7 +762,7 @@ class MainWindow:
         item_show.connect(     'activate', self.toggle_window_visibility )
         item_add_clip.connect( 'activate', self.on_add_article           )
         item_exit.connect(     'activate', self.exit_application         )
-        item_reset.connect(    'activate', self.set_indicator_active     )
+        item_reset.connect(    'activate', self.set_ind_active           )
 
         menu = gtk.Menu()
 
@@ -792,7 +793,8 @@ class MainWindow:
 
         for icon, label, callback in izip( i, l, c ):
             image = gtk.Image();
-            image.set_from_stock( stock_id=icon, size=gtk.ICON_SIZE_LARGE_TOOLBAR )
+            image.set_from_stock( stock_id=icon,
+                                  size=gtk.ICON_SIZE_LARGE_TOOLBAR )
 
             toolbar.append_item( None, label, None, image, callback )
 
@@ -914,13 +916,13 @@ class MainWindow:
         avg_rend.set_property( 'foreground', TV_EX_AVG )
         max_rend.set_property( 'foreground', TV_AB_AVG )
 
-        toggle_col = gtk.TreeViewColumn( '',      toggle_rend,   active=0 )
-        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rend,      text=1   )
-        price_col  = gtk.TreeViewColumn( 'Price', price_rend,    markup=2 )
-        min_col    = gtk.TreeViewColumn( 'Min',   min_rend,      text=3   )
-        avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rend,      text=4   )
-        max_col    = gtk.TreeViewColumn( 'Max',   max_rend,      text=5   )
-        title_col  = gtk.TreeViewColumn( 'Title', title_rend,    text=6   )
+        toggle_col = gtk.TreeViewColumn( '',      toggle_rend, active=0 )
+        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rend,    text=1   )
+        price_col  = gtk.TreeViewColumn( 'Price', price_rend,  markup=2 )
+        min_col    = gtk.TreeViewColumn( 'Min',   min_rend,    text=3   )
+        avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rend,    text=4   )
+        max_col    = gtk.TreeViewColumn( 'Max',   max_rend,    text=5   )
+        title_col  = gtk.TreeViewColumn( 'Title', title_rend,  text=6   )
 
         columns = [ toggle_col,
                     cur_col,
@@ -942,7 +944,7 @@ class MainWindow:
     def start_thread( self ):
         self.refresh_thread = RefreshThread( self.articles,
                                              self.update_list_store,
-                                             self.set_indicator_attention,
+                                             self.set_ind_attention,
                                              '',
                                              )
         self.refresh_thread.start()
@@ -1009,7 +1011,9 @@ class MainWindow:
             try:
                 for index in xrange( len( self.articles ) ):
                     if self.data_store[ index ][6] == art.name:
-                        self.data_store[ index ][2] = color + str( price ) + '</span>'
+                        self.data_store[ index ][2] = color         \
+                                                    + str( price )  \
+                                                    + '</span>'
                         self.data_store[ index ][3] = mins
                         self.data_store[ index ][4] = avgs
                         self.data_store[ index ][5] = maxs
@@ -1018,7 +1022,9 @@ class MainWindow:
             except IndexError:
                 self.data_store.append( [ False,
                                           art.currency,
-                                          color + str( price )+ '</span>',
+                                          color
+                                        + str( price )
+                                        + '</span>',
                                           mins,
                                           avgs,
                                           maxs,
@@ -1041,23 +1047,23 @@ def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
 
 def my_sort_function( treemodel, iter1, iter2, index ):
     try:
-        float1 = treemodel[iter1][index]
-        float2 = treemodel[iter2][index]
+        f1 = treemodel[iter1][index]
+        f2 = treemodel[iter2][index]
 
         try:
-            if float1.find( 'N/A' ) != -1:
+            if f1.find( 'N/A' ) != -1:
                 return 1
-            elif float2.find( 'N/A' ) != -1:
+            elif f2.find( 'N/A' ) != -1:
                 return -1
         except:
             return -1
 
-        float1 = float( float1[ float1.find( '>' ) + 1 : float1.find( '<', 1 ) ] )
-        float2 = float( float2[ float2.find( '>' ) + 1 : float2.find( '<', 1 ) ] )
+        f1 = float( f1[ f1.find( '>' ) + 1 : f1.find( '<', 1 ) ] )
+        f2 = float( f2[ f2.find( '>' ) + 1 : f2.find( '<', 1 ) ] )
 
-        if float1 > float2:
+        if f1 > f2:
             return -1
-        elif float1 < float2:
+        elif f1 < f2:
             return 1
         else:
             return 0
@@ -1076,18 +1082,32 @@ def read_config_file():
     except IOError:
         error( msg=s[ 'cnf-no-pm' ] )
         error( msg=s[ 'us-def-op' ] )
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+        return [ SHOW_NOTIFICATIONS,
+                 SHOW_DEL_DIALOG,
+                 ALTERNATING_ROW_COLOR,
+                 MIN_SLEEP_TIME,
+                 MAX_SLEEP_TIME,
+                 ]
     except ValueError:
         reset_config_file()
-        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
-
+        return [ SHOW_NOTIFICATIONS,
+                 SHOW_DEL_DIALOG,
+                 ALTERNATING_ROW_COLOR,
+                 MIN_SLEEP_TIME,
+                 MAX_SLEEP_TIME,
+                 ]
 
     return options
 
 
 
 def reset_config_file():
-    options = [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ]
+    options = [ SHOW_NOTIFICATIONS,
+                SHOW_DEL_DIALOG,
+                ALTERNATING_ROW_COLOR,
+                MIN_SLEEP_TIME,
+                MAX_SLEEP_TIME,
+                ]
 
     write_config_file( options )
 
@@ -1150,12 +1170,13 @@ if __name__ == '__main__':
     info( msg=s[ 'dashes' ] )
     info( msg=s[ 'str-prgm' ] )
 
-    [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] = read_config_file()
+    SHOW_NOTIFICATIONS,
+    SHOW_DEL_DIALOG,
+    ALTERNATING_ROW_COLOR,
+    MIN_SLEEP_TIME,
+    MAX_SLEEP_TIME = read_config_file()
 
     info( msg=s[ 'str-mn-lp' ] )
 
     mywindow = MainWindow()
     mywindow.main()
-
-
-
