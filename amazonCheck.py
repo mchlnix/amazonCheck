@@ -663,9 +663,17 @@ class MainWindow:
 
 
         if pixbuf.get_width() < pixbuf.get_height():
-            scaled_buf = pixbuf.scale_simple( dest_width=int( pixbuf.get_width()*100 / pixbuf.get_height()), dest_height=100, interp_type=gtk.gdk.INTERP_BILINEAR )
+            width  = int( pixbuf.get_width()*100 / pixbuf.get_height() )
+            height = 100
         else:
-            scaled_buf = pixbuf.scale_simple( dest_width=100, dest_height=int( pixbuf.get_height()*100 / pixbuf.get_width()), interp_type=gtk.gdk.INTERP_BILINEAR )
+            width  = 100
+            height = int( pixbuf.get_height()*100 / pixbuf.get_width() )
+
+        interpolation = gtk.gdk.INTERP_BILINEAR
+
+        scaled_buf = pixbuf.scale_simple( dest_width=width,
+                                          dest_height=height,
+                                          interp_type=interpolation )
 
         self.image_preview.set_from_pixbuf( scaled_buf )
 
@@ -691,16 +699,16 @@ class MainWindow:
             tmp_price = art.price_data[i - limit][0]
 
             if tmp_price == 'N/A':
-                last_3_prices += '<span color="' + TV_AB_AVG + '">' + 'N/A' + '</span>'
+                last_3_prices += '<span color="%s">N/A</span>' % TV_AB_AVG
             else:
                 if tmp_price > avgs:
-                    color = '<span foreground="' + TV_AB_AVG + '">'
+                    color = '<span foreground="%s">' % TV_AB_AVG
 
                 elif tmp_price < avgs:
-                    color = '<span foreground="' + TV_BE_AVG + '">'
+                    color = '<span foreground="%s">' % TV_BE_AVG
 
                 elif tmp_price == avgs:
-                    color = '<span foreground="' + TV_EX_AVG + '">'
+                    color = '<span foreground="%s">' % TV_EX_AVG
 
                 last_3_prices += color + '%.2f</span>' % tmp_price
 
