@@ -240,7 +240,7 @@ def print_notification( title, body, picture='' ):
 
 def send_notification( title, body, picture ):
     if name == 'posix':
-        if not init ("icon-summary-body"):
+        if not init("amazonCheck update"):
             return false
 
         for color in [ RED, GREEN, NOCOLOR ]:
