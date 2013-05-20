@@ -32,14 +32,15 @@ from sys import argv, exit
 from re import search
 from os import name, remove
 
-
-CONFIG_FILE = expanduser( path='~/.amazonCheck/aC.config' )
-DATA_FILE   = expanduser( path='~/.amazonCheck/aC.data'   )
-ICON_FILE   = expanduser( path='~/.amazonCheck/aC.png'    )
-LOG_FILE    = expanduser( path='~/.amazonCheck/aC.log'    )
-
 IMAGE_WRITE_MODE = 'w'
-IMAGE_PATH  = expanduser( path='~/.amazonCheck/pics/'     )
+
+IMAGE_PATH  = expanduser( path='~/.amazonCheck/pics/'               )
+ICON_PATH   = expanduser( path='~/.amazonCheck/pics/icons/'         )
+ICON_FILE   = expanduser( path='~/.amazonCheck/pics/icons/icon.png' )
+
+CONFIG_FILE = expanduser( path='~/.amazonCheck/config' )
+DATA_FILE   = expanduser( path='~/.amazonCheck/data'   )
+LOG_FILE    = expanduser( path='~/.amazonCheck/log'    )
 
 SHOW_NOTIFICATIONS    = True
 SHOW_DEL_DIALOG       = True
@@ -323,7 +324,7 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_from_file( filename=IMAGE_PATH + 'no-pic.png' )
+        self.image_preview.set_from_file( ICON_FILE )
 
 
         #Setting up inner layer
@@ -371,7 +372,7 @@ class MainWindow:
                               self.set_ind_active,
                               )
 
-        self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
+        self.window.set_icon_from_file( ICON_FILE )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
 
         self.window.add( outer_layer )
@@ -625,7 +626,7 @@ class MainWindow:
         self.update_list_store()
 
         if len( self.data_store ) == 0:
-            self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
+            self.image_preview.set_from_file( ICON_FILE )
 
             fields = self.preview_box.get_children()[0].get_children()
 
@@ -753,12 +754,12 @@ class MainWindow:
 
     def setup_indicator( self ):
         indicator = Indicator( id='amazonCheck-indicator',
-                               icon_name='amazonCheck_indicator',
+                               icon_name='ind_act',
                                category=CATEGORY_APPLICATION_STATUS,
-                               icon_theme_path='/usr/share/pixmaps/',
+                               icon_theme_path=ICON_PATH,
                                )
 
-        indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
+        indicator.set_attention_icon( 'ind_att' )
         indicator.set_status( STATUS_ACTIVE )
 
         item_show      = gtk.MenuItem( 'Hide window'        )
