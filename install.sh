@@ -15,11 +15,11 @@ touch ~/.amazonCheck/config
 
 #Copies the application to its specific destination
 echo Copying the application to it\'s specific destination
-sudo cp -v $basedir/amazonCheck.py /usr/bin/amazonCheck
+cp -v $basedir/amazonCheck.py /usr/bin/amazonCheck
 
 #Copies the .desktop file to its specific destination
 echo Copying the .desktop file to it\'s specific destination
-sudo cp -v $basedir/amazonCheck.desktop /usr/share/applications/
+cp -v $basedir/amazonCheck.desktop /usr/share/applications/
 
 #Installs necessary libs
 echo Installs necessary libs
