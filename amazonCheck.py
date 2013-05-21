@@ -6,7 +6,7 @@ from sys import version_info, exit
 if version_info >= (2, 8):
     exit( '--Please use Python 2.7 with this program--' )
 
-from actranslib import strings as s
+from actrans import strings as s
 from amazonlib import Article
 from accolors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
