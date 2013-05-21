@@ -6,9 +6,9 @@ from sys import version_info, exit
 if version_info >= (2, 8):
     exit( '--Please use Python 2.7 with this program--' )
 
-from amazonCheckTrans import strings as s
-from amazonCheckLib import get_min_price, get_avg_price, get_max_price, get_info_for, get_time, notify, print_notification, shorten_amazon_link
-from colors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
+from actranslib import strings as s
+from amazonlib import Article
+from accolors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
 import pygtk
 pygtk.require( '2.0' )
@@ -16,15 +16,18 @@ import gtk
 import gobject
 
 from dbus.mainloop.glib import DBusGMainLoop
-from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, STATUS_ATTENTION, CATEGORY_APPLICATION_STATUS
-from dbus.service import Object as dbusServiceObject, BusName, method as dbusServiceMethod
+from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, \
+                         STATUS_ATTENTION, CATEGORY_APPLICATION_STATUS
+from dbus.service import Object as dbusServiceObject, BusName, \
+                         method as dbusServiceMethod
 from webbrowser import open as open_in_browser
 from threading import Thread, active_count
 from itertools import izip
+from pynotify import init, Notification
 from logging import  basicConfig, error, info, warning, DEBUG, INFO
-from os.path import exists, expanduser
+from os.path import abspath, expanduser
 from urllib import urlopen
-from time import ctime, time, sleep
+from time import ctime, time, sleep, strftime
 from json import dumps, loads
 from dbus import SessionBus
 from glib import GError
@@ -32,14 +35,15 @@ from sys import argv, exit
 from re import search
 from os import name, remove
 
-
-CONFIG_FILE = expanduser( path='~/.amazonCheck/aC.config' )
-DATA_FILE   = expanduser( path='~/.amazonCheck/aC.data'   )
-ICON_FILE   = expanduser( path='~/.amazonCheck/aC.png'    )
-LOG_FILE    = expanduser( path='~/.amazonCheck/aC.log'    )
-
 IMAGE_WRITE_MODE = 'w'
-IMAGE_PATH  = expanduser( path='~/.amazonCheck/pics/'     )
+
+IMAGE_PATH  = expanduser( path='~/.amazonCheck/pics/'               )
+ICON_PATH   = expanduser( path='~/.amazonCheck/pics/icons/'         )
+ICON_FILE   = expanduser( path='~/.amazonCheck/pics/icons/icon.png' )
+
+CONFIG_FILE = expanduser( path='~/.amazonCheck/config' )
+DATA_FILE   = expanduser( path='~/.amazonCheck/data'   )
+LOG_FILE    = expanduser( path='~/.amazonCheck/log'    )
 
 SHOW_NOTIFICATIONS    = True
 SHOW_DEL_DIALOG       = True
@@ -89,60 +93,6 @@ class DBusService( dbusServiceObject ):
         self.wind_obj.toggle_window_visibility()
 
 
-class Article():
-    def __init__( self,
-                  url = '',
-                  name = 'No Name Found',
-                  currency = '',
-                  pic_url = '',
-                  pic_name = '',
-                  ):
-        self.url = url
-        self.name = name
-        self.price_data = []
-        self.currency = currency
-        self.pic_url = pic_url
-        self.pic_name = pic_name
-
-        self.bad_conn = False
-        self.bad_url = False
-
-    def update( self ):
-        try:
-            self.name, self.currency, price, self.pic_url = get_info_for( self.url )
-
-            if price != self.price:
-                self.price_data.append( [ price, int( time() ) ] )
-
-            self.pic_name = search( '\/[A-Z0-9]{10}\/', self.url ).group()[1: -1] + '.jpg'
-
-        except IOError:
-            self.bad_conn = True
-        except ValueError:
-            self.bad_url = True
-
-    def __getattr__( self, name ):
-        if name=='bad_conn':
-            if self.bad_conn:
-                self.bad_conn = False
-                return True
-
-            return False
-
-        if name=='bad_url':
-            if self.bad_url:
-                self.bad_url = False
-                return True
-
-            return False
-
-        if name=='price':
-            try:
-                return self.price_data[-1][0]
-            except IndexError:
-                return 0
-
-
 
 class RefreshThread( Thread ):
     def __init__( self, articles, upd_list_store, set_ind, upd_art ):
@@ -190,7 +140,12 @@ class RefreshThread( Thread ):
 
                 old_price = art.price
 
-                art.update()
+                try:
+                    art.update()
+                except:
+                    warning( msg='Couldn\'t update article \'%s\'.' % art.name )
+                    print( '%s update failed.' % art.name )
+                    continue
 
                 new_price = art.price
 
@@ -214,9 +169,9 @@ class RefreshThread( Thread ):
                     body = art.name
 
                     if SHOW_NOTIFICATIONS:
-                        notify( title, body, IMAGE_PATH + art.pic_name )
+                        osd_notify( title, body, IMAGE_PATH + art.pic_name )
 
-                    print_notification( title, body, '' )
+                    print_notify( title, body, '' )
 
                     gobject.idle_add( self.callbacks[1] )
 
@@ -323,7 +278,7 @@ class MainWindow:
 
         #Setting up the imagebox
         self.image_preview = gtk.Image()
-        self.image_preview.set_from_file( filename=IMAGE_PATH + 'no-pic.png' )
+        self.image_preview.set_from_file( ICON_FILE )
 
 
         #Setting up inner layer
@@ -345,20 +300,20 @@ class MainWindow:
         info_box.pack_start( gtk.Label( 'By Me' ),                            False, False, 5 )
         info_box.pack_start( gtk.Label( '' ),                                 True, True,   0 )
 
-        self.preview_box.pack_start( info_box,               True, True,   5  )
-        self.preview_box.pack_start( self.image_preview,     False, False, 10 )
-        inner_layer.pack_start( self.preview_box,            False, False, 5  )
+        self.preview_box.pack_start( info_box,           True, True,   5  )
+        self.preview_box.pack_start( self.image_preview, False, False, 10 )
+        inner_layer.pack_start( self.preview_box,        False, False, 5  )
 
 
         #Setting up outer layer
         scroll_hbox = gtk.HBox()
-        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
-        scroll_hbox.pack_start( scroll,                      True,  True,  0  )
-        scroll_hbox.pack_start( gtk.Label( '' ),             False, False, 5  )
+        scroll_hbox.pack_start( gtk.Label( '' ), False, False, 5  )
+        scroll_hbox.pack_start( scroll,          True,  True,  0  )
+        scroll_hbox.pack_start( gtk.Label( '' ), False, False, 5  )
 
 
-        outer_layer.pack_start( scroll_hbox,                 True,  True,  0  )
-        outer_layer.pack_start( inner_layer,                 False, False, 10 )
+        outer_layer.pack_start( scroll_hbox, True,  True,  0  )
+        outer_layer.pack_start( inner_layer, False, False, 10 )
 
 
         #Setting up the main window
@@ -371,7 +326,7 @@ class MainWindow:
                               self.set_ind_active,
                               )
 
-        self.window.set_icon_from_file( '/usr/share/pixmaps/amazonCheck.png' )
+        self.window.set_icon_from_file( ICON_FILE )
         self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
 
         self.window.add( outer_layer )
@@ -436,14 +391,12 @@ class MainWindow:
             if textbox.get_visible():
                 return
 
-            url = shorten_amazon_link( textbox.get_text() )
+            url = textbox.get_text()
             textbox.set_text( '' )
 
         elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
-            if url is not None:
-                url = shorten_amazon_link( url )
-            else:
+            if url is None:
                 warning( msg="Couldn't add article: Clipboard was empty." )
 
         if url in self.articles:
@@ -451,6 +404,7 @@ class MainWindow:
             return
 
         if url.find( 'amazon.co.jp' ) != -1:
+            print( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
             warning( msg='Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
             return
 
@@ -625,7 +579,7 @@ class MainWindow:
         self.update_list_store()
 
         if len( self.data_store ) == 0:
-            self.image_preview.set_from_file( IMAGE_PATH + 'no-pic.png' )
+            self.image_preview.set_from_file( ICON_FILE )
 
             fields = self.preview_box.get_children()[0].get_children()
 
@@ -647,7 +601,7 @@ class MainWindow:
 
         art = self.find_article( name=art_name )
 
-        avgs = get_avg_price( art.price_data )
+        avgs = art.avg
         price = art.price
         currency = art.currency
 
@@ -753,12 +707,12 @@ class MainWindow:
 
     def setup_indicator( self ):
         indicator = Indicator( id='amazonCheck-indicator',
-                               icon_name='amazonCheck_indicator',
+                               icon_name='ind_act',
                                category=CATEGORY_APPLICATION_STATUS,
-                               icon_theme_path='/usr/share/pixmaps/',
+                               icon_theme_path=ICON_PATH,
                                )
 
-        indicator.set_attention_icon( 'amazonCheck_indicator_attention' )
+        indicator.set_attention_icon( 'ind_att' )
         indicator.set_status( STATUS_ACTIVE )
 
         item_show      = gtk.MenuItem( 'Hide window'        )
@@ -979,42 +933,31 @@ class MainWindow:
         self.data_store.clear()
 
         for art in self.articles.values():
-            price = art.price
+            price = mins = avgs = maxs = 'N/A'
 
-            if not len( art.price_data ) > 1:
-                avgs = mins = maxs = art.price_data[0][0]
-            else:
-                avgs = get_avg_price( art.price_data )
-                if avgs == -1: avgs = s[ 'N/A' ]
 
-                mins = get_min_price( art.price_data )
-                if mins == -1: mins = s[ 'N/A' ]
-
-                maxs = get_max_price( art.price_data )
-                if maxs == -1: maxs = s[ 'N/A' ]
-
-            if maxs == mins:
+            if art.max == art.min:
                 color = '<span>'
 
-            elif price == mins:
+            elif art.price == art.min:
                 color = '<span foreground="' + TV_MIN + '">'
 
-            elif price > avgs:
+            elif art.price > art.avg:
                 color = '<span foreground="' + TV_AB_AVG + '">'
 
-            elif price < avgs:
+            elif art.price < art.avg:
                 color = '<span foreground="' + TV_BE_AVG + '">'
 
-            else: #price == avgs
+            else:                                         #price == avgs
                 color = '<span foreground="' + TV_EX_AVG + '">'
 
-            if mins != s[ 'N/A' ]:  mins = '%.2f' % mins #1.00 not 1.0
+            if art.min != -1:  mins = '%.2f' % art.min       #1.00 not 1.0
 
-            if maxs != s[ 'N/A' ]:  maxs = '%.2f' % maxs
+            if art.max != -1:  maxs = '%.2f' % art.max
 
-            if avgs != s[ 'N/A' ]:  avgs = '%.2f' % avgs
+            if art.avg != -1:  avgs = '%.2f' % art.avg
 
-            if price != s[ 'N/A' ]: price = '%.2f' % price
+            if art.price != 'N/A': price = '%.2f' % art.price
 
             try:
                 for index in xrange( len( self.articles ) ):
@@ -1090,6 +1033,11 @@ def read_config_file():
     except IOError:
         error( msg=s[ 'cnf-no-pm' ] )
         error( msg=s[ 'us-def-op' ] )
+        try:
+            reset_config_file()
+        except:
+            pass
+
         return [ SHOW_NOTIFICATIONS,
                  SHOW_DEL_DIALOG,
                  ALTERNATING_ROW_COLOR,
@@ -1167,6 +1115,27 @@ def write_data_file( content ):
     except IOError:
         error( msg=s[ 'dat-no-pm' ] )
         return False
+
+
+
+def get_time():
+    return strftime( s[ 'date-frmt' ] )
+
+
+
+def print_notify( title, body, picture='' ):
+    print( get_time() + ' ' + title + ' ' + body )
+
+
+
+def osd_notify( title, body, picture ):
+    init("amazonCheck update")
+
+    for color in [ RED, GREEN, NOCOLOR ]:
+        title = title.replace( color, '' )
+        body = body.replace( color, '' )
+
+    Notification ( title, body, abspath( picture ) ).show()
 
 
 

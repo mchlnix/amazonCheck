@@ -1,0 +1,1 @@
+from actrans import strings

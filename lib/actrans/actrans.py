@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7 -u
 # -*- coding: utf-8 -*-
 
-from colors import GREEN, RED
+from accolors import GREEN, RED
 
 strings = {
 #amazonCheck.py

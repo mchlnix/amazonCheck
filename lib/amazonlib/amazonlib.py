@@ -1,20 +1,62 @@
 #!/usr/bin/python2.7 -u
 # -*- coding: utf-8 -*-
 
-from amazonCheckTrans import strings as s
-from colors import RED, GREEN, NOCOLOR
+from pricelib import min_price, avg_price, max_price
 
-from pynotify import init, Notification
-from os.path import abspath
 from urllib2 import Request, urlopen
-from time import strftime, time
-from sys import argv, exit
+from time import time
 from re import search
-from os import name
 
 TIMEOUT_TIME = 5
 
 USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
+
+class Article():
+    def __init__( self,
+                  url = '',
+                  ):
+        self.url = shorten_amazon_link( url )
+        self.name = 'No name found'
+        self.price_data = []
+
+        self.min = -1
+        self.avg = -1
+        self.max = -1
+
+        self.currency = ''
+        self.pic_url = ''
+        self.pic_name = ''
+
+        self.bad_conn = False
+        self.bad_url = False
+
+    def update( self ):
+
+        self.bad_conn = self.bad_url = False
+        try:
+            self.name, self.currency, price, self.pic_url = get_info_for( self.url )
+
+            if price != self.price:
+                self.price_data.append( [ price, int( time() ) ] )
+                self.min = min_price( self.price_data )
+                self.max = max_price( self.price_data )
+
+            self.pic_name = search( '\/[A-Z0-9]{10}\/', self.url ).group()[1: -1] + '.jpg'
+
+        except IOError:
+            self.bad_conn = True
+        except ValueError:
+            self.bad_url = True
+
+        self.avg = avg_price( self.price_data )
+
+    def __getattr__( self, name ):
+        if name=='price':
+            try:
+                return self.price_data[-1][0]
+            except IndexError:
+                return 0
+
 
 
 def format_price( string ):
@@ -35,85 +77,6 @@ def format_price( string ):
         raise LookupError( 'Couldn\'t find price' )
 
     return ( price, currency )
-
-
-
-def get_min_price( price_list ):
-    min_price = 99999999999999
-    changed = False
-
-    for price in price_list:
-        if price[0] == s[ 'N/A' ]:
-            continue
-        else:
-            if price[0] < min_price:
-                changed = True
-                min_price = price[0]
-
-    if changed:
-        return min_price
-    else:
-        return -1
-
-
-
-def get_avg_price( price_list ):
-    avg = 0
-    length = len( price_list )
-    changed = False
-
-    if length == 1:
-        if price_list[0][0] == s[ 'N/A' ]:
-            return -1
-        else:
-            return price_list[0][0]
-
-    div_time = int( round( time() ) ) - price_list[0][1]
-
-    if price_list[-1][0] == s[ 'N/A' ]:
-        div_time -= int( round( time() ) ) - price_list[-1][1]
-    else:
-        changed = True
-        avg += price_list[-1][0] * (int( round( time() ) ) - price_list[-1][1])
-
-
-    for i in range( 2, length + 1 ):
-
-        index = length - i
-
-        if price_list[ index ][0] == s[ 'N/A' ]:
-            div_time -= price_list[ index + 1 ][1] - price_list[ index ][1]
-            continue
-
-        avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
-        changed = True
-
-    try:
-        if changed:
-            return round( avg / div_time, 2 )
-        else:
-            return -1
-
-    except ZeroDivisionError:
-        return -1
-
-
-def get_max_price( price_list ):
-    max_price = 0
-    changed = False
-
-    for price in price_list:
-        if price[0] == s[ 'N/A' ]:
-            continue
-        else:
-            if price[0] > max_price:
-                changed = True
-                max_price = price[0]
-
-    if changed:
-        return max_price
-    else:
-        return -1
 
 
 
@@ -199,12 +162,11 @@ def get_price( source ):
 
 
 def get_info_for( url ):
-
-    source = urlopen( url=Request( url.replace( 'product',
-                                                'offer-listing',
-                                                 ) + '?condition=new',
-                                   '',
-                                   USER_AGENT
+    url = url.replace( 'product', 'offer-listing' )
+    url = ''.join( [ url, '?condition=new' ] )
+    source = urlopen( url=Request( url=url,
+                                   data='',
+                                   headers=USER_AGENT
                                    ),
                       data=None,
                       timeout=TIMEOUT_TIME,
@@ -225,39 +187,6 @@ def get_info_for( url ):
         picture = ''
 
     return ( title, currency, price, picture )
-
-
-
-def get_time():
-    return strftime( s[ 'date-frmt' ] )
-
-
-
-def print_notification( title, body, picture='' ):
-    print( get_time() + ' ' + title + ' ' + body )
-
-
-
-def send_notification( title, body, picture ):
-    if name == 'posix':
-        if not init("amazonCheck update"):
-            return false
-
-        for color in [ RED, GREEN, NOCOLOR ]:
-            title = title.replace( color, '' )
-            body = body.replace( color, '' )
-
-        Notification ( title, body, abspath( picture ) ).show()
-    else:
-        return false
-
-
-
-if name == 'posix':
-    notify = send_notification
-
-else:
-    notify = print_notification
 
 
 

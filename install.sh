@@ -8,10 +8,10 @@ echo $basedir
 echo Creating necessary directories and files in the home directory
 mkdir -p ~/.amazonCheck
 mkdir -p ~/.amazonCheck/pics
-cp -v $basedir/icons/icon-100px.png ~/.amazonCheck/pics/no_pic.png
-touch ~/.amazonCheck/aC.log
-touch ~/.amazonCheck/aC.data
-touch ~/.amazonCheck/aC.config
+mkdir -p ~/.amazonCheck/pics/icons
+touch ~/.amazonCheck/log
+touch ~/.amazonCheck/data
+touch ~/.amazonCheck/config
 
 #Copies the application to its specific destination
 echo Copying the application to it\'s specific destination
@@ -21,15 +21,14 @@ sudo cp -v $basedir/amazonCheck.py /usr/bin/amazonCheck
 echo Copying the .desktop file to it\'s specific destination
 sudo cp -v $basedir/amazonCheck.desktop /usr/share/applications/
 
+#Installs necessary libs
+echo Installs necessary libs
+cd $basedir/lib
+sudo python setup.py install
+cd -
 
 #Copies the icon files to their specific destinations
 echo Copying the icon files to their specific destinations
-sudo cp -v $basedir/icons/icon.png /usr/share/pixmaps/amazonCheck.png
-sudo cp -v $basedir/icons/indicator.png /usr/share/pixmaps/amazonCheck_indicator.png
-sudo cp -v $basedir/icons/indicator_attention.png /usr/share/pixmaps/amazonCheck_indicator_attention.png
-
-#Installs necessary libraries ( python2.7 should be installed )
-echo Installing the necessary libraries \( python2.7 should be installed \)
-echo /usr/lib/python* | xargs -n 1 sudo cp -v $basedir/lib/amazonCheckLib.py
-echo /usr/lib/python* | xargs -n 1 sudo cp -v $basedir/lib/amazonCheckTrans.py
-echo /usr/lib/python* | xargs -n 1 sudo cp -v $basedir/lib/colors.py
+cp -v $basedir/icons/icon-100px.png ~/.amazonCheck/pics/icons/icon.png
+cp -v $basedir/icons/indicator.png ~/.amazonCheck/pics/icons/ind_act.png
+cp -v $basedir/icons/indicator_attention.png ~/.amazonCheck/pics/icons/ind_att.png
