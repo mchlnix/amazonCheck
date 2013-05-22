@@ -92,43 +92,6 @@ def get_encoding( source ):
 
 
 
-def get_title( source ):
-    try:
-        title = get_tag_content( source=source,
-                                 searchterm='"producttitle"',
-                                 format=True,
-                                 encoded=False,
-                                 )
-    except LookupError:
-        with open( '/tmp/derp.html', 'w') as f:
-            f.write( source )
-
-        raise LookupError( 'Could not find name of article.' )
-
-    return title
-
-
-
-def get_price( source ):
-    #Finding the price
-    try:
-        price_env = get_tag_content( source=source, searchterm='class="result"', format=False, encoded=False )
-        price = get_tag_content( source=price_env, searchterm='class="price"', format=True, encoded=True )
-    except LookupError:
-        return 'N/A', 'N/A'
-
-    try:
-        shipping = get_tag_content( source=price_env, searchterm='class="price_shipping"', format=False, encoded=True )
-        ( shipping, unused ) = format_price( shipping )
-    except LookupError:
-        shipping = 0
-
-    ( price, currency ) = format_price( price )
-
-    return round( price + shipping, 2 ), currency
-
-
-
 def get_info_for( url ):
     url = url.replace( 'product', 'offer-listing' )
     url = ''.join( [ url, '?condition=new' ] )
@@ -155,6 +118,27 @@ def get_info_for( url ):
         picture = ''
 
     return ( title, currency, price, picture )
+
+
+
+def get_price( source ):
+    #Finding the price
+    try:
+        price_env = get_tag_content( source=source, searchterm='class="result"', format=False, encoded=False )
+        price = get_tag_content( source=price_env, searchterm='class="price"', format=True, encoded=True )
+    except LookupError:
+        return 'N/A', 'N/A'
+
+    try:
+        shipping = get_tag_content( source=price_env, searchterm='class="price_shipping"', format=False, encoded=True )
+        ( shipping, unused ) = format_price( shipping )
+    except LookupError:
+        shipping = 0
+
+    ( price, currency ) = format_price( price )
+
+    return round( price + shipping, 2 ), currency
+
 
 
 def get_tag_content( source, searchterm, format=False, encoded=False ):
@@ -186,6 +170,23 @@ def get_tag_content( source, searchterm, format=False, encoded=False ):
             content = content[0:-1]
 
     return content
+
+
+
+def get_title( source ):
+    try:
+        title = get_tag_content( source=source,
+                                 searchterm='"producttitle"',
+                                 format=True,
+                                 encoded=False,
+                                 )
+    except LookupError:
+        with open( '/tmp/derp.html', 'w') as f:
+            f.write( source )
+
+        raise LookupError( 'Could not find name of article.' )
+
+    return title
 
 
 
