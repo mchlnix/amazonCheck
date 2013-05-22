@@ -147,6 +147,13 @@ class RefreshThread( Thread ):
                     print( '%s update failed.' % art.name )
                     continue
 
+                if art.bad_conn:
+                    print 'Bad connection'
+                    print art.name
+                elif art.bad_url:
+                    print 'Bad Url'
+                    print art.name
+
                 new_price = art.price
 
                 if new_price != old_price:
