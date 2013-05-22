@@ -16,16 +16,17 @@ class Article():
                   url = '',
                   ):
         self.url = shorten_amazon_link( url )
-        self.name = 'No name found'
+        self.name = None
+        self.category = None
         self.price_data = []
 
         self.min = -1
         self.avg = -1
         self.max = -1
 
-        self.currency = ''
-        self.pic_url = ''
-        self.pic_name = ''
+        self.currency = None
+        self.pic_url = None
+        self.pic_name = None
 
         self.bad_conn = False
         self.bad_url = False
@@ -33,8 +34,25 @@ class Article():
     def update( self ):
 
         self.bad_conn = self.bad_url = False
+
         try:
-            self.name, self.currency, price, self.pic_url = get_info_for( self.url )
+            url = self.url.replace( 'product', 'offer-listing' )
+            url = ''.join( [ url, '?condition=new' ] )
+            source = urlopen( url=Request( url=url,
+                                           data='',
+                                           headers=USER_AGENT
+                                           ),
+                              data=None,
+                              timeout=TIMEOUT_TIME,
+                              ).read()
+
+            self.name = get_name( source )
+
+            price, self.currency = get_price( source )
+
+            self.category = get_category( source )
+
+            self.pic_url = get_picture( source )
 
             if price != self.price:
                 self.price_data.append( [ price, int( time() ) ] )
@@ -80,6 +98,11 @@ def format_price( string ):
 
 
 
+def get_category( source ):
+    return get_tag_content( source=source, searchterm="id='nav-search-in-content'", format=True, encoded=False )
+
+
+
 def get_encoding( source ):
     tmp_index = source.find( 'http-equiv="content-type"' ) + 25
     start = source.find( 'charset=', tmp_index ) + 8
@@ -92,32 +115,16 @@ def get_encoding( source ):
 
 
 
-def get_info_for( url ):
-    url = url.replace( 'product', 'offer-listing' )
-    url = ''.join( [ url, '?condition=new' ] )
-    source = urlopen( url=Request( url=url,
-                                   data='',
-                                   headers=USER_AGENT
-                                   ),
-                      data=None,
-                      timeout=TIMEOUT_TIME,
-                      ).read()
+def get_picture( source ):
+    try:
+        temp = get_tag_content( source=source, searchterm='id="productheader"', format=False, encoded=False )
+    except LookupError:
+        return ''
 
-    title = get_title( source )
+    pic_pos = temp.find( '<img src="' ) + 10
+    pic_url = temp[ pic_pos : temp.find( '"', pic_pos ) ]
 
-    price, currency = get_price( source )
-
-    #Finding picture
-    pic_pos = source.find( '<div id="productheader">' ) + 24
-
-    if pic_pos != -1 + 24:
-        pic_pos = source.find( '<img src="', pic_pos ) + 10
-        picture = source[ pic_pos : source.find( '"', pic_pos ) ]
-
-    else:
-        picture = ''
-
-    return ( title, currency, price, picture )
+    return pic_url
 
 
 
@@ -144,7 +151,7 @@ def get_price( source ):
 def get_tag_content( source, searchterm, format=False, encoded=False ):
     if not encoded:
         encoding = get_encoding( source )
-        unicode( source, encoding )
+        source = unicode( source, encoding )
 
     tmp_index = source.find( searchterm )
 
@@ -173,20 +180,20 @@ def get_tag_content( source, searchterm, format=False, encoded=False ):
 
 
 
-def get_title( source ):
+def get_name( source ):
     try:
-        title = get_tag_content( source=source,
-                                 searchterm='"producttitle"',
-                                 format=True,
-                                 encoded=False,
-                                 )
+        name = get_tag_content( source=source,
+                                searchterm='"producttitle"',
+                                format=True,
+                                encoded=False,
+                                )
     except LookupError:
         with open( '/tmp/derp.html', 'w') as f:
             f.write( source )
 
         raise LookupError( 'Could not find name of article.' )
 
-    return title
+    return name
 
 
 
@@ -207,13 +214,7 @@ if __name__ == '__main__':
     source = open( '/tmp/dept.html', 'r' ).read()
 
 
-    print get_title( source )
-    print get_tag_content( source, "id='nav-search-in-content'", format=True )
-    print
-    print '---------------------'
-    print
+    print get_name( source )
+    print get_category( source )
     print get_price( source )
-
-
-
-
+    print get_picture( source )
