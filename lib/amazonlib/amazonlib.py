@@ -80,42 +80,30 @@ def format_price( string ):
 
 
 
-def get_encoding( web_page ):
-    tmp_index = web_page.find( 'http-equiv="content-type"' ) + 25
-    start = web_page.find( 'charset=', tmp_index ) + 8
+def get_encoding( source ):
+    tmp_index = source.find( 'http-equiv="content-type"' ) + 25
+    start = source.find( 'charset=', tmp_index ) + 8
 
-    end = web_page.find( '"', start )
+    end = source.find( '"', start )
 
-    encoding = web_page[ start : end ]
+    encoding = source[ start : end ]
 
     return encoding
 
 
 
-def get_title( web_page ):
-    encoding = get_encoding( web_page )
+def get_title( source ):
+    try:
+        title = get_tag_content( source=source,
+                                 searchterm='"producttitle"',
+                                 format=True,
+                                 encoded=False,
+                                 )
+    except LookupError:
+        with open( '/tmp/derp.html', 'w') as f:
+            f.write( source )
 
-    start = web_page.find( '"producttitle"' )
-
-    if start == -1:
         raise LookupError( 'Could not find name of article.' )
-
-    start = web_page.find( '>', start ) + 1
-
-    end = web_page.find( '<', start )
-
-    title = web_page[ start : end ]
-
-    title = unicode( title, encoding )
-
-    title = title.replace( '\n', '' )
-    title = title.replace( '  ', '' )
-
-    while title[0] == ' ':
-        title = title[1:]
-
-    while title[-1] == ' ':
-        title = title[0:-1]
 
     return title
 
@@ -123,39 +111,19 @@ def get_title( web_page ):
 
 def get_price( source ):
     #Finding the price
-    if source.find( '<tbody class="result">') != -1:
-        price_pos = source.find( '<span class="price">' ) + 20
-
-        if  price_pos != -1 + 20:
-            price = source[ price_pos : source.find( '</span>', price_pos ) ]
-        else:
-            price = 'N/A'
-    else:
-        return s[ 'N/A' ], s[ 'N/A' ]
-
-    #Finding shipping
-    shipping_pos = source.find( '<span class="price_shipping">', price_pos ) + 29
-    end_pos = source.find( '</td>', price_pos ) + 5
-
-    if  shipping_pos != -1 + 29 and shipping_pos < end_pos:
-        shipping = source[ shipping_pos : source.find( '</span>', shipping_pos ) ]
-    else:
-        shipping = '0.00'
-
-    #Formating price and currency
     try:
-        ( price, currency ) = format_price( price )
+        price_env = get_tag_content( source=source, searchterm='class="result"', format=False, encoded=False )
+        price = get_tag_content( source=price_env, searchterm='class="price"', format=True, encoded=True )
     except LookupError:
         return 'N/A', 'N/A'
+
     try:
+        shipping = get_tag_content( source=price_env, searchterm='class="price_shipping"', format=False, encoded=True )
         ( shipping, unused ) = format_price( shipping )
     except LookupError:
-        return price, currency
-
-
-    if shipping == 'N/A':
-        print 'No shipping?'
         shipping = 0
+
+    ( price, currency ) = format_price( price )
 
     return round( price + shipping, 2 ), currency
 
@@ -189,6 +157,37 @@ def get_info_for( url ):
     return ( title, currency, price, picture )
 
 
+def get_tag_content( source, searchterm, format=False, encoded=False ):
+    if not encoded:
+        encoding = get_encoding( source )
+        unicode( source, encoding )
+
+    tmp_index = source.find( searchterm )
+
+    tag_start = source[ 0: tmp_index ].rfind( '<' ) + 1
+    tag_end   = source.find( ' ', tag_start )
+
+    tag_name = source[ tag_start : tag_end ]
+
+    start = source.find( '>', tmp_index ) + 1
+
+    end = source.find( '</%s>' % tag_name, start )
+
+    if min( tmp_index, start, end ) == -1:
+        raise LookupError( 'Couldn\'t find tag with search term \'%s\'.' % searchterm )
+
+    content = source[ start : end ]
+
+    if format:
+        content = content.replace( '\n', '' ).replace( '  ', '' )
+        while content[0] == ' ':
+            content = content[1:]
+        while content[-1] == ' ':
+            content = content[0:-1]
+
+    return content
+
+
 
 def shorten_amazon_link( url ):
     offset = url.find( 'amazon.' )
@@ -201,3 +200,19 @@ def shorten_amazon_link( url ):
         return_url = ''
 
     return return_url
+
+
+if __name__ == '__main__':
+    source = open( '/tmp/dept.html', 'r' ).read()
+
+
+    print get_title( source )
+    print get_tag_content( source, "id='nav-search-in-content'", format=True )
+    print
+    print '---------------------'
+    print
+    print get_price( source )
+
+
+
+
