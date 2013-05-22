@@ -204,6 +204,8 @@ class RefreshThread( Thread ):
 
             sleeptime = min( max( 2*diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
 
+            gobject.idle_add( self.callbacks[0] )
+
             #Sleeping for agreed amount
 
             info( msg=s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ] )
