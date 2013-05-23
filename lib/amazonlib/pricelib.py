@@ -4,19 +4,11 @@
 from time import time
 
 def min_price( price_list ):
-    min_price = 99999999999999
-    changed = False
+    tmp_list = sorted( price_list )
 
-    for price in price_list:
-        if price[0] == 'N/A':
-            continue
-        else:
-            if price[0] < min_price:
-                changed = True
-                min_price = price[0]
-
-    if changed:
-        return min_price
+    for price, time in tmp_list:
+        if price != 'N/A':
+            return price
     else:
         return -1
 
@@ -64,18 +56,23 @@ def avg_price( price_list ):
 
 
 def max_price( price_list ):
-    max_price = 0
-    changed = False
+    tmp_list = reversed( sorted( price_list ) )
 
-    for price in price_list:
-        if price[0] == 'N/A':
-            continue
-        else:
-            if price[0] > max_price:
-                changed = True
-                max_price = price[0]
-
-    if changed:
-        return max_price
+    for price, time in tmp_list:
+        if price != 'N/A':
+            return price
     else:
         return -1
+
+
+if __name__ == '__main__':
+    mylists = [ [ (10, time() - 5000), (20, time() - 3000), ('N/A', time() - 2000), (15, time() - 1000) ],
+                [ (10, time() - 5000) ],
+                [ ('N/A', time() - 2000) ],
+                ]
+
+    for mylist in mylists:
+        print mylist
+        print min_price( mylist ) #10
+        print avg_price( mylist ) #13.75
+        print max_price( mylist ) #20
