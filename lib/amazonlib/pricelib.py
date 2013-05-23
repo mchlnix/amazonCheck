@@ -4,9 +4,9 @@
 from time import time
 
 def min_price( price_list ):
-    tmp_list = sorted( price_list )
+    tmp_list = sorted( price for price, time in price_list )
 
-    for price, time in tmp_list:
+    for price in tmp_list:
         if price != 'N/A':
             return price
     else:
@@ -47,7 +47,7 @@ def avg_price( price_list ):
 
     try:
         if changed:
-            return round( avg / div_time, 2 )
+            return round( avg / float( div_time ), 2 )
         else:
             return -1
 
@@ -56,9 +56,9 @@ def avg_price( price_list ):
 
 
 def max_price( price_list ):
-    tmp_list = reversed( sorted( price_list ) )
+    tmp_list = reversed( sorted( price for price, time in price_list ) )
 
-    for price, time in tmp_list:
+    for price in tmp_list:
         if price != 'N/A':
             return price
     else:
@@ -66,13 +66,16 @@ def max_price( price_list ):
 
 
 if __name__ == '__main__':
-    mylists = [ [ (10, time() - 5000), (20, time() - 3000), ('N/A', time() - 2000), (15, time() - 1000) ],
-                [ (10, time() - 5000) ],
-                [ ('N/A', time() - 2000) ],
+    mylists = [ [ (10, int( time() - 5000 )), (20, int( time() - 3000 )), ('N/A', int( time() - 2000 )), (15, int( time() - 1000 )) ],
+                [ (10, int( time() - 5000 )) ],
+                [ ('N/A', int( time() - 2000 )) ],
                 ]
 
-    for mylist in mylists:
-        print mylist
-        print min_price( mylist ) #10
-        print avg_price( mylist ) #13.75
-        print max_price( mylist ) #20
+    results = [ [10, 13.75, 20], [10, 10, 10], [-1, -1, -1] ]
+
+    for mylist, result in zip( mylists, results ):
+        print 'Tested list:',mylist
+        print '[min] Should be:', result[0], 'is', min_price( mylist )
+        print '[avg] Should be:', result[1], 'is', avg_price( mylist )
+        print '[max] Should be:', result[2], 'is', max_price( mylist )
+        print '-------------------------------------------------'
