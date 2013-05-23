@@ -247,7 +247,7 @@ class MainWindow:
 
 
         #Setting up the Liststore
-        self.data_store = gtk.ListStore( bool, str, str, str, str, str, str )
+        self.data_store = gtk.ListStore( bool, str, str, str, str, str, str, str )
         self.sortable = gtk.TreeModelSort( self.data_store )
 
 
@@ -606,7 +606,7 @@ class MainWindow:
             index = treeview.get_selection().get_selected_rows()[1][0][0]
         except IndexError:
             return False
-        art_name = unicode( self.data_view.get_model()[ index ][-1] )
+        art_name = unicode( self.data_view.get_model()[ index ][6] )
 
         art = self.find_article( name=art_name )
 
@@ -680,7 +680,7 @@ class MainWindow:
 
         fields = self.preview_box.get_children()[0].get_children()
 
-        fields[1].set_markup( '<a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
+        fields[1].set_markup( art.category.replace( '&', '&amp;' ) + ': <a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
         fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
         fields[3].set_markup( last_3_prices )
 
@@ -693,7 +693,7 @@ class MainWindow:
         if column.get_title() == '':
             return
 
-        art_name = unicode( self.data_view.get_model()[ path ][-1] )
+        art_name = unicode( self.data_view.get_model()[ path ][6] )
 
         article = self.find_article( name=art_name )
 
@@ -879,6 +879,7 @@ class MainWindow:
         cur_rend   = gtk.CellRendererText()
         price_rend = gtk.CellRendererText()
         title_rend = gtk.CellRendererText()
+        links_rend = gtk.CellRendererText()
         min_rend   = gtk.CellRendererText()
         avg_rend   = gtk.CellRendererText()
         max_rend   = gtk.CellRendererText()
@@ -894,6 +895,7 @@ class MainWindow:
         avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rend,    text=4   )
         max_col    = gtk.TreeViewColumn( 'Max',   max_rend,    text=5   )
         title_col  = gtk.TreeViewColumn( 'Title', title_rend,  text=6   )
+        link_col   = gtk.TreeViewColumn( 'Links', links_rend,  text=7   )
 
         columns = [ toggle_col,
                     cur_col,
@@ -902,6 +904,7 @@ class MainWindow:
                     avg_col,
                     max_col,
                     title_col,
+                    link_col,
                     ]
 
         for index, column in enumerate( columns ):
@@ -977,6 +980,7 @@ class MainWindow:
                         self.data_store[ index ][3] = mins
                         self.data_store[ index ][4] = avgs
                         self.data_store[ index ][5] = maxs
+                        self.data_store[ index ][7] = art.url
                         break
 
             except IndexError:
@@ -989,6 +993,7 @@ class MainWindow:
                                           avgs,
                                           maxs,
                                           art.name,
+                                          art.url,
                                         ] )
 
         info( msg='Updated Gui' )
