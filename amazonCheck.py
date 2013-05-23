@@ -259,15 +259,15 @@ class MainWindow:
                                          )
 
 
-        #Setting up the TreeView
-        self.data_view = self.setup_treeview()
-
-
-        #Fill the TreeView
+        #Fill the TreeStore
         articles = read_data_file()
 
         for article in articles:
             self.articles[ article.url ] = article
+
+
+        #Setting up the TreeView
+        self.data_view = self.setup_treeview()
 
         self.update_list_store()
 
@@ -359,6 +359,8 @@ class MainWindow:
                                              '',
                                              )
 
+        self.link_col.set_visible( False )
+
 
     def main( self ):
         #Starting the data thread
@@ -378,15 +380,6 @@ class MainWindow:
         self.indicator.set_status( STATUS_PASSIVE )
         self.refresh_thread.stop()
         gtk.main_quit()
-
-
-    def find_article( self, name ):
-        for url,art in self.articles.items():
-            if art.name == name:
-                return art
-
-        else:
-            raise LookupError( 'Couldn\'t find article with name \'%s\'.' % name )
 
 
     def on_add_article( self, widget ):
@@ -515,16 +508,11 @@ class MainWindow:
 
 
     def on_delete_articles( self, widget=None ):
-
-        delete_queue = []
-        tree_length = len( self.data_store )
-
-        for index, row in enumerate( reversed( list( self.data_store ) ) ):
-            if row[0] == True:
-                delete_queue.append( ( index, row[6] ) )
-
-        if len( delete_queue ) == 0:
-            return False
+        for row in self.data_store:
+            if row[0]:
+                break
+        else:
+            return
 
         if SHOW_DEL_DIALOG:
             dialog = gtk.Dialog( "",
@@ -541,10 +529,7 @@ class MainWindow:
             hbox = gtk.HBox()
             hbox.show()
 
-            if len( delete_queue ) == 1:
-                label = gtk.Label( 'Really delete the selected article?' )
-            else:
-                label = gtk.Label( 'Really delete the selected articles?' )
+            label = gtk.Label( 'Really delete the selected articles?' )
 
             label.show()
 
@@ -555,33 +540,21 @@ class MainWindow:
             dialog.destroy()
 
             if response != -3:
-                return False
+                return
 
 
         self.refresh_thread.stop()
         self.refresh_thread.join()
+        for index, row in reversed( list( enumerate( self.data_store ) ) ):
+            if row[0]:
+                try:
+                    remove( IMAGE_PATH + self.articles[ row[-1] ].pic_name )
+                except OSError:
+                    error( msg='Picture file was already deleted' )
 
-        for index, name in delete_queue:
+                del self.articles[ row[-1] ]
 
-            try:
-                art = self.find_article( name )
-
-                pic_name = art.pic_name
-                del self.articles[ art.url ]
-
-            except KeyError:
-                error( msg='Couldn\'t find article with this title in the database: %s', args=name )
-                continue
-            except LookupError:
-                error( msg='Couldn\'t find article with this url in database: %s', args=art.url )
-                continue
-
-            try:
-                remove( IMAGE_PATH + pic_name )
-            except OSError:
-                error( msg='Picture file was already deleted' )
-
-            self.data_store.remove( self.data_store.get_iter( index ) )
+                self.data_store.remove( self.data_store.get_iter( index ) )
 
         write_data_file( content=self.articles )
 
@@ -606,9 +579,9 @@ class MainWindow:
             index = treeview.get_selection().get_selected_rows()[1][0][0]
         except IndexError:
             return False
-        art_name = unicode( self.data_view.get_model()[ index ][6] )
+        url = self.data_view.get_model()[ index ][7]
 
-        art = self.find_article( name=art_name )
+        art = self.articles[ url ]
 
         avgs = art.avg
         price = art.price
@@ -617,7 +590,7 @@ class MainWindow:
         try:
             pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
         except GError:
-            error( msg='Selected article doesn\'t have an image associated with it: %s', args=art.name )
+            error( msg='Selected article doesn\'t have an image associated with it: %s' % art.name )
             info( msg='Trying to reload image.' )
             download_image( url=art.pic_url,
                             dest=IMAGE_PATH + art.pic_name,
@@ -693,11 +666,9 @@ class MainWindow:
         if column.get_title() == '':
             return
 
-        art_name = unicode( self.data_view.get_model()[ path ][6] )
+        url = self.data_view.get_model()[ path ][-1]
 
-        article = self.find_article( name=art_name )
-
-        open_in_browser( article.url )
+        open_in_browser( url )
 
 
     def set_ind_active( self, widget, direction=None ):
@@ -897,6 +868,8 @@ class MainWindow:
         title_col  = gtk.TreeViewColumn( 'Title', title_rend,  text=6   )
         link_col   = gtk.TreeViewColumn( 'Links', links_rend,  text=7   )
 
+        self.link_col = link_col
+
         columns = [ toggle_col,
                     cur_col,
                     price_col,
@@ -911,6 +884,17 @@ class MainWindow:
             column.set_sort_column_id( index )
 
             data_view.append_column( column )
+
+        for art in self.articles.values():
+            self.data_store.append( [ False,
+                                      art.currency,
+                                      art.price,
+                                      art.min,
+                                      art.avg,
+                                      art.max,
+                                      art.name,
+                                      art.url,
+                                      ] )
 
         return data_view
 
@@ -942,11 +926,10 @@ class MainWindow:
     def update_list_store( self ):
         info( msg='Updating Gui' )
 
-        self.data_store.clear()
+        for row in self.data_store:
+            art = self.articles[ row[7] ] #Hidden links row
 
-        for art in self.articles.values():
             price = mins = avgs = maxs = 'N/A'
-
 
             if art.max == art.min:
                 color = '<span>'
@@ -963,38 +946,31 @@ class MainWindow:
             else:                                         #price == avgs
                 color = '<span foreground="' + TV_EX_AVG + '">'
 
-            if art.min != -1:  mins = '%.2f' % art.min       #1.00 not 1.0
+            if art.min != -1:
+                mins = '%.2f' % art.min       #1.00 not 1.0
 
-            if art.max != -1:  maxs = '%.2f' % art.max
+            if art.max != -1:
+                maxs = '%.2f' % art.max       #1.00 not 1.0
 
-            if art.avg != -1:  avgs = '%.2f' % art.avg
+            if art.avg != -1:
+                avgs = '%.2f' % art.avg       #1.00 not 1.0
 
-            if art.price != 'N/A': price = '%.2f' % art.price
+            if art.price != 'N/A':
+                price = '%.2f' % art.price    #1.00 not 1.0
 
-            try:
-                for index in xrange( len( self.articles ) ):
-                    if self.data_store[ index ][6] == art.name:
-                        self.data_store[ index ][2] = color         \
-                                                    + str( price )  \
-                                                    + '</span>'
-                        self.data_store[ index ][3] = mins
-                        self.data_store[ index ][4] = avgs
-                        self.data_store[ index ][5] = maxs
-                        self.data_store[ index ][7] = art.url
-                        break
+            art_list = [ row[0],
+                         art.currency,
+                         color + str( price ) + '</span>',
+                         mins,
+                         avgs,
+                         maxs,
+                         art.name,
+                         art.url
+                         ]
 
-            except IndexError:
-                self.data_store.append( [ False,
-                                          art.currency,
-                                          color
-                                        + str( price )
-                                        + '</span>',
-                                          mins,
-                                          avgs,
-                                          maxs,
-                                          art.name,
-                                          art.url,
-                                        ] )
+
+            for index, content in enumerate( art_list ):
+                row[ index ] = content
 
         info( msg='Updated Gui' )
 
