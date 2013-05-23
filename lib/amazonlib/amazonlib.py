@@ -170,11 +170,8 @@ def get_tag_content( source, searchterm, format=False, encoded=False ):
     content = source[ start : end ]
 
     if format:
-        content = content.replace( '\n', '' ).replace( '  ', '' )
-        while content[0] == ' ':
-            content = content[1:]
-        while content[-1] == ' ':
-            content = content[0:-1]
+        content = content.replace( '\n', ' ' )
+        content = ' '.join( content.split() )
 
     return content
 
