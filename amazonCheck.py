@@ -143,16 +143,13 @@ class RefreshThread( Thread ):
                 try:
                     art.update()
                 except:
-                    warning( msg='Couldn\'t update article \'%s\'.' % art.name )
-                    print( '%s update failed.' % art.name )
+                    error( msg='Couldn\'t update article %s.' % art.name )
                     continue
 
                 if art.bad_conn:
-                    print 'Bad connection'
-                    print art.name
+                    warning( msg='Bad connection for %s' % art.name )
                 elif art.bad_url:
-                    print 'Bad Url'
-                    print art.name
+                    warning( msg='Bad url for %s' % art.name )
 
                 new_price = art.price
 
