@@ -63,8 +63,10 @@ class Article():
 
         except IOError:
             self.bad_conn = True
+            return
         except ValueError:
             self.bad_url = True
+            return
 
         self.avg = avg_price( self.price_data )
 
