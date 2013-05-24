@@ -410,31 +410,41 @@ class MainWindow:
             warning( msg='Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
             return
 
-        new_art = Article( url )
+        art = Article( url )
 
-        new_art.update()
+        art.update()
 
-        if new_art.bad_conn:
+        if art.bad_conn:
             error( msg=s[ 'err-con-s' ] )
             return
-        elif new_art.bad_url:
+        elif art.bad_url:
             error( msg='Couldn\'t parse the url.' )
             return
 
         self.refresh_thread.stop()
 
-        download_image( url=new_art.pic_url, dest=IMAGE_PATH + new_art.pic_name )
+        download_image( url=art.pic_url, dest=IMAGE_PATH + art.pic_name )
 
         self.refresh_thread.join()
 
-        self.articles[ new_art.url ] = new_art
+        self.articles[ art.url ] = art
 
         try:
             with open( DATA_FILE, 'a' ) as data_file:
-                data_file.write( dumps( new_art.__dict__ ) )
+                data_file.write( dumps( art.__dict__ ) )
                 data_file.write( '\n' )
         except IOError:
             error( msg='Couldn\'t write to data file.' )
+
+        self.data_store.append( [ False,
+                                  art.currency,
+                                  art.price,
+                                  art.min,
+                                  art.avg,
+                                  art.max,
+                                  art.name,
+                                  art.url,
+                                  ] )
 
         self.update_list_store()
 
