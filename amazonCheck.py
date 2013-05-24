@@ -21,7 +21,7 @@ from appindicator import Indicator, STATUS_ACTIVE, STATUS_PASSIVE, \
 from dbus.service import Object as dbusServiceObject, BusName, \
                          method as dbusServiceMethod
 from webbrowser import open as open_in_browser
-from threading import Thread, active_count
+from threading import Thread
 from itertools import izip
 from pynotify import init, Notification
 from logging import  basicConfig, error, info, warning, DEBUG, INFO
@@ -111,9 +111,7 @@ class RefreshThread( Thread ):
 
     def run( self ):
 
-        info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' started' )
-
-        runs = 0
+        info( msg='Refresh Thread started' )
 
         while not self.stop_flag:
             start_time = time()
@@ -122,8 +120,6 @@ class RefreshThread( Thread ):
 
             if no_of_articles == 0:
                 warning( msg=s[ 'dat-empty' ] )
-
-            runs = runs + 1
 
             #Updates the information
 
@@ -134,7 +130,7 @@ class RefreshThread( Thread ):
                     info( msg=s[ 'svng-data' ] )
                     write_data_file( content=self.articles )
 
-                    info( msg='Halted Refresh Thread ' + str( active_count() - 1 ) )
+                    info( msg='Halted Refresh Thread' )
 
                     return
 
@@ -158,7 +154,7 @@ class RefreshThread( Thread ):
                           mode=IMAGE_WRITE_MODE,
                           ).write( urlopen( url=art.pic_url ).read() )
 
-                    if old_price == s[ 'N/A' ]: #Überdenken
+                    if old_price == s[ 'N/A' ]:
                         title = s[ 'bec-avail' ] + NOCOLOR + ':'
 
                     elif new_price == s[ 'N/A' ]:
@@ -208,17 +204,17 @@ class RefreshThread( Thread ):
             info( msg=s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ] )
 
             if self.stop_flag:
-                info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' was halted before sleeping' )
+                info( msg='Refresh Thread was halted before sleeping' )
                 return
 
             for i in xrange( 10*sleeptime ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    info( msg='Refresh Thread ' + str( active_count() - 1 ) + ' was halted while sleeping' )
+                    info( msg='Refresh Thread was halted while sleeping' )
                     return
 
-        info( msg='Refresh-Thread ' + str( active_count() - 1 ) + ' was stopped' )
+        info( msg='Refresh-Thread was stopped' )
 
 
 class MainWindow:
