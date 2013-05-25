@@ -49,8 +49,8 @@ SHOW_NOTIFICATIONS    = True
 SHOW_DEL_DIALOG       = True
 ALTERNATING_ROW_COLOR = True
 
-MIN_SLEEP_TIME = 180
-MAX_SLEEP_TIME = 300
+MIN_SLEEPTIME = 180
+MAX_SLEEPTIME = 300
 
 TV_AB_AVG = '#FF3D3D'
 TV_BE_AVG = '#27B81F'
@@ -69,9 +69,10 @@ DBusGMainLoop( set_as_default = True )
 
 for service_name in SessionBus().list_names():
     if service_name == SERVICE_NAME:
-        to_execute = SessionBus().get_object( SERVICE_NAME, '/alive' ).get_dbus_method( 'toggle_window', SERVICE_NAME )
+        obj = SessionBus().get_object( SERVICE_NAME, '/alive' )
+        to_exec = obj.get_dbus_method( 'toggle_window', SERVICE_NAME )
 
-        to_execute()
+        to_exec()
 
         exit( 'Program already running' )
 
@@ -90,7 +91,7 @@ class DBusService( dbusServiceObject ):
 
     @dbusServiceMethod( SERVICE_NAME )
     def toggle_window( self ):
-        self.wind_obj.toggle_window_visibility()
+        self.wind_obj.toggle_window_visible()
 
 
 
@@ -98,10 +99,7 @@ class RefreshThread( Thread ):
     def __init__( self, articles, upd_list_store, set_ind, upd_art ):
         self.stop_flag = False
         self.articles = articles
-        self.callbacks = ( upd_list_store,
-                           set_ind,
-                           upd_art
-                           )
+        self.callbacks = ( upd_list_store, set_ind, upd_art )
         Thread.__init__( self )
 
 
@@ -111,7 +109,7 @@ class RefreshThread( Thread ):
 
     def run( self ):
 
-        info( msg='Refresh Thread started' )
+        info( 'Refresh Thread started' )
 
         while not self.stop_flag:
             start_time = time()
@@ -119,18 +117,18 @@ class RefreshThread( Thread ):
             no_of_articles = len( self.articles )
 
             if no_of_articles == 0:
-                warning( msg=s[ 'dat-empty' ] )
+                warning( s[ 'dat-empty' ] )
 
             #Updates the information
 
-            info( msg=s[ 'getng-dat' ] )
+            info( s[ 'getng-dat' ] )
 
             for art in self.articles.values():
                 if self.stop_flag:
-                    info( msg=s[ 'svng-data' ] )
+                    info( s[ 'svng-data' ] )
                     write_data_file( content=self.articles )
 
-                    info( msg='Halted Refresh Thread' )
+                    info( 'Halted Refresh Thread' )
 
                     return
 
@@ -139,13 +137,13 @@ class RefreshThread( Thread ):
                 try:
                     art.update()
                 except:
-                    error( msg='Couldn\'t update article %s.' % art.name )
+                    error( 'Couldn\'t update article %s.' % art.name )
                     continue
 
                 if art.bad_conn:
-                    warning( msg='Bad connection for %s' % art.name )
+                    warning( 'Bad connection for %s' % art.name )
                 elif art.bad_url:
-                    warning( msg='Bad url for %s' % art.name )
+                    warning( 'Bad url for %s' % art.name )
 
                 new_price = art.price
 
@@ -179,7 +177,7 @@ class RefreshThread( Thread ):
 
             #Saving data to file
 
-            info( msg=s[ 'svng-data' ] )
+            info( s[ 'svng-data' ] )
 
             write_data_file( content=self.articles )
 
@@ -191,30 +189,30 @@ class RefreshThread( Thread ):
 
             diff_time = int( end_time - start_time )
 
-            info( msg=s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
+            info( s[ 'it-took' ] + str( diff_time ) + s[ 'seconds' ] )
 
             #Calculating sleeptime
 
-            sleeptime = min( max( 2*diff_time, MIN_SLEEP_TIME ), MAX_SLEEP_TIME )
+            sleeptime = min( max( 2*diff_time, MIN_SLEEPTIME ), MAX_SLEEPTIME )
 
             gobject.idle_add( self.callbacks[0] )
 
             #Sleeping for agreed amount
 
-            info( msg=s[ 'sleep-for' ] + str( int( round( sleeptime ) ) ) + s[ 'seconds' ] )
+            info( s[ 'sleep-for' ] + str( int( sleeptime ) ) + s[ 'seconds' ] )
 
             if self.stop_flag:
-                info( msg='Refresh Thread was halted before sleeping' )
+                info( 'Refresh Thread was halted before sleeping' )
                 return
 
             for i in xrange( 10*sleeptime ):
                 if not self.stop_flag:
                     sleep( 1/10. )
                 else:
-                    info( msg='Refresh Thread was halted while sleeping' )
+                    info( 'Refresh Thread was halted while sleeping' )
                     return
 
-        info( msg='Refresh-Thread was stopped' )
+        info( 'Refresh-Thread was stopped' )
 
 
 class MainWindow:
@@ -322,14 +320,16 @@ class MainWindow:
         self.window = gtk.Window( gtk.WINDOW_TOPLEVEL )
         self.window.set_position( gtk.WIN_POS_CENTER  )
         self.window.connect( 'delete-event',
-                              self.toggle_window_visibility,
+                              self.toggle_window_visible,
                               )
         self.window.connect( 'focus-in-event',
                               self.set_ind_active,
                               )
 
         self.window.set_icon_from_file( ICON_FILE )
-        self.window.set_title( 'amazonCheck - Monitor your favorite books, movies, games...' )
+        self.window.set_title(
+          'amazonCheck - Monitor your favorite books, movies, games...',
+                             )
 
         self.window.add( outer_layer )
 
@@ -363,7 +363,7 @@ class MainWindow:
             gtk.main()
 
         except KeyboardInterrupt:
-            error( msg='Gui crashed' )
+            error( 'Gui crashed' )
             self.refresh_thread.stop()
             self.refresh_thread.join()
 
@@ -392,15 +392,17 @@ class MainWindow:
         elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
             if url is None:
-                warning( msg="Couldn't add article: Clipboard was empty." )
+                warning(
+                      'Couldn\'t add article: Clipboard was empty.',
+                       )
 
         if url in self.articles:
-            warning( msg='Article already in the database' )
+            warning( 'Article already in the database' )
             return
 
         if url.find( 'amazon.co.jp' ) != -1:
             print( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
-            warning( msg='Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
+            warning( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
             return
 
         art = Article( url )
@@ -408,10 +410,10 @@ class MainWindow:
         art.update()
 
         if art.bad_conn:
-            error( msg=s[ 'err-con-s' ] )
+            error( s[ 'err-con-s' ] )
             return
         elif art.bad_url:
-            error( msg='Couldn\'t parse the url.' )
+            error( 'Couldn\'t parse the url.' )
             return
 
         self.refresh_thread.stop()
@@ -427,7 +429,7 @@ class MainWindow:
                 data_file.write( dumps( art.__dict__ ) )
                 data_file.write( '\n' )
         except IOError:
-            error( msg='Couldn\'t write to data file.' )
+            error( 'Couldn\'t write to data file.' )
 
         self.data_store.append( [ False,
                                   art.currency,
@@ -473,7 +475,7 @@ class MainWindow:
 
 
     def on_config_confirm( self, widget ):
-        global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, MIN_SLEEP_TIME, MAX_SLEEP_TIME
+        global SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, MIN_SLEEPTIME, MAX_SLEEPTIME
 
         checkboxes = self.config_window.get_children()[0].get_children()[0].get_children()
         min_spin_button = self.config_window.get_children()[0].get_children()[0].get_children()[0].get_children()[2]
@@ -482,12 +484,14 @@ class MainWindow:
         SHOW_NOTIFICATIONS       = checkboxes[2].get_children()[2].get_active()
         SHOW_DEL_DIALOG          = checkboxes[3].get_children()[2].get_active()
         ALTERNATING_ROW_COLOR    = checkboxes[4].get_children()[2].get_active()
-        MIN_SLEEP_TIME           = min_spin_button.get_value_as_int()
-        MAX_SLEEP_TIME           = max_spin_button.get_value_as_int()
+        MIN_SLEEPTIME           = min_spin_button.get_value_as_int()
+        MAX_SLEEPTIME           = max_spin_button.get_value_as_int()
 
         self.data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
-        write_config_file( [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR, MIN_SLEEP_TIME, MAX_SLEEP_TIME ] )
+        write_config_file( [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG,
+                             ALTERNATING_ROW_COLOR, MIN_SLEEPTIME,
+                             MAX_SLEEPTIME ] )
 
         self.config_window.hide()
 
@@ -504,8 +508,8 @@ class MainWindow:
         checkboxes[3].get_children()[2].set_active( SHOW_DEL_DIALOG       )
         checkboxes[4].get_children()[2].set_active( ALTERNATING_ROW_COLOR )
 
-        min_spin_button.set_value( MIN_SLEEP_TIME )
-        max_spin_button.set_value( MAX_SLEEP_TIME )
+        min_spin_button.set_value( MIN_SLEEPTIME )
+        max_spin_button.set_value( MAX_SLEEPTIME )
 
         return True
 
@@ -518,7 +522,7 @@ class MainWindow:
             return
 
         if SHOW_DEL_DIALOG:
-            dialog = gtk.Dialog( "",
+            dialog = gtk.Dialog( '',
                                  None,
                                  gtk.DIALOG_MODAL
                                | gtk.DIALOG_DESTROY_WITH_PARENT,
@@ -553,7 +557,7 @@ class MainWindow:
                 try:
                     remove( IMAGE_PATH + self.articles[ row[-1] ].pic_name )
                 except OSError:
-                    error( msg='Picture file was already deleted' )
+                    error( 'Picture file was already deleted' )
 
                 del self.articles[ row[-1] ]
 
@@ -589,16 +593,15 @@ class MainWindow:
         avgs = art.avg
         price = art.price
         currency = art.currency
+        pic_path = IMAGE_PATH + art.pic_name
 
         try:
-            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
+            pixbuf = gtk.gdk.pixbuf_new_from_file( pic_path )
         except GError:
-            error( msg='Selected article doesn\'t have an image associated with it: %s' % art.name )
-            info( msg='Trying to reload image.' )
-            download_image( url=art.pic_url,
-                            dest=IMAGE_PATH + art.pic_name,
-                            )
-            pixbuf = gtk.gdk.pixbuf_new_from_file( IMAGE_PATH + art.pic_name )
+            error( 'Selected article doesn\'t have an image associated with it: %s' % art.name )
+            info( 'Trying to reload image.' )
+            download_image( url=art.pic_url, dest=pic_path )
+            pixbuf = gtk.gdk.pixbuf_new_from_file( pic_path )
 
 
         if pixbuf.get_width() < pixbuf.get_height():
@@ -656,8 +659,12 @@ class MainWindow:
 
         fields = self.preview_box.get_children()[0].get_children()
 
-        fields[1].set_markup( art.category.replace( '&', '&amp;' ) + ': <a href="' + art.url + '">' + art.name.replace( '&', '&amp;' ) + '</a>' )
-        fields[2].set_markup( 'Current price: ' + '<u>' + price + '</u> ' + currency )
+        cur_price = 'Current price: <u>%s</u> %s' % ( price, currency )
+        cat_title = '%s: <a href="%s">%s</a>' % ( art.category, art.url,
+                                                  art.name )
+
+        fields[1].set_markup( cat_title.replace( '&', '&amp;' ) )
+        fields[2].set_markup( cur_price )
         fields[3].set_markup( last_3_prices )
 
 
@@ -704,10 +711,10 @@ class MainWindow:
         item_reset     = gtk.MenuItem( 'Reset'              )
         item_exit      = gtk.MenuItem( 'Exit'               )
 
-        item_show.connect(     'activate', self.toggle_window_visibility )
-        item_add_clip.connect( 'activate', self.on_add_article           )
-        item_exit.connect(     'activate', self.exit_application         )
-        item_reset.connect(    'activate', self.set_ind_active           )
+        item_show.connect(     'activate', self.toggle_window_visible )
+        item_add_clip.connect( 'activate', self.on_add_article        )
+        item_exit.connect(     'activate', self.exit_application      )
+        item_reset.connect(    'activate', self.set_ind_active        )
 
         menu = gtk.Menu()
 
@@ -765,7 +772,7 @@ class MainWindow:
         checkbutton_delete_dialog.set_active( SHOW_DEL_DIALOG       )
         checkbutton_alt_row_color.set_active( ALTERNATING_ROW_COLOR )
 
-        spin_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEP_TIME,
+        spin_min_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MIN_SLEEPTIME,
                                                                     lower=30,
                                                                     upper=3600,
                                                                     step_incr=1,
@@ -776,7 +783,7 @@ class MainWindow:
                                          digits=0,
                                          )
 
-        spin_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEP_TIME,
+        spin_max_sleep = gtk.SpinButton( adjustment=gtk.Adjustment( value=MAX_SLEEPTIME,
                                                                     lower=30,
                                                                     upper=3600,
                                                                     step_incr=1,
@@ -847,41 +854,34 @@ class MainWindow:
         data_view.connect( 'cursor-changed', self.on_row_selected )
         data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
-        toggle_rend = gtk.CellRendererToggle()
-        toggle_rend.connect( 'toggled', self.on_cell_toggled )
+        toggle_rnd = gtk.CellRendererToggle()
+        toggle_rnd.connect( 'toggled', self.on_cell_toggled )
 
-        cur_rend   = gtk.CellRendererText()
-        price_rend = gtk.CellRendererText()
-        title_rend = gtk.CellRendererText()
-        links_rend = gtk.CellRendererText()
-        min_rend   = gtk.CellRendererText()
-        avg_rend   = gtk.CellRendererText()
-        max_rend   = gtk.CellRendererText()
+        cur_rnd   = gtk.CellRendererText()
+        price_rnd = gtk.CellRendererText()
+        title_rnd = gtk.CellRendererText()
+        links_rnd = gtk.CellRendererText()
+        min_rnd   = gtk.CellRendererText()
+        avg_rnd   = gtk.CellRendererText()
+        max_rnd   = gtk.CellRendererText()
 
-        min_rend.set_property( 'foreground', TV_BE_AVG )
-        avg_rend.set_property( 'foreground', TV_EX_AVG )
-        max_rend.set_property( 'foreground', TV_AB_AVG )
+        min_rnd.set_property( 'foreground', TV_BE_AVG )
+        avg_rnd.set_property( 'foreground', TV_EX_AVG )
+        max_rnd.set_property( 'foreground', TV_AB_AVG )
 
-        toggle_col = gtk.TreeViewColumn( '',      toggle_rend, active=0 )
-        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rend,    text=1   )
-        price_col  = gtk.TreeViewColumn( 'Price', price_rend,  markup=2 )
-        min_col    = gtk.TreeViewColumn( 'Min',   min_rend,    text=3   )
-        avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rend,    text=4   )
-        max_col    = gtk.TreeViewColumn( 'Max',   max_rend,    text=5   )
-        title_col  = gtk.TreeViewColumn( 'Title', title_rend,  text=6   )
-        link_col   = gtk.TreeViewColumn( 'Links', links_rend,  text=7   )
+        toggle_col = gtk.TreeViewColumn( '',      toggle_rnd, active=0 )
+        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rnd,    text=1   )
+        price_col  = gtk.TreeViewColumn( 'Price', price_rnd,  markup=2 )
+        min_col    = gtk.TreeViewColumn( 'Min',   min_rnd,    text=3   )
+        avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rnd,    text=4   )
+        max_col    = gtk.TreeViewColumn( 'Max',   max_rnd,    text=5   )
+        title_col  = gtk.TreeViewColumn( 'Title', title_rnd,  text=6   )
+        link_col   = gtk.TreeViewColumn( 'Links', links_rnd,  text=7   )
 
         self.link_col = link_col
 
-        columns = [ toggle_col,
-                    cur_col,
-                    price_col,
-                    min_col,
-                    avg_col,
-                    max_col,
-                    title_col,
-                    link_col,
-                    ]
+        columns = [ toggle_col, cur_col, price_col, min_col, avg_col,
+                    max_col, title_col, link_col ]
 
         for index, column in enumerate( columns ):
             column.set_sort_column_id( index )
@@ -889,15 +889,9 @@ class MainWindow:
             data_view.append_column( column )
 
         for art in self.articles.values():
-            self.data_store.append( [ False,
-                                      art.currency,
-                                      art.price,
-                                      art.min,
-                                      art.avg,
-                                      art.max,
-                                      art.name,
-                                      art.url,
-                                      ] )
+            self.data_store.append( [ False, art.currency, art.price,
+                                      art.min, art.avg, art.max,
+                                      art.name, art.url ] )
 
         return data_view
 
@@ -911,7 +905,7 @@ class MainWindow:
         self.refresh_thread.start()
 
 
-    def toggle_window_visibility( self, widget=None, event=None ):
+    def toggle_window_visible( self, widget=None, event=None ):
         menu_entry = self.indicator.get_menu().get_children()[0]
 
         if self.window.get_visible():
@@ -927,55 +921,50 @@ class MainWindow:
 
 
     def update_list_store( self ):
-        info( msg='Updating Gui' )
+        info( 'Updating Gui' )
 
         for row in self.data_store:
             art = self.articles[ row[7] ] #Hidden links row
 
-            price = mins = avgs = maxs = 'N/A'
+            mins = avgs = maxs = 'N/A'
+
+            price = '<span%s>'
+            color = ' foreground="%s"'
 
             if art.max == art.min:
-                color = '<span>'
+                price = price % ''
 
             elif art.price == art.min:
-                color = '<span foreground="' + TV_MIN + '">'
+                price = price % color % TV_MIN
 
             elif art.price > art.avg:
-                color = '<span foreground="' + TV_AB_AVG + '">'
+                price = price % color % TV_AB_AVG
 
             elif art.price < art.avg:
-                color = '<span foreground="' + TV_BE_AVG + '">'
+                price = price % color % TV_BE_AVG
 
-            else:                                         #price == avgs
-                color = '<span foreground="' + TV_EX_AVG + '">'
+            else:                                  #art.price == art.avg
+                price = price % color % TV_EX_AVG
 
-            if art.min != -1:
+            if min( art.min, art.avg, art.max ) != -1:
                 mins = '%.2f' % art.min       #1.00 not 1.0
-
-            if art.max != -1:
+                avgs = '%.2f' % art.avg       #1.00 not 1.0
                 maxs = '%.2f' % art.max       #1.00 not 1.0
 
-            if art.avg != -1:
-                avgs = '%.2f' % art.avg       #1.00 not 1.0
-
             if art.price != 'N/A':
-                price = '%.2f' % art.price    #1.00 not 1.0
+                price += '%.2f' % art.price    #1.00 not 1.0
+            else:
+                price += 'N/A'
 
-            art_list = [ row[0],
-                         art.currency,
-                         color + str( price ) + '</span>',
-                         mins,
-                         avgs,
-                         maxs,
-                         art.name,
-                         art.url
-                         ]
+            price += '</span>'
 
+            art_list = [ row[0], art.currency, price, mins, avgs, maxs,
+                         art.name, art.url ]
 
             for index, content in enumerate( art_list ):
                 row[ index ] = content
 
-        info( msg='Updated Gui' )
+        info( 'Updated Gui' )
 
 
 def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
@@ -985,7 +974,7 @@ def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
         with open( name=dest, mode=write_mode ) as f:
             f.write( pic_data )
     except IOError:
-        error( msg='Couldn\'t download picture.' )
+        error( 'Couldn\'t download picture.' )
 
 
 
@@ -1021,63 +1010,52 @@ def read_config_file():
     try:
         with open( CONFIG_FILE, 'r' ) as config_file:
             options = loads( config_file.read() )
-            info( msg=s[ 'rd-cf-fil' ] + CONFIG_FILE )
+            info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
     except IOError:
-        error( msg=s[ 'cnf-no-pm' ] )
-        error( msg=s[ 'us-def-op' ] )
+        error( s[ 'cnf-no-pm' ] )
+        error( s[ 'us-def-op' ] )
         try:
             reset_config_file()
         except:
             pass
 
-        return [ SHOW_NOTIFICATIONS,
-                 SHOW_DEL_DIALOG,
-                 ALTERNATING_ROW_COLOR,
-                 MIN_SLEEP_TIME,
-                 MAX_SLEEP_TIME,
-                 ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG,
+                 ALTERNATING_ROW_COLOR, MIN_SLEEPTIME, MAX_SLEEPTIME ]
+
     except ValueError:
         reset_config_file()
-        return [ SHOW_NOTIFICATIONS,
-                 SHOW_DEL_DIALOG,
-                 ALTERNATING_ROW_COLOR,
-                 MIN_SLEEP_TIME,
-                 MAX_SLEEP_TIME,
-                 ]
+        return [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG,
+                 ALTERNATING_ROW_COLOR, MIN_SLEEPTIME, MAX_SLEEPTIME ]
 
     return options
 
 
 
 def reset_config_file():
-    options = [ SHOW_NOTIFICATIONS,
-                SHOW_DEL_DIALOG,
-                ALTERNATING_ROW_COLOR,
-                MIN_SLEEP_TIME,
-                MAX_SLEEP_TIME,
-                ]
+    options = [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG,
+                ALTERNATING_ROW_COLOR, MIN_SLEEPTIME, MAX_SLEEPTIME ]
 
     write_config_file( options )
 
-    info( msg=s[ 'rd-cf-fil' ] + CONFIG_FILE )
+    info( s[ 'rd-cf-fil' ] + CONFIG_FILE )
 
 
 
-def write_config_file( options ):                                       #Rewrite
+def write_config_file( options ):                               #Rewrite
     try:
         with open( name=CONFIG_FILE, mode='w' ) as config_file:
             config_file.write( dumps( options ) )
 
-            info( msg=s[ 'wrt-cf-fl' ] + CONFIG_FILE )
+            info( s[ 'wrt-cf-fl' ] + CONFIG_FILE )
     except IOError:
-        error( msg=s[ 'cnf-no-pm' ] )
+        error( s[ 'cnf-no-pm' ] )
         return False
 
 
 
 def read_data_file():
-    info( msg=s[ 'dat-fl-rd' ] )
+    info( s[ 'dat-fl-rd' ] )
 
     try:
         with open( name=DATA_FILE, mode='r' ) as f:
@@ -1089,10 +1067,10 @@ def read_data_file():
                     new_art.__dict__ = loads( line )
                     return_list.append( new_art )
                 except ValueError:
-                    error( msg='Problem reading data entry.' )
+                    error( 'Problem reading data entry.' )
                     continue
     except IOError:
-        error( msg='Couldn\'t read datafile.' )
+        error( 'Couldn\'t read datafile.' )
         return []
 
     return return_list
@@ -1106,7 +1084,7 @@ def write_data_file( content ):
                 data_file.write( '\n' )
 
     except IOError:
-        error( msg=s[ 'dat-no-pm' ] )
+        error( s[ 'dat-no-pm' ] )
         return False
 
 
@@ -1122,7 +1100,7 @@ def print_notify( title, body, picture='' ):
 
 
 def osd_notify( title, body, picture ):
-    init("amazonCheck update")
+    init( 'amazonCheck update' )
 
     for color in [ RED, GREEN, NOCOLOR ]:
         title = title.replace( color, '' )
@@ -1137,17 +1115,13 @@ def osd_notify( title, body, picture ):
 
 
 if __name__ == '__main__':
-    info( msg=s[ 'dashes' ] )
-    info( msg=s[ 'str-prgm' ] )
+    info( s[ 'dashes' ] )
+    info( s[ 'str-prgm' ] )
 
-    [ SHOW_NOTIFICATIONS,
-    SHOW_DEL_DIALOG,
-    ALTERNATING_ROW_COLOR,
-    MIN_SLEEP_TIME,
-    MAX_SLEEP_TIME,
-    ] = read_config_file()
+    [ SHOW_NOTIFICATIONS, SHOW_DEL_DIALOG, ALTERNATING_ROW_COLOR,
+      MIN_SLEEPTIME, MAX_SLEEPTIME ] = read_config_file()
 
-    info( msg=s[ 'str-mn-lp' ] )
+    info( s[ 'str-mn-lp' ] )
 
     mywindow = MainWindow()
     mywindow.main()
