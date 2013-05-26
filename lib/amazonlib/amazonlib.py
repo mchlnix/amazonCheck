@@ -7,6 +7,8 @@ from urllib2 import Request, urlopen
 from time import time
 from re import search
 
+JAPAN_HACK = False
+
 TIMEOUT_TIME = 5
 
 USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
@@ -50,7 +52,7 @@ class Article():
 
             price, currency = get_price( source )
 
-            self.currency = currency.replace( 'EUR', '€' )
+            self.currency = currency.replace( 'EUR', u'€' )
 
             self.category = get_category( source )
 
@@ -77,7 +79,7 @@ class Article():
             try:
                 return self.price_data[-1][0]
             except IndexError:
-                return 0
+                return -1
 
 
 
@@ -94,7 +96,7 @@ def format_price( string ):
         raise LookupError( 'Couldn\'t find currency' )
 
     try:
-        price = float( search( '[0-9]+[.][0-9]+', string ).group() )
+        price = float( search( '[0-9]+[.]*[0-9]*', string ).group() )
     except:
         raise LookupError( 'Couldn\'t find price' )
 
@@ -108,6 +110,12 @@ def get_category( source ):
 
 
 def get_encoding( source ):
+    if JAPAN_HACK:
+        tmp_index = source.find( 'ue_sn=\'' )
+        url = source[ tmp_index + 7 : source.find( '\'', tmp_index + 7 ) ]
+        if url == 'www.amazon.co.jp':
+            return 'SHIFT_JIS'
+
     tmp_index = source.find( 'http-equiv="content-type"' ) + 25
     start = source.find( 'charset=', tmp_index ) + 8
 
@@ -211,11 +219,28 @@ def shorten_amazon_link( url ):
     return return_url
 
 
+
+def set_japan_hack( activated ):
+    global JAPAN_HACK
+
+    JAPAN_HACK = activated
+
+
 if __name__ == '__main__':
-    source = open( '/tmp/dept.html', 'r' ).read()
+    set_japan_hack( True )
 
+    art = Article( 'http://www.amazon.co.jp/HUNTER%C3%97HUNTER-32-%E3%82%B8%E3%83%A3%E3%83%B3%E3%83%97%E3%82%B3%E3%83%9F%E3%83%83%E3%82%AF%E3%82%B9-%E5%86%A8%E6%A8%AB-%E7%BE%A9%E5%8D%9A/dp/4088706986/ref=tmm_comic_meta_binding_title_0?ie=UTF8&qid=1369566753&sr=8-3' )
 
-    print get_name( source )
-    print get_category( source )
-    print get_price( source )
-    print get_picture( source )
+    art.update()
+
+    for k, v in art.__dict__.items():
+        print k, v
+
+    print '-------------------------------------------'
+
+    art = Article( 'http://www.amazon.de/gp/product/B006I3OH6Q/' )
+
+    art.update()
+
+    for k, v in art.__dict__.items():
+        print k, v
