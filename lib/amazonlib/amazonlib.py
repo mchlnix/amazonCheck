@@ -48,7 +48,9 @@ class Article():
 
             self.name = get_name( source )
 
-            price, self.currency = get_price( source )
+            price, currency = get_price( source )
+
+            self.currency = currency.replace( 'EUR', '€' )
 
             self.category = get_category( source )
 
