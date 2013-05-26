@@ -246,7 +246,7 @@ class MainWindow:
         #Setting the costum sort function on columns 2 - 5
         for sort_column_id in [ 2, 3, 4, 5 ]:
             self.sortable.set_sort_func( sort_column_id,
-                                         my_sort_function,
+                                         sort_function,
                                          sort_column_id, #user_data
                                          )
 
@@ -919,76 +919,6 @@ class MainWindow:
         info( 'Updated Gui' )
 
 
-def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
-    pic_data = urlopen( url ).read()
-
-    try:
-        with open( name=dest, mode=write_mode ) as f:
-            f.write( pic_data )
-    except IOError:
-        error( 'Couldn\'t download picture.' )
-
-
-
-def get_color( article, price=None ):
-    if price is None:
-        price = article.price
-
-    if price == 'N/A':
-        return '<span>%s</span>' % price
-
-    if is_japanese( article ):
-        str_price = '%d' % price
-    else:
-        str_price = '%.2f' % price
-
-    if article.min == article.max:
-        return '<span>%s</span>' % str_price
-
-    markup = '<span foreground="%s">'
-
-    if price == article.min:
-        color = TV_MIN
-    elif price < article.avg:
-        color = TV_BE_AVG
-    elif price > article.avg:
-        color = TV_AB_AVG
-    else:
-        color = TV_EX_AVG
-
-    markup = markup % color + '%s</span>' % str_price
-
-    return markup
-
-
-
-def my_sort_function( treemodel, iter1, iter2, index ):
-    try:
-        f1 = treemodel[iter1][index]
-        f2 = treemodel[iter2][index]
-
-        try:
-            if f1.find( 'N/A' ) != -1:
-                return 1
-            elif f2.find( 'N/A' ) != -1:
-                return -1
-        except:
-            return -1
-
-        f1 = float( f1[ f1.find( '>' ) + 1 : f1.find( '<', 1 ) ] )
-        f2 = float( f2[ f2.find( '>' ) + 1 : f2.find( '<', 1 ) ] )
-
-        if f1 > f2:
-            return -1
-        elif f1 < f2:
-            return 1
-        else:
-            return 0
-
-    except ValueError:
-        return 0
-
-
 
 def read_config_file():
     try:
@@ -1073,6 +1003,49 @@ def write_data_file( content ):
 
 
 
+def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
+    pic_data = urlopen( url ).read()
+
+    try:
+        with open( name=dest, mode=write_mode ) as f:
+            f.write( pic_data )
+    except IOError:
+        error( 'Couldn\'t download picture.' )
+
+
+
+def get_color( article, price=None ):
+    if price is None:
+        price = article.price
+
+    if price == 'N/A':
+        return '<span>%s</span>' % price
+
+    if is_japanese( article ):
+        str_price = '%d' % price
+    else:
+        str_price = '%.2f' % price
+
+    if article.min == article.max:
+        return '<span>%s</span>' % str_price
+
+    markup = '<span foreground="%s">'
+
+    if price == article.min:
+        color = TV_MIN
+    elif price < article.avg:
+        color = TV_BE_AVG
+    elif price > article.avg:
+        color = TV_AB_AVG
+    else:
+        color = TV_EX_AVG
+
+    markup = markup % color + '%s</span>' % str_price
+
+    return markup
+
+
+
 def get_time():
     return strftime( s[ 'date-frmt' ] )
 
@@ -1080,11 +1053,6 @@ def get_time():
 
 def is_japanese( article ):
     return article.url.find( 'amazon.co.jp' ) != -1
-
-
-
-def print_notify( title, body, picture='' ):
-    print( get_time() + ' ' + title + ' ' + body )
 
 
 
@@ -1096,6 +1064,39 @@ def osd_notify( title, body, picture ):
         body = body.replace( color, '' )
 
     Notification ( title, body, abspath( picture ) ).show()
+
+
+
+def print_notify( title, body, picture='' ):
+    print( get_time() + ' ' + title + ' ' + body )
+
+
+
+def sort_function( treemodel, iter1, iter2, index ):
+    try:
+        f1 = treemodel[iter1][index]
+        f2 = treemodel[iter2][index]
+
+        try:
+            if f1.find( 'N/A' ) != -1:
+                return 1
+            elif f2.find( 'N/A' ) != -1:
+                return -1
+        except:
+            return -1
+
+        f1 = float( f1[ f1.find( '>' ) + 1 : f1.find( '<', 1 ) ] )
+        f2 = float( f2[ f2.find( '>' ) + 1 : f2.find( '<', 1 ) ] )
+
+        if f1 > f2:
+            return -1
+        elif f1 < f2:
+            return 1
+        else:
+            return 0
+
+    except ValueError:
+        return 0
 
 
 
