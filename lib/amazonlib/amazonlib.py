@@ -9,8 +9,9 @@ from re import search
 
 JAPAN_HACK = False
 
-EUR = 'EUR'
+EUR = u'€'
 GBP = u'£'
+USD = u'$'
 YEN = u'￥'
 
 TIMEOUT_TIME = 5
@@ -31,6 +32,7 @@ class Article():
         self.max = -1
 
         self.currency = None
+        self.cur_str  = None
         self.pic_url  = None
         self.pic_name = None
 
@@ -56,7 +58,9 @@ class Article():
 
             price, currency = get_price( source )
 
-            self.currency = currency.replace( EUR, u'€' )
+            self.currency = currency.replace( 'EUR', u'€' )
+
+            self.cur_str = currency + ' %s'
 
             self.category = get_category( source )
 
@@ -105,7 +109,7 @@ def format_price( string, currency=None ):
         except:
             raise LookupError( 'Couldn\'t find currency' )
 
-    if currency == EUR:
+    if currency == 'EUR':
         regexp = '[0-9]{1,3}([.]*[0-9]{3})*([,][0-9]{2})'
     elif currency == GBP:
         regexp = '[0-9]{1,3}([,]*[0-9]*)([.][0-9]{2})'
