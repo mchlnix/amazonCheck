@@ -614,12 +614,12 @@ class MainWindow:
         cur_price = get_color( art )
 
         last_3_prices = '  >  '.join(
-        [ get_color( art, price=price ) + art.currency for price, time in art.price_data[-3:] ]
+        [ get_color( art, price=price ) for price, time in art.price_data[-3:] ]
                                     )
 
         fields = self.preview_box.get_children()[0].get_children()
 
-        cur_price = 'Current price: %s%s' % ( cur_price, art.currency )
+        cur_price = 'Current price: %s' % ( cur_price )
         cat_title = '%s: <a href="%s">%s</a>' % ( art.category, art.url,
                                                   art.name )
 
@@ -827,7 +827,7 @@ class MainWindow:
 
         cur_rnd.set_alignment( 0.5, 0.5 )
 
-        price_rnd.set_alignment( 1, 0.5 )
+        price_rnd.set_alignment( 0, 0.5 )
 
         min_rnd.set_property( 'foreground', TV_BE_AVG )
         min_rnd.set_alignment( 1, 0.5 )
@@ -990,6 +990,7 @@ def read_data_file():
     return return_list
 
 
+
 def write_data_file( content ):
     try:
         with open( name=DATA_FILE, mode='w' ) as data_file:
@@ -1025,6 +1026,8 @@ def get_color( article, price=None ):
         str_price = '%d' % price
     else:
         str_price = '%.2f' % price
+
+    str_price = article.cur_str % str_price
 
     if article.min == article.max:
         return '<span>%s</span>' % str_price
@@ -1077,16 +1080,13 @@ def sort_function( treemodel, iter1, iter2, index ):
         f1 = treemodel[iter1][index]
         f2 = treemodel[iter2][index]
 
-        try:
-            if f1.find( 'N/A' ) != -1:
-                return 1
-            elif f2.find( 'N/A' ) != -1:
-                return -1
-        except:
+        if f1.find( 'N/A' ) != -1:
+            return 1
+        elif f2.find( 'N/A' ) != -1:
             return -1
 
-        f1 = float( f1[ f1.find( '>' ) + 1 : f1.find( '<', 1 ) ] )
-        f2 = float( f2[ f2.find( '>' ) + 1 : f2.find( '<', 1 ) ] )
+        f1 = float( search( '[0-9]+([\.][0-9]{2})', f1 ).group() )
+        f2 = float( search( '[0-9]+([\.][0-9]{2})', f2 ).group() )
 
         if f1 > f2:
             return -1
