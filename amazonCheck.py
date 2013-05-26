@@ -590,9 +590,6 @@ class MainWindow:
 
         art = self.articles[ url ]
 
-        avgs = art.avg
-        price = art.price
-        currency = art.currency
         pic_path = IMAGE_PATH + art.pic_name
 
         try:
@@ -602,7 +599,6 @@ class MainWindow:
             info( 'Trying to reload image.' )
             download_image( url=art.pic_url, dest=pic_path )
             pixbuf = gtk.gdk.pixbuf_new_from_file( pic_path )
-
 
         if pixbuf.get_width() < pixbuf.get_height():
             width  = int( pixbuf.get_width()*100 / pixbuf.get_height() )
@@ -619,47 +615,15 @@ class MainWindow:
 
         self.image_preview.set_from_pixbuf( scaled_buf )
 
-        if price > avgs:
-            color = '<span foreground="' + TV_AB_AVG + '">'
+        cur_price = get_color( art )
 
-        elif price < avgs:
-            color = '<span foreground="' + TV_BE_AVG + '">'
-
-        elif price == avgs:
-            color = '<span foreground="' + TV_EX_AVG + '">'
-
-        if price != 'N/A':
-            price = color + '%.2f</span>' % price
-        else:
-            currency = ''
-
-        last_3_prices = '    '
-
-        limit = min( len( art.price_data ), 3 )
-
-        for i in xrange( limit ):
-            tmp_price = art.price_data[i - limit][0]
-
-            if tmp_price == 'N/A':
-                last_3_prices += '<span color="%s">N/A</span>' % TV_AB_AVG
-            else:
-                if tmp_price > avgs:
-                    color = '<span foreground="%s">' % TV_AB_AVG
-
-                elif tmp_price < avgs:
-                    color = '<span foreground="%s">' % TV_BE_AVG
-
-                elif tmp_price == avgs:
-                    color = '<span foreground="%s">' % TV_EX_AVG
-
-                last_3_prices += color + '%.2f</span>' % tmp_price
-
-            if i < limit - 1:
-                last_3_prices += ' > '
+        last_3_prices = '  >  '.join(
+        [ get_color( art, price=price ) + art.currency for price, time in art.price_data[-3:] ]
+                                    )
 
         fields = self.preview_box.get_children()[0].get_children()
 
-        cur_price = 'Current price: <u>%s</u> %s' % ( price, currency )
+        cur_price = 'Current price: %s%s' % ( cur_price, art.currency )
         cat_title = '%s: <a href="%s">%s</a>' % ( art.category, art.url,
                                                   art.name )
 
@@ -855,22 +819,31 @@ class MainWindow:
         data_view.set_rules_hint( ALTERNATING_ROW_COLOR )
 
         toggle_rnd = gtk.CellRendererToggle()
+        cur_rnd    = gtk.CellRendererText()
+        price_rnd  = gtk.CellRendererText()
+        title_rnd  = gtk.CellRendererText()
+        links_rnd  = gtk.CellRendererText()
+        min_rnd    = gtk.CellRendererText()
+        avg_rnd    = gtk.CellRendererText()
+        max_rnd    = gtk.CellRendererText()
+
         toggle_rnd.connect( 'toggled', self.on_cell_toggled )
 
-        cur_rnd   = gtk.CellRendererText()
-        price_rnd = gtk.CellRendererText()
-        title_rnd = gtk.CellRendererText()
-        links_rnd = gtk.CellRendererText()
-        min_rnd   = gtk.CellRendererText()
-        avg_rnd   = gtk.CellRendererText()
-        max_rnd   = gtk.CellRendererText()
+        cur_rnd.set_alignment( 0.5, 0.5 )
+
+        price_rnd.set_alignment( 1, 0.5 )
 
         min_rnd.set_property( 'foreground', TV_BE_AVG )
+        min_rnd.set_alignment( 1, 0.5 )
+
         avg_rnd.set_property( 'foreground', TV_EX_AVG )
+        avg_rnd.set_alignment( 1, 0.5 )
+
         max_rnd.set_property( 'foreground', TV_AB_AVG )
+        max_rnd.set_alignment( 1, 0.5 )
 
         toggle_col = gtk.TreeViewColumn( '',      toggle_rnd, active=0 )
-        cur_col    = gtk.TreeViewColumn( 'CY',    cur_rnd,    text=1   )
+        cur_col    = gtk.TreeViewColumn( '',      cur_rnd,    text=1   )
         price_col  = gtk.TreeViewColumn( 'Price', price_rnd,  markup=2 )
         min_col    = gtk.TreeViewColumn( 'Min',   min_rnd,    text=3   )
         avg_col    = gtk.TreeViewColumn( 'Avg',   avg_rnd,    text=4   )
@@ -885,6 +858,7 @@ class MainWindow:
 
         for index, column in enumerate( columns ):
             column.set_sort_column_id( index )
+            column.set_sizing( gtk.TREE_VIEW_COLUMN_AUTOSIZE )
 
             data_view.append_column( column )
 
@@ -928,35 +902,12 @@ class MainWindow:
 
             mins = avgs = maxs = 'N/A'
 
-            price = '<span%s>'
-            color = ' foreground="%s"'
-
-            if art.max == art.min:
-                price = price % ''
-
-            elif art.price == art.min:
-                price = price % color % TV_MIN
-
-            elif art.price > art.avg:
-                price = price % color % TV_AB_AVG
-
-            elif art.price < art.avg:
-                price = price % color % TV_BE_AVG
-
-            else:                                  #art.price == art.avg
-                price = price % color % TV_EX_AVG
-
             if min( art.min, art.avg, art.max ) != -1:
                 mins = '%.2f' % art.min       #1.00 not 1.0
                 avgs = '%.2f' % art.avg       #1.00 not 1.0
                 maxs = '%.2f' % art.max       #1.00 not 1.0
 
-            if art.price != 'N/A':
-                price += '%.2f' % art.price    #1.00 not 1.0
-            else:
-                price += 'N/A'
-
-            price += '</span>'
+            price = get_color( art )
 
             art_list = [ row[0], art.currency, price, mins, avgs, maxs,
                          art.name, art.url ]
@@ -975,6 +926,32 @@ def download_image( url, dest, write_mode=IMAGE_WRITE_MODE ):
             f.write( pic_data )
     except IOError:
         error( 'Couldn\'t download picture.' )
+
+
+
+def get_color( article, price=None ):
+    if price is None:
+        price = article.price
+
+    if price == 'N/A':
+        return '<span>%s</span>' % price
+    elif article.min == article.max:
+        return '<span>%.2f</span>' % price
+
+    markup = '<span foreground="%s">'
+
+    if price == article.min:
+        color = TV_MIN
+    elif price < article.avg:
+        color = TV_BE_AVG
+    elif price > article.avg:
+        color = TV_AB_AVG
+    else:
+        color = TV_EX_AVG
+
+    markup = markup % color + '%.2f</span>' % price
+
+    return markup
 
 
 
