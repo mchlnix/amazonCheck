@@ -7,7 +7,8 @@ if version_info >= (2, 8):
     exit( '--Please use Python 2.7 with this program--' )
 
 from actrans import strings as s
-from amazonlib import Article
+from amazonlib import Article, set_japan_hack
+set_japan_hack( True )
 from accolors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
 import pygtk
@@ -396,16 +397,11 @@ class MainWindow:
                       'Couldn\'t add article: Clipboard was empty.',
                        )
 
-        if url in self.articles:
+        art = Article( url )
+
+        if art.url in self.articles:
             warning( 'Article already in the database' )
             return
-
-        if url.find( 'amazon.co.jp' ) != -1:
-            print( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
-            warning( 'Japanese Amazon articles cannot be parsed at the moment. Sorry.' )
-            return
-
-        art = Article( url )
 
         art.update()
 
@@ -900,12 +896,17 @@ class MainWindow:
         for row in self.data_store:
             art = self.articles[ row[7] ] #Hidden links row
 
+            if is_japanese( art ):
+                f_str = '%d'
+            else:
+                f_str = '%.2f' #1.00 not 1.0
+
             mins = avgs = maxs = 'N/A'
 
             if min( art.min, art.avg, art.max ) != -1:
-                mins = '%.2f' % art.min       #1.00 not 1.0
-                avgs = '%.2f' % art.avg       #1.00 not 1.0
-                maxs = '%.2f' % art.max       #1.00 not 1.0
+                mins = f_str % art.min
+                avgs = f_str % art.avg
+                maxs = f_str % art.max
 
             price = get_color( art )
 
@@ -935,8 +936,14 @@ def get_color( article, price=None ):
 
     if price == 'N/A':
         return '<span>%s</span>' % price
-    elif article.min == article.max:
-        return '<span>%.2f</span>' % price
+
+    if is_japanese( article ):
+        str_price = '%d' % price
+    else:
+        str_price = '%.2f' % price
+
+    if article.min == article.max:
+        return '<span>%s</span>' % str_price
 
     markup = '<span foreground="%s">'
 
@@ -949,7 +956,7 @@ def get_color( article, price=None ):
     else:
         color = TV_EX_AVG
 
-    markup = markup % color + '%.2f</span>' % price
+    markup = markup % color + '%s</span>' % str_price
 
     return markup
 
@@ -1068,6 +1075,11 @@ def write_data_file( content ):
 
 def get_time():
     return strftime( s[ 'date-frmt' ] )
+
+
+
+def is_japanese( article ):
+    return article.url.find( 'amazon.co.jp' ) != -1
 
 
 

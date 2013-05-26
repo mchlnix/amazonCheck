@@ -4,10 +4,14 @@
 from pricelib import min_price, avg_price, max_price
 
 from urllib2 import Request, urlopen
-from time import time
+from time import time, sleep
 from re import search
 
 JAPAN_HACK = False
+
+EUR = 'EUR'
+GBP = u'£'
+YEN = u'￥'
 
 TIMEOUT_TIME = 5
 
@@ -27,11 +31,11 @@ class Article():
         self.max = -1
 
         self.currency = None
-        self.pic_url = None
+        self.pic_url  = None
         self.pic_name = None
 
         self.bad_conn = False
-        self.bad_url = False
+        self.bad_url  = False
 
     def update( self ):
 
@@ -52,7 +56,7 @@ class Article():
 
             price, currency = get_price( source )
 
-            self.currency = currency.replace( 'EUR', u'€' )
+            self.currency = currency.replace( EUR, u'€' )
 
             self.category = get_category( source )
 
@@ -77,30 +81,51 @@ class Article():
     def __getattr__( self, name ):
         if name=='price':
             try:
-                return self.price_data[-1][0]
+                price = self.price_data[-1][0]
+
+                if self.currency == YEN:
+                    return int( price )
+                else:
+                    return price
             except IndexError:
                 return -1
 
 
 
-def format_price( string ):
-    format_from = [ '\n', '\t', '  ', ',', '+' ]
-    format_to   = [  '' ,  '' ,  '' , '.', ''  ]
+def format_price( string, currency=None ):
+    format_from = [ '\n', '\t', '  ', '+' ]
+    format_to   = [  '' ,  '' ,  '' , ''  ]
 
     for _from, _to in zip( format_from, format_to ):
         string = string.replace( _from, _to )
 
-    try:
-        currency = search( '[^ .,0-9]*', string ).group()
-    except:
-        raise LookupError( 'Couldn\'t find currency' )
+    if currency is None:
+        try:
+            currency = search( '[^ .,0-9]*', string ).group()
+        except:
+            raise LookupError( 'Couldn\'t find currency' )
+
+    if currency == EUR:
+        regexp = '[0-9]{1,3}([.]*[0-9]{3})*([,][0-9]{2})'
+    elif currency == GBP:
+        regexp = '[0-9]{1,3}([,]*[0-9]*)([.][0-9]{2})'
+    elif currency == YEN:
+        regexp = '[0-9]{1,3}([,][0-9]{3})*'
 
     try:
-        price = float( search( '[0-9]+[.]*[0-9]*', string ).group() )
+        price = search( regexp, string ).group()
+
+        if currency == YEN or currency == GBP:
+            price = price.replace( ',', '' )
+        else:
+            price = price.replace( '.', '' ).replace( ',', '.' )
+
+        price = float( price )
+
+        return ( price, currency )
+
     except:
         raise LookupError( 'Couldn\'t find price' )
-
-    return ( price, currency )
 
 
 
@@ -148,13 +173,13 @@ def get_price( source ):
     except LookupError:
         return 'N/A', 'N/A'
 
+    ( price, currency ) = format_price( price )
+
     try:
         shipping = get_tag_content( source=price_env, searchterm='class="price_shipping"', format=False, encoded=True )
-        ( shipping, unused ) = format_price( shipping )
+        ( shipping, unused ) = format_price( shipping, currency=currency )
     except LookupError:
         shipping = 0
-
-    ( price, currency ) = format_price( price )
 
     return round( price + shipping, 2 ), currency
 
@@ -233,6 +258,8 @@ if __name__ == '__main__':
 
     art.update()
 
+    print art.price
+
     for k, v in art.__dict__.items():
         print k, v
 
@@ -241,6 +268,30 @@ if __name__ == '__main__':
     art = Article( 'http://www.amazon.de/gp/product/B006I3OH6Q/' )
 
     art.update()
+
+    print art.price
+
+    for k, v in art.__dict__.items():
+        print k, v
+
+    print '-------------------------------------------'
+
+    art = Article( 'http://www.amazon.co.jp/%E3%83%9A%E3%83%B3%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B9-50-mm-DA-%E3%83%9A%E3%83%B3%E3%82%BF%E3%83%83%E3%82%AF%E3%82%B9%E3%83%AA%E3%82%B3%E3%83%BC%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8%E3%83%B3%E3%82%B0/dp/B0087MQ1B0/ref=sr_1_1?ie=UTF8&qid=1369570227&sr=8-1&keywords=da' )
+
+    art.update()
+
+    print art.price
+
+    for k, v in art.__dict__.items():
+        print k, v
+
+    print '-------------------------------------------'
+
+    art = Article( 'http://www.amazon.co.uk/AKG-True-Hybrid-In-Ear-Headphones/dp/B00A9H8XTY/ref=sr_1_1?m=A3P5ROKL5A1OLE&s=electronics-accessories&ie=UTF8&qid=1369574490&sr=1-1' )
+
+    art.update()
+
+    print art.price
 
     for k, v in art.__dict__.items():
         print k, v
