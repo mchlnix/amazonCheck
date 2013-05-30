@@ -7,8 +7,7 @@ if version_info >= (2, 8):
     exit( '--Please use Python 2.7 with this program--' )
 
 from actrans import strings as s
-from amazonlib import Article, set_japan_hack
-set_japan_hack( True )
+from amazonlib import Article
 from accolors import BOLD_WHITE, BLUE, GREEN, RED, YELLOW, NOCOLOR
 
 import pygtk
