@@ -110,13 +110,15 @@ class Article():
             price, currency = get_price( source )
             self.currency = currency.replace( 'EUR', EUR )
             self.cur_str = self.currency + ' %s'
+        except PriceNotFound:
+            price = 'N/A'
+        except CurrencyNotFound:
+            price = self.price
 
-            if price != self.price:
-                self.price_data.append( [ price, int( time() ) ] )
-                self.min = min_price( self.price_data )
-                self.max = max_price( self.price_data )
-        except ( CurrencyNotFound, PriceNotFound ):
-            pass
+        if price != self.price:
+            self.price_data.append( [ price, int( time() ) ] )
+            self.min = min_price( self.price_data )
+            self.max = max_price( self.price_data )
 
         self.pic_name = search( '\/[A-Z0-9]{10}\/', self.url ).group()[1: -1] + '.jpg'
 
@@ -217,22 +219,24 @@ def get_price( source ):
         price = get_tag_content( source=price_env, searchterm='class="price"', format=True )
     except TagNotFound as T:
         if T.args[0] == 'class="price"':
-            return 'N/A', None
+            raise PriceNotFound
         else:
             pass
 
     try:
         if price is None:
-            price = get_tag_content( source=source, searchterm='a-size-large a-color-price a-text-bold', format=True )
+            price = get_tag_content( source=source, searchterm='a-size-large a-color-price', format=True )
         else:
             pass
     except TagNotFound:
-        return 'N/A', None
+        raise PriceNotFound
 
     try:
         ( price, currency ) = format_price( price )
+    except CurrencyNotFound:
+        raise CurrencyNotFound
     except PriceNotFound:
-        return 'N/A', None
+        raise PriceNotFound
 
     try:
         if price_env is not None:
@@ -247,8 +251,11 @@ def get_price( source ):
         if shipping[0] == '+':
             try:
                 ( shipping, unused ) = format_price( shipping, currency=currency )
+            except CurrencyNotFound:
+                raise CurrencyNotFound
             except PriceNotFound:
-                return 'N/A', None
+                raise PriceNotFound
+
         else:
             shipping = 0
 
@@ -308,21 +315,15 @@ def shorten_amazon_link( url ):
 
 
 if __name__ == '__main__':
-
-    #with open( '/tmp/derp.html', 'r' ) as f:
-        #source = f.read()
-#
-    #print get_price( source )
-#
     urls = [ 'http://www.amazon.cn/gp/offer-listing/B00AZR7NSA/',#China
-    'http://www.amazon.fr//dp/B005OS4NHE/',#France
-    'http://www.amazon.com/gp/product/0735619670/',#USA
-    'http://www.amazon.ca/gp/product/B00ADSBS3M/',#Canada
-    'http://www.amazon.co.jp/gp/product/B0042D73LA/',#Japan
-    'http://www.amazon.es/gp/product/B00BP5DKM4/',#Spain
-    'http://www.amazon.co.uk/gp/product/B008U5H7Q2/',#GB
-    'http://www.amazon.it/gp/product/B009KR4UNM/',#Italy
-    'http://www.amazon.de/gp/product/B009WJC77O/',#Germany
+    'http://www.amazon.fr//dp/B005OS4NHE/',                      #France
+    'http://www.amazon.com/gp/product/0735619670/',              #USA
+    'http://www.amazon.ca/gp/product/B00ADSBS3M/',               #Canada
+    'http://www.amazon.co.jp/gp/product/B0042D73LA/',            #Japan
+    'http://www.amazon.es/gp/product/B00BP5DKM4/',               #Spain
+    'http://www.amazon.co.uk/gp/product/B008U5H7Q2/',            #GB
+    'http://www.amazon.it/gp/product/B009KR4UNM/',               #Italy
+    'http://www.amazon.de/gp/product/B009WJC77O/',               #Germany
     ]
 
     for url in urls:
@@ -334,6 +335,3 @@ if __name__ == '__main__':
         print 'Currency: ', art.currency
         print 'URL     : ', art.url
         print '----------------------------------'
-
-        #sleep( 3 )
-
