@@ -15,6 +15,8 @@ class NameNotFound( LookupError ):
     pass
 class PriceNotFound( LookupError ):
     pass
+class ShippingNotFound( LookupError ):
+    pass
 class TagNotFound( LookupError ):
     pass
 class URLNotFound( LookupError ):
@@ -112,7 +114,7 @@ class Article():
             self.cur_str = self.currency + ' %s'
         except PriceNotFound:
             price = 'N/A'
-        except CurrencyNotFound:
+        except ( CurrencyNotFound, ShippingNotFound ):
             price = self.price
 
         if price != self.price:
@@ -254,7 +256,7 @@ def get_price( source ):
             except CurrencyNotFound:
                 raise CurrencyNotFound
             except PriceNotFound:
-                raise PriceNotFound
+                raise ShippingNotFound
 
         else:
             shipping = 0
