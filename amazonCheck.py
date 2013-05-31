@@ -436,6 +436,8 @@ class MainWindow:
                                   art.url,
                                   ] )
 
+        osd_notify( 'Successfully added article.', art.name, IMAGE_PATH + art.pic_name )
+
         self.update_list_store()
 
         self.start_thread()
