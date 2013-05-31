@@ -392,23 +392,26 @@ class MainWindow:
         elif type( widget ) == gtk.MenuItem:
             url = gtk.Clipboard().wait_for_text()
             if url is None:
-                warning(
-                      'Couldn\'t add article: Clipboard was empty.',
-                       )
+                warning( 'Couldn\'t add article: Clipboard was empty.' )
+                osd_notify( 'Couldn\'t add article: Clipboard was empty.' )
+                return
 
         art = Article( url )
 
         if art.url in self.articles:
             warning( 'Article already in the database' )
+            osd_notify( 'Article already in the database' )
             return
 
         art.update()
 
         if art.bad_conn:
             error( s[ 'err-con-s' ] )
+            osd_notify( s[ 'err-con-s' ] )
             return
         elif art.bad_url:
             error( 'Couldn\'t parse the url.' )
+            osd_notify( 'Couldn\'t parse the url.' )
             return
 
         self.refresh_thread.stop()
@@ -425,6 +428,7 @@ class MainWindow:
                 data_file.write( '\n' )
         except IOError:
             error( 'Couldn\'t write to data file.' )
+            osd_notify( 'Couldn\'t write to data file.' )
 
         self.data_store.append( [ False,
                                   art.currency,
@@ -1060,7 +1064,7 @@ def is_japanese( article ):
 
 
 
-def osd_notify( title, body, picture ):
+def osd_notify( title, body='', picture=ICON_FILE ):
     init( 'amazonCheck update' )
 
     for color in [ RED, GREEN, NOCOLOR ]:
