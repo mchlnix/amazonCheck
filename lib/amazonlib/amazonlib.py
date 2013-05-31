@@ -22,8 +22,9 @@ class TagNotFound( LookupError ):
 class URLNotFound( LookupError ):
     pass
 
+BRA = u'R$'
 CAN = u'CDN$'
-EUR = u'€'
+EUR = u'EUR'
 GBP = u'£'
 USD = u'$'
 YEN = u'￥'
@@ -32,15 +33,16 @@ TIMEOUT_TIME = 5
 
 USER_AGENT = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1' }
 
-ENCODING_DICT = { 'www.amazon.ca'   : 'iso-8859-15',
-                  'www.amazon.com'  : 'iso-8859-1',
-                  'www.amazon.co.jp': 'shift-jis',
-                  'www.amazon.co.uk': 'iso-8859-1',
-                  'www.amazon.cn'   : 'utf-8',
-                  'www.amazon.de'   : 'iso-8859-1',
-                  'www.amazon.es'   : 'iso-8859-1',
-                  'www.amazon.fr'   : 'iso-8859-1',
-                  'www.amazon.it'   : 'iso-8859-1',
+ENCODING_DICT = { 'www.amazon.ca'     : 'iso-8859-15',
+                  'www.amazon.co.jp'  : 'shift-jis',
+                  'www.amazon.co.uk'  : 'iso-8859-1',
+                  'www.amazon.com'    : 'iso-8859-1',
+                  'www.amazon.com.br' : 'iso-8859-1',
+                  'www.amazon.cn'     : 'utf-8',
+                  'www.amazon.de'     : 'iso-8859-1',
+                  'www.amazon.es'     : 'iso-8859-1',
+                  'www.amazon.fr'     : 'iso-8859-1',
+                  'www.amazon.it'     : 'iso-8859-1',
                   }
 
 
@@ -110,7 +112,7 @@ class Article():
 
         try:
             price, currency = get_price( source )
-            self.currency = currency.replace( 'EUR', EUR )
+            self.currency = currency.replace( EUR, u'€' )
             self.cur_str = self.currency + ' %s'
         except PriceNotFound:
             price = 'N/A'
@@ -153,7 +155,7 @@ def format_price( string, currency=None ):
         except AttributeError:
             raise CurrencyNotFound
 
-    if currency == 'EUR':
+    if currency in [ EUR, BRA ]:
         regexp = '[0-9]{1,3}([.]*[0-9]{3})*([,][0-9]{2})'
     elif currency in [ CAN, GBP, USD ]:
         regexp = '[0-9]{1,3}([,]*[0-9]*)([.][0-9]{2})'
