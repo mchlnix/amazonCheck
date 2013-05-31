@@ -1084,11 +1084,12 @@ def sort_function( treemodel, iter1, iter2, index ):
                 return 1
             elif f2.find( 'N/A' ) != -1:
                 return -1
+
+            f1 = float( search( '[0-9]+([\.][0-9]{2})', f1 ).group() )
+            f2 = float( search( '[0-9]+([\.][0-9]{2})', f2 ).group() )
+
         except AttributeError:
             return -1
-
-        f1 = float( search( '[0-9]+([\.][0-9]{2})', f1 ).group() )
-        f2 = float( search( '[0-9]+([\.][0-9]{2})', f2 ).group() )
 
         if f1 > f2:
             return -1
