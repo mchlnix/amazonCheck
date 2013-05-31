@@ -94,13 +94,13 @@ class Article():
             return
 
         try:
-            self.name = get_name( source )
-        except NameNotFound:
+            self.category = get_category( source )
+        except CategoryNotFound:
             pass
 
         try:
-            self.category = get_category( source )
-        except CategoryNotFound:
+            self.name = get_name( source )
+        except NameNotFound:
             pass
 
         try:
@@ -200,12 +200,19 @@ def get_encoding( source ):
 
 
 def get_picture( source ):
+    temp = None
     try:
-        temp = get_tag_content( source=source, searchterm='id="productheader"', format=False )
+        temp = get_tag_content( source, searchterm='id="productheader"', format=False )
     except TagNotFound:
-        raise URLNotFound
+        pass
 
-    pic_pos = temp.find( '<img src="' ) + 10
+    if temp is None:
+        try:
+            temp = get_tag_content( source, searchterm='id="prodImageCell"', format=False )
+        except:
+            raise URLNotFound
+
+    pic_pos = temp.find( 'src="' ) + 5
     pic_url = temp[ pic_pos : temp.find( '"', pic_pos ) ]
 
     return pic_url
@@ -230,6 +237,12 @@ def get_price( source ):
             price = get_tag_content( source=source, searchterm='a-size-large a-color-price', format=True )
         else:
             pass
+    except TagNotFound:
+        pass
+
+    try:
+        if price is None:
+            price = get_tag_content( source=source, searchterm='class="priceLarge"', format=True )
     except TagNotFound:
         raise PriceNotFound
 
@@ -298,7 +311,15 @@ def get_name( source ):
         except TagNotFound:
             continue
     else:
-        raise NameNotFound
+        try:
+            name = get_tag_content( source, searchterm='id="prodImageCell"', format=False )
+            name_pos = name.find( 'alt="' ) + 5
+            name = name[ name_pos : name.find( '"', name_pos ) ]
+        except TagNotFound:
+            raise NameNotFound
+
+    return name
+
 
 
 
