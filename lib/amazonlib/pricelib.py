@@ -13,45 +13,27 @@ def min_price( price_list ):
         return -1
 
 
-
 def avg_price( price_list ):
-    avg = 0
-    length = len( price_list )
     changed = False
+    avg = 0
 
-    if length == 1:
-        if price_list[0][0] == 'N/A':
-            return -1
+    start_time = tmp_time = int( time() )
+
+    for _price, _time in reversed( price_list ):
+        if _price == 'N/A':
+            start_time -= ( tmp_time - _time )
         else:
+            changed = True
+            avg += ( tmp_time - _time ) * _price
+
+        tmp_time = _time
+
+    if changed:
+        try:
+            return round( avg / float( start_time - price_list[0][1] ), 2 )
+        except ZeroDivisionError:
             return price_list[0][0]
-
-    div_time = int( round( time() ) ) - price_list[0][1]
-
-    if price_list[-1][0] == 'N/A':
-        div_time -= int( round( time() ) ) - price_list[-1][1]
     else:
-        changed = True
-        avg += price_list[-1][0] * (int( round( time() ) ) - price_list[-1][1])
-
-
-    for i in range( 2, length + 1 ):
-
-        index = length - i
-
-        if price_list[ index ][0] == 'N/A':
-            div_time -= price_list[ index + 1 ][1] - price_list[ index ][1]
-            continue
-
-        avg += price_list[ index ][0] * ( price_list[ index + 1 ][1] - price_list[ index ][1] )
-        changed = True
-
-    try:
-        if changed:
-            return round( avg / float( div_time ), 2 )
-        else:
-            return -1
-
-    except ZeroDivisionError:
         return -1
 
 
@@ -69,9 +51,14 @@ if __name__ == '__main__':
     mylists = [ [ (10, int( time() - 5000 )), (20, int( time() - 3000 )), ('N/A', int( time() - 2000 )), (15, int( time() - 1000 )) ],
                 [ (10, int( time() - 5000 )) ],
                 [ ('N/A', int( time() - 2000 )) ],
+                [ (10 , int( time() - 6000 )), (20 , int( time() - 5000 )), (30 , int( time() - 4000 )), (40 , int( time() - 3000 )), ( 50 , int( time() - 2000 )), ('N/A' , int( time() - 1000 )) ],
+                [],
+                [ (20, int( time() - 4000)), ('N/A', int( time() - 2000)) ],
+                [ (0, int( time() )) ],
+                [ (20, int( time() - 7000 )), (15, int( time() - 4000 )), (13, int( time() - 2000 )), (27, int( time() - 500 )) ]
                 ]
 
-    results = [ [10, 13.75, 20], [10, 10, 10], [-1, -1, -1] ]
+    results = [ [10, 13.75, 20], [10, 10, 10], [-1, -1, -1], [10, 30, 50], [-1, -1, -1], [20, 20, 20], [0, 0, 0], [13, 17.57, 27] ]
 
     for mylist, result in zip( mylists, results ):
         print 'Tested list:',mylist
