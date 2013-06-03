@@ -4,6 +4,12 @@
 from time import time
 
 def min_price( price_list ):
+    """Return the minimum price in the list of tupels or -1.
+    
+    Arguments:
+    price_list -- list of tupels ( price or 'N/A', seconds in unix time )
+    
+    """
     tmp_list = sorted( price for price, time in price_list )
 
     for price in tmp_list:
@@ -14,6 +20,12 @@ def min_price( price_list ):
 
 
 def avg_price( price_list ):
+    """Calculate the average price considering time, neglecting 'N/A'.
+    
+    Arguments:
+    price_list -- list of tupels ( price or 'N/A', seconds in unix time )
+    
+    """
     changed = False
     avg = 0
 
@@ -38,6 +50,12 @@ def avg_price( price_list ):
 
 
 def max_price( price_list ):
+    """Return the maximum price in the list of tupels or -1.
+    
+    Arguments:
+    price_list -- list of tupels ( price or 'N/A', seconds in unix time )
+    
+    """
     tmp_list = reversed( sorted( price for price, time in price_list ) )
 
     for price in tmp_list:
