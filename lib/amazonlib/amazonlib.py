@@ -143,6 +143,16 @@ class Article():
 
 
 def format_price( string, currency=None ):
+    """Format the content containing price and/or currency information and return it.
+    Raises CurrencyNotFound/PriceNotFound ( LookupError ), if either couldn't be determined.
+    
+    Arguments:
+    string   -- String containing price and/or currency information ( from a website ).
+    
+    Keyword arguments:
+    currency -- If given, uses currency instead of determining it. Defaults to None.
+    
+    """
     format_from = [ '\n', '\t', '  ', '+' ]
     format_to   = [  '' ,  '' ,  '' , ''  ]
 
@@ -180,6 +190,14 @@ def format_price( string, currency=None ):
 
 
 def get_category( source ):
+    """
+    Return the category of an Amazon article found in source. Raises 
+    CategoryNotFound if the category couldn't be determined.
+    
+    Arguments:
+    source -- String containing category information ( from a website ).
+    
+    """
     try:
         return get_tag_content( source=source,
                                 searchterm="id='nav-search-in-content'",
@@ -191,6 +209,13 @@ def get_category( source ):
 
 
 def get_encoding( source ):
+    """
+    Return the encoding of source page.
+    
+    Arguments:
+    source -- Page source.
+    
+    """
     start = source.find( 'charset=' ) + 8
 
     end = source.find( '"', start )
@@ -202,6 +227,14 @@ def get_encoding( source ):
 
 
 def get_picture( source ):
+    """
+    Return the target url of a picture related to an Amazon article page. Raises
+    URLNotFound ( LookupError ) if the url couldn't be determined.
+    
+    Arguments:
+    source -- String containing url information ( from a website ).
+    
+    """
     temp = None
     try:
         temp = get_tag_content( source, searchterm='id="productheader"', format=False )
@@ -222,6 +255,15 @@ def get_picture( source ):
 
 
 def get_price( source ):
+    """
+    Find and return the price, including shipping if applicable, rounded to 2 places 
+    and the currency of an Amazon article. Raises PriceNotFound, ShippingNotFound 
+    ( LookupError ) if either couldn't be found.
+    
+    Arguments:
+    source -- Page source.
+    
+    """
     price = None
     price_env = None
     shipping = None
@@ -281,6 +323,16 @@ def get_price( source ):
 
 
 def get_tag_content( source, searchterm, format=False ):
+    """
+    Find and return the content of the first tag found in source with searchterm
+    in it.
+    Raises TagNotFound ( LookupError ), if the tag couldn't be found.
+    
+    Arguments:
+    source     -- Page source.
+    searchterm -- String to search for in the source.
+    
+    """
     tmp_index = source.find( searchterm )
 
     tag_start = source[ 0: tmp_index ].rfind( '<' ) + 1
@@ -306,6 +358,14 @@ def get_tag_content( source, searchterm, format=False ):
 
 
 def get_name( source ):
+    """
+    Find and return the name of an Amazon article. 
+    Raises NameNotFound ( LookupError ) if the name couldn't be found.
+    
+    Arguments:
+    source -- Page source.
+    
+    """
     for searchterm in [ '"producttitle"', 'a-spacing-none' ]:
         try:
             name = get_tag_content( source, searchterm, format=True )
@@ -326,6 +386,13 @@ def get_name( source ):
 
 
 def shorten_amazon_link( url ):
+    """
+    Format an Amazon link to be as short as possible. Return it or empty string.
+    
+    Arguments:
+    url -- Amazon URL
+    
+    """
     offset = url.find( 'amazon.' )
     domain = url[ url.find( '.' , offset ) + 1 : url.find( '/', offset ) ]
 
